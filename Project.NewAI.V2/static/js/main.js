@@ -317,12 +317,12 @@ function initThreeRowTileLayout() {
     // We want 4 in top row, 1 in middle row (expanded), 4 in bottom row
     // We'll define top row as the first 4 in tileOrder (except the clicked tile).
     // The clicked tile is the middle row, expanded.
-    // The last 4 in tileOrder (plus the Customize tile) go on bottom row,
+    // The last 4 in tileOrder (plus "Customize") go on bottom row,
     // with "Customize" un-hidden.
 
     const topTileIds = tileOrder.slice(0, 4).filter(x => x !== tileId);
     const middleTileId = tileId;
-    const bottomTileIds = tileOrder.slice(4); // last 5 or so (including customize)
+    const bottomTileIds = tileOrder.slice(4); // last 5 or so (including "Customize")
     // If the clicked tile is among them, remove it
     const idx = bottomTileIds.indexOf(tileId);
     if (idx >= 0) bottomTileIds.splice(idx, 1);

@@ -253,15 +253,15 @@ async def generate_summaries_and_risks(ten_k_text):
     logger.debug('Generating company, industry summaries, and risk considerations from 10-K report.')
 
     company_prompt = f"""
-Summarize the company based on the following 10-K report...
+Summarize the company based on the following 10-K report:
 {ten_k_text}
 """
     industry_prompt = f"""
-Summarize the industry based on the following 10-K report...
+Summarize the industry based on the following 10-K report:
 {ten_k_text}
 """
     risks_prompt = f"""
-Identify and summarize the key risk considerations from the 10-K report...
+Identify and summarize the key risk considerations from the 10-K report:
 {ten_k_text}
 """
 
@@ -289,7 +289,7 @@ Identify and summarize the key risk considerations from the 10-K report...
         company_summary_task, industry_summary_task, risks_task
     )
 
-    logger.debug('Summaries generated.')
+    logger.debug('Summaries generated for 10-K data.')
     return company_summary, industry_summary, risks_summary
 
 async def call_openai_analyze_sentiment(text, context):
@@ -373,7 +373,7 @@ async def summarize_text_async(text):
     return combined_summary
 
 async def process_documents(earnings_call_text, industry_report_text, economic_report_text):
-    logger.debug('Summarizing extracted texts.')
+    logger.debug('Summarizing extracted texts for earnings, industry, and economic reports.')
     summaries = await asyncio.gather(
         summarize_text_async(earnings_call_text),
         summarize_text_async(industry_report_text),
@@ -385,7 +385,7 @@ async def process_documents(earnings_call_text, industry_report_text, economic_r
         return None
 
     earnings_call_summary, industry_report_summary, economic_report_summary = summaries
-    logger.debug('Analyzing sentiments on the summaries.')
+    logger.debug('Analyzing sentiments on the summarized texts.')
     sentiments = await asyncio.gather(
         call_openai_analyze_sentiment(earnings_call_summary, "earnings call transcript"),
         call_openai_analyze_sentiment(industry_report_summary, "industry report"),
@@ -491,6 +491,12 @@ def analyze_financials():
             return jsonify({'error': error_message}), 400
         else:
             logger.info('Extracted text from the 10-K successfully.')
+
+        # Generate real summaries from the 10-K
+        company_summary, industry_summary, risks_summary = run_async_function(
+            generate_summaries_and_risks(ten_k_text)
+        )
+        logger.info('Generated 10-K summaries successfully.')
 
         # Retrieve form inputs
         wacc = float(request.form['wacc']) / 100
@@ -660,7 +666,7 @@ def analyze_financials():
         ratios = calculate_ratios(financials, benchmarks)
         factor2_score = ratios['Normalized Factor 2 Score']
 
-        # Extract PDF text
+        # Extract PDF text for earnings/industry/economic
         earnings_call_text = extract_text_from_pdf(file_paths['earnings_call'])
         industry_report_text = extract_text_from_pdf(file_paths['industry_report'])
         economic_report_text = extract_text_from_pdf(file_paths['economic_report'])
@@ -848,16 +854,15 @@ def analyze_financials():
 
         # We'll store all final data in a dictionary, then put it in session
         analysis_data = {
-            "company_summary": "Placeholder company summary",
-            "industry_summary": "Placeholder industry summary",
-            "risks_summary": "Placeholder risks summary",
+            "company_summary": company_summary or "",
+            "industry_summary": industry_summary or "",
+            "risks_summary": risks_summary or "",
             "dcf_intrinsic_value": intrinsic_value_per_share if intrinsic_value_per_share else 0,
             "recommendation": recommendation,
             "weighted_total_score": weighted_total_score,
             "ratios": ratios,
             "sentiment_results": sentiment_results,
             "factor_scores": factor_scores,
-            # You can store more if needed, e.g. time series data, CAGR, etc.
         }
 
         # Put your final data in session
@@ -973,10 +978,7 @@ def sentiment_data():
             "economic_report_sentiment": {"score": 0, "explanation": ""}
         })
 
-    # Convert your 'sentiment_results' structure to a simpler JSON
-    # Suppose 'sentiment_results' is a list of dict with titles/scores
     sr = analysis.get("sentiment_results", [])
-    # We'll find each by title for demonstration
     e_call = next((x for x in sr if x['title'] == 'Earnings Call Sentiment'), None)
     i_repo = next((x for x in sr if x['title'] == 'Industry Report Sentiment'), None)
     econ_repo = next((x for x in sr if x['title'] == 'Economic Report Sentiment'), None)
@@ -1007,7 +1009,7 @@ def data_visualizations_data():
     return jsonify({
         "benchmark_comparison": {
             "Ratios": ["Debt-to-Equity Ratio", "Current Ratio", "P/E Ratio", "P/B Ratio"],
-            "Company": [],   # you'd fill from analysis if you want
+            "Company": [],
             "Industry": []
         },
         "revenue_over_time": [],
@@ -1034,7 +1036,7 @@ def final_recommendation():
 
 @system1_bp.route('/company_info_data', methods=['GET'])
 def company_info_data():
-    # Possibly also dynamic; for now you can keep placeholders
+    # Possibly also dynamic; for now you can keep placeholders or fill from analysis
     return jsonify({
         "c_suite_executives": "John Doe (CEO), Jane Smith (CFO), Alex Johnson (CTO)",
         "shares_outstanding": 1500000000,
