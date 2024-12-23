@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI-Powered Financial Research Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Roboto', sans-serif;
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background-color: #343a40;
+        }
+
+        .navbar-brand {
+            color: #ffffff;
+        }
+
+        .navbar-brand:hover {
+            color: #d4d4d4;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 50px;
+            background-color: #007bff;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+        }
+
+        .input-section {
+            padding: 30px;
+            margin-top: -20px;
+        }
+
+        .footer {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #00408d;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">AI Financial Research</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Research Smarter with AI</h1>
+        <p>Analyze stocks, generate insights, and explore scenarios in seconds.</p>
+    </section>
+
+    <!-- Input Section -->
+    <section class="input-section container">
+        <form id="analysis-form" action="/system1/analyze" method="post" enctype="multipart/form-data">
+            <div class="row g-4">
+                <!-- Basic Inputs -->
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header">Basic Information</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="company_name" class="form-label">Company Name (Optional)</label>
+                                <input type="text" name="company_name" id="company_name" class="form-control" placeholder="e.g., Apple Inc.">
+                            </div>
+                            <div class="mb-3">
+                                <label for="stock_price" class="form-label">Current Stock Price</label>
+                                <input type="number" step="0.01" name="stock_price" id="stock_price" class="form-control" placeholder="e.g., 145.32" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="company_logo" class="form-label">Company Logo (Optional)</label>
+                                <input type="file" name="company_logo" id="company_logo" class="form-control" accept=".png,.jpg,.jpeg,.gif">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scenario Inputs -->
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header">Scenario Information</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="stock_ticker" class="form-label">Stock Ticker</label>
+                                <input type="text" name="stock_ticker" id="stock_ticker" class="form-control" placeholder="e.g., AAPL, TSLA" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sector" class="form-label">Sector</label>
+                                <input type="text" name="sector" id="sector" class="form-control" placeholder="e.g., Technology, Healthcare" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="industry" class="form-label">Industry</label>
+                                <input type="text" name="industry" id="industry" class="form-control" placeholder="e.g., Semiconductors, Pharmaceuticals" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sub_industry" class="form-label">Sub-Industry</label>
+                                <input type="text" name="sub_industry" id="sub_industry" class="form-control" placeholder="More granular industry category" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="scenario" class="form-label">Scenario</label>
+                                <select name="scenario" id="scenario" class="form-select" required>
+                                    <option value="Optimistic">Optimistic</option>
+                                    <option value="Neutral">Neutral</option>
+                                    <option value="Negative">Negative</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="shares_outstanding" class="form-label">Shares Outstanding (Optional)</label>
+                                <input type="number" name="shares_outstanding" id="shares_outstanding" class="form-control" placeholder="If not provided, the system will attempt to fetch from YFinance">
+                            </div>
+                            <div class="mb-3">
+                                <label for="terminal_growth_rate" class="form-label">Terminal Growth Rate (Optional)</label>
+                                <input type="number" step="0.0001" name="terminal_growth_rate" id="terminal_growth_rate" class="form-control" placeholder="If not provided, defaults to scenario/historical average">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Numeric Inputs for Assumptions and Benchmarks -->
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header">Financial Assumptions & Benchmarks</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label for="wacc" class="form-label">WACC (%)</label>
+                                    <input type="number" step="0.01" name="wacc" id="wacc" class="form-control" placeholder="e.g., 10 for 10%" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="tax_rate" class="form-label">Tax Rate (%)</label>
+                                    <input type="number" step="0.01" name="tax_rate" id="tax_rate" class="form-control" placeholder="e.g., 21 for 21%" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="growth_rate" class="form-label">Growth Rate (%)</label>
+                                    <input type="number" step="0.01" name="growth_rate" id="growth_rate" class="form-control" placeholder="e.g., 5 for 5%" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="debt_equity_benchmark" class="form-label">Debt/Equity Benchmark</label>
+                                    <input type="number" step="0.01" name="debt_equity_benchmark" id="debt_equity_benchmark" class="form-control" placeholder="e.g., 0.5" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="current_ratio_benchmark" class="form-label">Current Ratio Benchmark</label>
+                                    <input type="number" step="0.01" name="current_ratio_benchmark" id="current_ratio_benchmark" class="form-control" placeholder="e.g., 1.5" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="pe_benchmark" class="form-label">P/E Benchmark</label>
+                                    <input type="number" step="0.01" name="pe_benchmark" id="pe_benchmark" class="form-control" placeholder="e.g., 15" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="pb_benchmark" class="form-label">P/B Benchmark</label>
+                                    <input type="number" step="0.01" name="pb_benchmark" id="pb_benchmark" class="form-control" placeholder="e.g., 2.0" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Inputs for CSV & PDF -->
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header">Upload Required Files</div>
+                        <div class="card-body">
+                            <h6>CSV Files (Required)</h6>
+                            <div class="mb-3">
+                                <label for="income_statement" class="form-label">Income Statement (CSV)</label>
+                                <input type="file" name="income_statement" id="income_statement" class="form-control" accept=".csv" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="balance_sheet" class="form-label">Balance Sheet (CSV)</label>
+                                <input type="file" name="balance_sheet" id="balance_sheet" class="form-control" accept=".csv" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="cash_flow" class="form-label">Cash Flow Statement (CSV)</label>
+                                <input type="file" name="cash_flow" id="cash_flow" class="form-control" accept=".csv" required>
+                            </div>
+
+                            <h6 class="mt-4">PDF Files (Required)</h6>
+                            <div class="mb-3">
+                                <label for="earnings_call" class="form-label">Earnings Call (PDF)</label>
+                                <input type="file" name="earnings_call" id="earnings_call" class="form-control" accept=".pdf" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="industry_report" class="form-label">Industry Report (PDF)</label>
+                                <input type="file" name="industry_report" id="industry_report" class="form-control" accept=".pdf" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="economic_report" class="form-label">Economic Report (PDF)</label>
+                                <input type="file" name="economic_report" id="economic_report" class="form-control" accept=".pdf" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ten_k_report" class="form-label">10-K Report (PDF)</label>
+                                <input type="file" name="ten_k_report" id="ten_k_report" class="form-control" accept=".pdf" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="col-12 text-center">
+                    <button type="submit" class="btn btn-primary w-50">Analyze</button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <div class="footer">
+        <p class="mb-0">&copy; 2024 AI Financial Dashboard. All rights reserved.</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

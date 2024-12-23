@@ -1,0 +1,3 @@
+[2024-12-20 08:48:17,582] DEBUG in handlers: NLTK 'punkt' tokenizer not found, downloading...
+[2024-12-20 08:48:18,431] DEBUG in handlers: NLTK 'punkt' tokenizer downloaded
+[2024-12-20 09:02:30,935] DEBUG in handlers: NLTK 'punkt' tokenizer found

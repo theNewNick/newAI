@@ -1,0 +1,160 @@
+/* style.css */
+
+/* -----------------------------------------------------
+   1. GLOBAL & BASE STYLES
+   ----------------------------------------------------- */
+
+   html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa;
+    font-family: 'Roboto', sans-serif;
+    height: 100%; /* In case you want a full-viewport layout */
+}
+
+body {
+    /* Keep extra bottom padding so a fixed footer won't overlap content */
+    padding-bottom: 80px;
+}
+
+/* Navbar */
+.navbar {
+    background-color: #343a40;
+}
+.navbar-brand {
+    color: #ffffff;
+}
+.navbar-brand:hover {
+    color: #d4d4d4;
+}
+
+/* Footer */
+.footer {
+    background-color: #343a40;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    margin: 0;
+}
+
+/* Utility class to hide elements */
+.hidden {
+    display: none !important;
+}
+
+/* Buttons (optional hover style) */
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #00408d;
+}
+
+/* -----------------------------------------------------
+   2. DASHBOARD LAYOUT (DEFAULT 2×4 GRID)
+   ----------------------------------------------------- */
+
+/* 
+   The dashboard uses a 2-row × 4-column grid by default (eight tiles).
+   After user clicks a tile, we dynamically reassign classes to create a 
+   "3-row layout" (4 top, 1 middle expanded, 4 bottom).
+*/
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, auto);
+    gap: 1rem;
+    width: 100%;
+    min-height: calc(100vh - 100px); /* Leaves room for navbar & footer if desired */
+    box-sizing: border-box;
+    margin-top: 1rem;
+}
+
+/* A tile in the default state. 
+   Each tile is the same size in a 2×4 layout. */
+.dashboard-tile {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    position: relative; /* so we can stack or adjust if needed */
+    transition: transform 0.3s ease,
+                grid-column 0.3s ease,
+                grid-row 0.3s ease,
+                width 0.3s ease,
+                height 0.3s ease,
+                opacity 0.3s ease;
+    cursor: pointer;
+    min-height: 200px; /* default tile size */
+    display: flex;
+    flex-direction: column;
+}
+
+/* The .card inside each tile */
+.dashboard-tile .card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+    height: 100%;
+    overflow: hidden; /* prevent overlap if content is large */
+}
+
+.dashboard-tile .card:hover {
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.15);
+}
+
+/* -----------------------------------------------------
+   3. THREE-ROW LAYOUT CLASSES
+   ----------------------------------------------------- */
+
+/* 
+   When a tile is expanded, we want a 3-row layout:
+     - row 1: up to 4 smaller tiles (.top-row)
+     - row 2: 1 expanded tile (.middle-row, .expanded)
+     - row 3: 3 smaller tiles + "Customize Dashboard" tile (.bottom-row)
+*/
+
+/* For the top row in the expanded state (mini tiles) */
+.top-row {
+    grid-row: 1 / 2;
+}
+
+/* For the middle expanded tile */
+.middle-row {
+    grid-row: 2 / 3;
+}
+
+/* For the bottom row in the expanded state */
+.bottom-row {
+    grid-row: 3 / 4;
+}
+
+/* 
+   We also want the expanded tile to span all 4 columns 
+   (i.e., grid-column: 1 / 5), so it occupies the middle row fully.
+*/
+.expanded {
+    grid-column: 1 / 5;  /* span all 4 columns */
+    z-index: 99;         /* ensure it sits on top */
+    transform: scale(1.01);
+    min-height: 600px;   /* or bigger, depending on how tall you want it */
+}
+
+/* Minimizing tiles if you want them slightly smaller or faded */
+.minimized {
+    opacity: 0.75;
+    transform: scale(0.95);
+}
+
+/* 
+   The "Customize Dashboard" tile can appear in the bottom row. 
+   By default, we keep it hidden (.hidden) until a tile is expanded.
+*/
+#tile-customize-dashboard {
+    /* No special overrides are strictly needed here;
+       it's controlled by .hidden or .bottom-row. */
+}
