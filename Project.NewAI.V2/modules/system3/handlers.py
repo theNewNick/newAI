@@ -53,6 +53,10 @@ newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'csv', 'xls', 'xlsx'}
 
+################################################################
+#  SQLAlchemy MODELS
+################################################################
+
 class AssumptionSet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sector = db.Column(db.String(50), nullable=False)
@@ -77,23 +81,31 @@ class Feedback(db.Model):
     score = db.Column(db.Integer, nullable=False)
     comments = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    # Detailed feedback on each assumption
     revenue_growth_feedback = db.Column(db.String(20), nullable=True)
     tax_rate_feedback = db.Column(db.String(20), nullable=True)
     cogs_pct_feedback = db.Column(db.String(20), nullable=True)
     operating_expenses_feedback = db.Column(db.String(20), nullable=True)
     wacc_feedback = db.Column(db.String(20), nullable=True)
+
     assumption_set_id = db.Column(db.Integer, db.ForeignKey('assumption_set.id'), nullable=False)
+
+################################################################
+#  FILE & DATA PROCESSING UTILS
+################################################################
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def clean_json(json_like_str):
+    """Cleans common JSON issues like trailing commas or JS comments."""
     cleaned = re.sub(r'//.*?\n', '\n', json_like_str)
     cleaned = re.sub(r',\s*}', '}', cleaned)
     cleaned = re.sub(r',\s*\]', ']', cleaned)
     return cleaned
 
 def parse_json_from_reply(reply):
+    """Extracts JSON from GPT-like text replies."""
     cleaned_reply = clean_json(reply)
     cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
     json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
@@ -106,6 +118,10 @@ def parse_json_from_reply(reply):
     return {}
 
 def summarize_feedback(sector, industry, sub_industry, scenario):
+    """
+    Summarizes all user feedback from the Feedback table for a given
+    (sector, industry, sub_industry, scenario).
+    """
     logger.debug(f"Summarizing feedback for {sector}, {industry}, {sub_industry}, {scenario}")
     try:
         feedback_entries = Feedback.query.join(AssumptionSet).filter(
@@ -153,6 +169,9 @@ def summarize_feedback(sector, industry, sub_industry, scenario):
         return "Error retrieving feedback."
 
 def validate_assumptions(adjusted_assumptions):
+    """
+    Ensures each assumption is in a valid range (e.g. 0-1) and sets to default if not.
+    """
     logger.debug(f"Validating assumptions: {adjusted_assumptions}")
     ranges = {
         'revenue_growth_rate': (0.0, 1.0, 0.05),
@@ -168,6 +187,7 @@ def validate_assumptions(adjusted_assumptions):
         if value is not None:
             try:
                 value = float(value)
+                # If user typed e.g. 5 for 5%, we might interpret that as 0.05
                 if value > 1.0:
                     value = value / 100.0
                 value = max(min_val, min(value, max_val))
@@ -178,6 +198,10 @@ def validate_assumptions(adjusted_assumptions):
         validated_assumptions[key] = value
     logger.debug(f"Validated assumptions: {validated_assumptions}")
     return validated_assumptions
+
+################################################################
+#  OPENAI & NEWS API UTILS
+################################################################
 
 def call_openai_api(prompt):
     logger.debug(f"Calling OpenAI API with prompt: {prompt[:1000]}...")
@@ -212,14 +236,48 @@ def call_openai_api_with_messages(messages):
         logger.exception("Error in OpenAI API call with messages")
         return ""
 
+################################################################
+#  MAPPINGS & DATA EXTRACTION
+################################################################
+
 custom_mappings = {
-    'Revenue': ['TotalRevenue', 'OperatingRevenue', 'Net Sales', 'Sales Revenue'],
-    'COGS': ['CostOfRevenue', 'CostOfGoodsSold', 'Cost of Revenue', 'Cost of Goods Sold', 'Cost of Goods Manufactured'],
-    'Operating Expenses': ['OperatingExpenses', 'SG&A', 'Selling General & Administrative Expenses', 'Selling, General and Administrative Expenses'],
-    'Depreciation': ['Depreciation & Amortization', 'Depreciation Expense'],
-    'Capital Expenditures': ['CapEx', 'Capital Spending', 'Purchase of Fixed Assets', 'Purchases of property and equipment'],
-    'Current Assets': ['Total Current Assets', 'Current Assets'],
-    'Current Liabilities': ['Total Current Liabilities', 'Current Liabilities'],
+    'Revenue': [
+        'TotalRevenue',
+        'OperatingRevenue',
+        'Net Sales',
+        'Sales Revenue'
+    ],
+    'COGS': [
+        'CostOfRevenue',
+        'CostOfGoodsSold',
+        'Cost of Revenue',
+        'Cost of Goods Sold',
+        'Cost of Goods Manufactured'
+    ],
+    'Operating Expenses': [
+        'OperatingExpenses',
+        'SG&A',
+        'Selling General & Administrative Expenses',
+        'Selling, General and Administrative Expenses'
+    ],
+    'Depreciation': [
+        'Depreciation & Amortization',
+        'Depreciation Expense'
+    ],
+    'Capital Expenditures': [
+        'CapEx',
+        'Capital Spending',
+        'Purchase of Fixed Assets',
+        'Purchases of property and equipment'
+    ],
+    'Current Assets': [
+        'Total Current Assets',
+        'Current Assets'
+    ],
+    'Current Liabilities': [
+        'Total Current Liabilities',
+        'Current Liabilities'
+    ],
 }
 
 def normalize_string(s):
@@ -250,6 +308,7 @@ def get_field_mappings(required_fields, existing_labels):
     existing_labels_normalized = {normalize_string(label): label for label in existing_labels}
     for field in required_fields:
         mapped = False
+        # Check if we have a custom mapping for known synonyms
         if field in custom_mappings:
             for alias in custom_mappings[field]:
                 alias_normalized = normalize_string(alias)
@@ -257,6 +316,7 @@ def get_field_mappings(required_fields, existing_labels):
                     field_mapping[field] = existing_labels_normalized[alias_normalized]
                     mapped = True
                     break
+        # If not found in custom, try direct or approximate match
         if not mapped:
             field_normalized = normalize_string(field)
             if field_normalized in existing_labels_normalized:
@@ -349,6 +409,10 @@ def extract_fields(data, required_fields):
     logger.debug(f"Extracted data: {processed_data}")
     return processed_data
 
+################################################################
+#  FINANCIAL / ECONOMIC HELPER FUNCTIONS
+################################################################
+
 def get_risk_free_rate():
     logger.debug("Fetching risk-free rate")
     tnx = yf.Ticker("^TNX")
@@ -378,6 +442,10 @@ def calculate_mrp():
         mrp = 0.05
     logger.debug(f"MRP: {mrp}")
     return mrp
+
+################################################################
+#  MULTI-AGENT ADJUSTMENTS
+################################################################
 
 def adjust_for_sector(sector):
     logger.debug(f"Adjusting for sector: {sector}")
@@ -597,7 +665,13 @@ def adjust_based_on_historical_data(stock_ticker):
             logger.warning(f"No financial data available for {stock_ticker}.")
             return {}
 
-        required_fields = ['Total Revenue', 'Income Before Tax', 'Income Tax Expense', 'Cost Of Revenue', 'Selling General Administrative']
+        required_fields = [
+            'Total Revenue',
+            'Income Before Tax',
+            'Income Tax Expense',
+            'Cost Of Revenue',
+            'Selling General Administrative'
+        ]
         for field in required_fields:
             if field not in income_statement.index:
                 logger.warning(f"Field '{field}' not found in financial data for {stock_ticker}.")
@@ -608,6 +682,7 @@ def adjust_based_on_historical_data(stock_ticker):
             logger.warning(f"Not enough revenue data to calculate growth rates for {stock_ticker}.")
             return {}
 
+        # average revenue growth
         revenue_growth_rates = revenue.pct_change().dropna()
         average_revenue_growth = revenue_growth_rates.mean()
 
@@ -647,6 +722,10 @@ def adjust_based_on_historical_data(stock_ticker):
         logger.exception(f"Error adjusting based on historical data for {stock_ticker}")
         return {}
 
+################################################################
+#  AGENT WEIGHTING & VALIDATION
+################################################################
+
 def get_agent_importance_weights():
     logger.debug("Getting agent importance weights")
     prompt = """
@@ -681,7 +760,14 @@ You are a Validation Agent tasked with reviewing and validating the financial as
 
 def compute_final_adjustments_with_agents(agent_adjustments, agent_importance_weights, agent_confidence_scores):
     logger.debug("Computing final adjustments with agents")
-    assumptions = ['revenue_growth_rate', 'tax_rate', 'cogs_pct', 'wacc', 'terminal_growth_rate', 'operating_expenses_pct']
+    assumptions = [
+        'revenue_growth_rate',
+        'tax_rate',
+        'cogs_pct',
+        'wacc',
+        'terminal_growth_rate',
+        'operating_expenses_pct'
+    ]
     final_adjustments = {}
     for assumption in assumptions:
         weighted_sum = 0
@@ -739,20 +825,38 @@ def adjust_financial_variables(sector, industry, sub_industry, scenario, stock_t
         'sentiment_agent': sentiment_adjustments
     }
 
-    assumptions_keys = ['revenue_growth_rate', 'tax_rate', 'cogs_pct', 'wacc', 'terminal_growth_rate', 'operating_expenses_pct']
+    assumptions_keys = [
+        'revenue_growth_rate',
+        'tax_rate',
+        'cogs_pct',
+        'wacc',
+        'terminal_growth_rate',
+        'operating_expenses_pct'
+    ]
     combined_pre_sanity = {}
     for k in assumptions_keys:
         vals = [a[k] for a in agent_adjustments.values() if k in a]
-        combined_pre_sanity[k] = sum(vals)/len(vals) if vals else 0.05
+        combined_pre_sanity[k] = sum(vals) / len(vals) if vals else 0.05
 
     historical_wacc = historical_data_adjustments.get('wacc', 0.10)
     historical_growth = historical_data_adjustments.get('revenue_growth_rate', 0.05)
-    corrected_assumptions = pre_validation_sanity_check(combined_pre_sanity, historical_wacc, historical_growth, stock_ticker)
+    corrected_assumptions = pre_validation_sanity_check(
+        combined_pre_sanity,
+        historical_wacc,
+        historical_growth,
+        stock_ticker
+    )
     agent_adjustments['sanity_check_agent'] = corrected_assumptions
 
     agent_importance_weights = get_agent_importance_weights()
-    reasoning, agent_confidence_scores = validation_agent({}, sector, industry, sub_industry, scenario, stock_ticker, agent_adjustments)
-    final_adjustments = compute_final_adjustments_with_agents(agent_adjustments, agent_importance_weights, agent_confidence_scores)
+    reasoning, agent_confidence_scores = validation_agent(
+        {}, sector, industry, sub_industry, scenario, stock_ticker, agent_adjustments
+    )
+    final_adjustments = compute_final_adjustments_with_agents(
+        agent_adjustments,
+        agent_importance_weights,
+        agent_confidence_scores
+    )
     logger.debug(f"Final adjustments after weighting: {final_adjustments}")
     logger.debug(f"Validation reasoning: {reasoning}, Confidence scores: {agent_confidence_scores}")
     return final_adjustments, reasoning, agent_confidence_scores
@@ -772,8 +876,16 @@ def get_shares_outstanding(stock_ticker):
         logger.exception(f"Error fetching shares outstanding for {stock_ticker}")
         return None
 
+################################################################
+#  FLASK ROUTES
+################################################################
+
 @system3_bp.route('/upload', methods=['POST'])
 def upload_files():
+    """
+    Example endpoint to upload CSV/Excel for income_statement, balance_sheet, cash_flow_statement
+    and return the processed data in JSON.
+    """
     logger.debug("Received file upload request")
     required_files = ['income_statement', 'balance_sheet', 'cash_flow_statement']
     files = {}
@@ -807,6 +919,13 @@ def upload_files():
 
 @system3_bp.route('/calculate', methods=['POST'])
 def calculate_intrinsic_value():
+    """
+    Endpoint to run the multi-agent DCF analysis. It expects a JSON payload with:
+      - 'data': { 'income_statement': {}, 'balance_sheet': {}, 'cash_flow_statement': {} }
+      - 'assumptions': { ... } (optional overrides)
+      - 'sector', 'industry', 'sub_industry', 'scenario', 'stock_ticker'
+    Returns the DCF results, adjusted assumptions, etc.
+    """
     logger.debug("Received /calculate request")
     try:
         content = request.get_json()
@@ -826,7 +945,15 @@ def calculate_intrinsic_value():
         combined_data = {**income_data, **balance_sheet_data, **cash_flow_data}
         logger.debug(f"Combined data from uploads: {combined_data}")
 
-        required_fields = ['Revenue', 'Operating Expenses', 'Depreciation', 'Capital Expenditures', 'Current Assets', 'Current Liabilities']
+        # Make sure we have the essential fields
+        required_fields = [
+            'Revenue',
+            'Operating Expenses',
+            'Depreciation',
+            'Capital Expenditures',
+            'Current Assets',
+            'Current Liabilities'
+        ]
         missing_fields = [field for field in required_fields if field not in combined_data]
         if missing_fields:
             logger.error(f"Missing required financial data: {missing_fields}")
@@ -835,23 +962,35 @@ def calculate_intrinsic_value():
         initial_revenue = combined_data['Revenue']
         combined_data['NWC'] = combined_data['Current Assets'] - combined_data['Current Liabilities']
 
+        # 1) Let the multi-agent approach adjust assumptions
         final_assumptions, validation_reasoning, agent_confidence_scores = adjust_financial_variables(
             sector, industry, sub_industry, scenario, stock_ticker
         )
 
-        required_keys = ['revenue_growth_rate', 'tax_rate', 'cogs_pct', 'wacc', 'terminal_growth_rate', 'operating_expenses_pct']
+        # 2) Ensure required keys are present
+        required_keys = [
+            'revenue_growth_rate',
+            'tax_rate',
+            'cogs_pct',
+            'wacc',
+            'terminal_growth_rate',
+            'operating_expenses_pct'
+        ]
         missing_keys = [key for key in required_keys if key not in final_assumptions]
         if missing_keys:
             logger.error(f"Adjusted assumptions missing keys: {missing_keys}")
             return jsonify({'error': f'Missing adjusted assumptions: {missing_keys}'}), 500
 
+        # 3) Override with user assumptions if present
         final_assumptions.update(user_assumptions)
 
+        # 4) Derive percentages from the combined_data
         final_assumptions['operating_expenses_pct'] = combined_data['Operating Expenses'] / initial_revenue
         final_assumptions['depreciation_pct'] = combined_data['Depreciation'] / initial_revenue
         final_assumptions['capex_pct'] = combined_data['Capital Expenditures'] / initial_revenue
         final_assumptions['nwc_pct'] = combined_data['NWC'] / initial_revenue
 
+        # 5) Shares outstanding (if not provided, fetch from YFinance)
         shares_outstanding = final_assumptions.get('shares_outstanding')
         if shares_outstanding is None or shares_outstanding <= 0:
             shares_outstanding = get_shares_outstanding(stock_ticker)
@@ -863,6 +1002,7 @@ def calculate_intrinsic_value():
 
         logger.debug(f"Final assumptions passed to DCFModel: {final_assumptions}")
 
+        # 6) Save to DB: Create a new AssumptionSet row
         assumption_set = AssumptionSet(
             sector=sector,
             industry=industry,
@@ -879,13 +1019,14 @@ def calculate_intrinsic_value():
         db.session.add(assumption_set)
         db.session.commit()
 
+        # 7) Run the DCF Model
         results = {}
-
         model = DCFModel(combined_data, final_assumptions)
         model.run_model()
         model_results = model.get_results()
         results.update(model_results)
 
+        # 8) Add context data for return
         results['adjusted_assumptions'] = final_assumptions
         results['validation_reasoning'] = validation_reasoning
         results['agent_confidence_scores'] = agent_confidence_scores
@@ -899,6 +1040,10 @@ def calculate_intrinsic_value():
 
 @system3_bp.route('/feedback', methods=['POST'])
 def receive_feedback():
+    """
+    Endpoint to capture user feedback for a given assumption_set_id
+    e.g. feedback about revenue_growth_rate is 'too_high', or 'score'=5.
+    """
     logger.debug("Received /feedback request")
     try:
         content = request.get_json()

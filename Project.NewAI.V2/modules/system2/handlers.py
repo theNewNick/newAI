@@ -16,6 +16,9 @@ import pinecone
 from logging.handlers import RotatingFileHandler
 import config
 
+# If you need session for cross-referencing user session or IDs:
+# from flask import session
+
 # Define the blueprint here
 system2_bp = Blueprint('system2_bp', __name__, template_folder='templates')
 
@@ -62,6 +65,7 @@ except LookupError:
     nltk.download('punkt', download_dir=NLTK_DATA_PATH)
     logger.debug("NLTK 'punkt' tokenizer downloaded")
 
+
 def download_pdf_from_s3(bucket_name, object_key, download_path):
     logger.debug(f"Entering download_pdf_from_s3 with object_key: {object_key}")
     try:
@@ -70,6 +74,7 @@ def download_pdf_from_s3(bucket_name, object_key, download_path):
     except Exception as e:
         logger.error(f"Error downloading file from S3: {e}", exc_info=True)
         raise
+
 
 def extract_text_from_pdf(pdf_path):
     logger.debug(f"Entering extract_text_from_pdf with pdf_path: {pdf_path}")
@@ -90,6 +95,7 @@ def extract_text_from_pdf(pdf_path):
         logger.error(f"Error extracting text from PDF: {e}", exc_info=True)
         raise
 
+
 def preprocess_text(text):
     logger.debug("Entering preprocess_text")
     try:
@@ -100,6 +106,7 @@ def preprocess_text(text):
     except Exception as e:
         logger.error(f"Error preprocessing text: {e}", exc_info=True)
         raise
+
 
 def split_text_into_chunks(text, max_tokens=500):
     logger.debug("Entering split_text_into_chunks")
@@ -130,6 +137,7 @@ def split_text_into_chunks(text, max_tokens=500):
         logger.error(f"Error splitting text into chunks: {e}", exc_info=True)
         raise
 
+
 def generate_embeddings(text_chunks, document_id):
     logger.debug(f"Entering generate_embeddings for document_id: {document_id}")
     data = []
@@ -152,6 +160,7 @@ def generate_embeddings(text_chunks, document_id):
                 embedding = embedding_info['embedding']
                 chunk = batch_chunks[j]
                 chunk_index = i + j
+                # vector_id => You could also store user_id or analysis_id if you want
                 vector_id = f"{document_id}_chunk_{chunk_index}"
                 metadata = {
                     'document_id': document_id,
@@ -169,12 +178,13 @@ def generate_embeddings(text_chunks, document_id):
     logger.debug(f"Generated embeddings for {len(data)} chunks")
     return data
 
+
 def upsert_embeddings(pinecone_index, data):
     logger.debug("Entering upsert_embeddings")
     try:
         batch_size = 100
         for i in range(0, len(data), batch_size):
-            to_upsert = data[i:i+batch_size]
+            to_upsert = data[i:i + batch_size]
             vectors = [
                 {
                     'id': vector_id,
@@ -189,6 +199,7 @@ def upsert_embeddings(pinecone_index, data):
     except Exception as e:
         logger.error(f"Error upserting embeddings to Pinecone: {e}", exc_info=True)
         raise
+
 
 @system2_bp.route('/upload', methods=['POST'])
 def upload_files():
@@ -221,6 +232,7 @@ def upload_files():
             unique_filename = f"{uuid.uuid4()}_{filename}"
             logger.debug(f"Unique filename generated: {unique_filename}")
 
+            # Step 1: Upload to S3
             try:
                 logger.debug(f"Uploading {unique_filename} to S3")
                 s3.upload_fileobj(
@@ -239,6 +251,7 @@ def upload_files():
                 logger.error(f"Error uploading {filename} to S3: {e}", exc_info=True)
                 return jsonify({'error': f'File upload failed for {filename}'}), 500
 
+            # Step 2: Download from S3 locally, process text, embeddings, upsert
             try:
                 download_path = os.path.join(tempfile.gettempdir(), unique_filename)
                 logger.debug(f"Downloading {unique_filename} from S3 to {download_path}")
@@ -283,6 +296,7 @@ def upload_files():
         logger.error(f"Unhandled exception in upload_files: {e}", exc_info=True)
         return jsonify({'error': 'An internal error occurred'}), 500
 
+
 @system2_bp.route('/chat', methods=['POST'])
 def chat():
     logger.debug("Accessed chat route")
@@ -315,6 +329,7 @@ def chat():
         logger.error(f"Error in chat endpoint: {e}", exc_info=True)
         return jsonify({'error': 'An error occurred while processing your request.'}), 500
 
+
 def generate_query_embedding(query):
     logger.debug("Entering generate_query_embedding")
     try:
@@ -332,9 +347,11 @@ def generate_query_embedding(query):
         logger.error(f"General exception in generate_query_embedding: {e}", exc_info=True)
         raise
 
+
 def query_pinecone(pinecone_index, query_embedding, top_k, document_id):
     logger.debug("Entering query_pinecone")
     try:
+        # By default, we filter on 'document_id'—but you could filter by user_id or analysis_id if needed
         query_filter = {'document_id': {'$eq': document_id}}
         response = pinecone_index.query(
             vector=query_embedding,
@@ -348,6 +365,7 @@ def query_pinecone(pinecone_index, query_embedding, top_k, document_id):
     except Exception as e:
         logger.error(f"Error querying Pinecone: {e}", exc_info=True)
         raise
+
 
 def get_response_from_openai(query, context_texts):
     logger.debug("Entering get_response_from_openai")
@@ -374,6 +392,7 @@ def get_response_from_openai(query, context_texts):
         logger.error(f"General exception in get_response_from_openai: {e}", exc_info=True)
         raise
 
+
 @system2_bp.route('/view_document/<document_id>')
 def view_document(document_id):
     logger.debug(f"Accessed view_document route with document_id: {document_id}")
@@ -386,6 +405,7 @@ def view_document(document_id):
     except Exception as e:
         logger.error(f"Error serving document {document_id}: {e}", exc_info=True)
         return 'Error retrieving document', 500
+
 
 @system2_bp.route('/test_nltk')
 def test_nltk():
