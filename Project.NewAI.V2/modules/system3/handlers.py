@@ -22,7 +22,9 @@ system3_bp = Blueprint('system3_bp', __name__, template_folder='templates')
 
 from .def_model import DCFModel
 import config
-from app import db  # Import db from main app
+#from app import db  # Import db from main app
+from modules.extensions import db
+
 from config import (
     OPENAI_API_KEY,
     NEWSAPI_KEY,

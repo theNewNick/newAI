@@ -1,0 +1,12 @@
+[2024-12-23 15:42:07 +0000] [3273] [INFO] Starting gunicorn 20.1.0
+[2024-12-23 15:42:07 +0000] [3273] [INFO] Listening at: http://0.0.0.0:5000 (3273)
+[2024-12-23 15:42:07 +0000] [3273] [INFO] Using worker: sync
+[2024-12-23 15:42:07 +0000] [3274] [INFO] Booting worker with pid: 3274
+2024-12-23 15:42:09,517 DEBUG asyncio MainThread : Using selector: EpollSelector
+2024-12-23 15:42:10,526 DEBUG urllib3.connectionpool MainThread : Starting new HTTPS connection (1): controller.us-west1-gcp.pinecone.io:443
+2024-12-23 15:42:10,644 DEBUG urllib3.connectionpool MainThread : https://controller.us-west1-gcp.pinecone.io:443 "GET /actions/whoami HTTP/1.1" 401 15
+[2024-12-23 15:42:10 +0000] [3273] [INFO] Handling signal: int
+[2024-12-23 15:42:11 +0000] [3274] [INFO] Worker exiting (pid: 3274)
+Current Working Directory: /home/ec2-user/newAI/Project.NewAI.V2
+Python Path: ['/home/ec2-user/newAI/Project.NewAI.V2', '/home/ec2-user/newAI/venv/bin', '/usr/lib64/python39.zip', '/usr/lib64/python3.9', '/usr/lib64/python3.9/lib-dynload', '/home/ec2-user/newAI/venv/lib64/python3.9/site-packages', '/home/ec2-user/newAI/venv/lib/python3.9/site-packages']
+[2024-12-23 15:42:11 +0000] [3273] [INFO] Shutting down: Master

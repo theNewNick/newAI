@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv  # Import load_dotenv
+
+# Load environment variables from a .env file
+load_dotenv()
 
 # Load environment variables
 # Make sure you have these environment variables set or defaults will be used.
