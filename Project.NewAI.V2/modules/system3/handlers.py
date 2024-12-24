@@ -22,7 +22,7 @@ system3_bp = Blueprint('system3_bp', __name__, template_folder='templates')
 
 from .def_model import DCFModel
 import config
-#from app import db  # Import db from main app
+# from app import db  # Import db from main app
 from modules.extensions import db
 
 from config import (
@@ -207,8 +207,10 @@ def call_openai_api(prompt):
     logger.debug(f"Calling OpenAI API with prompt: {prompt[:1000]}...")
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",  # Updated to GPT-4
             temperature=0.2,
+            # Optionally adjust max_tokens if needed, e.g.:
+            max_tokens=750,
             messages=[
                 {"role": "system", "content": "You are an expert financial analyst."},
                 {"role": "user", "content": prompt}
@@ -225,8 +227,10 @@ def call_openai_api_with_messages(messages):
     logger.debug(f"Calling OpenAI API with messages: {messages}")
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",  # Updated to GPT-4
             temperature=0.2,
+            # Optionally adjust max_tokens if needed, e.g.:
+            max_tokens=750,
             messages=messages
         )
         assistant_reply = response['choices'][0]['message']['content']

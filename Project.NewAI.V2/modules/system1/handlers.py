@@ -58,8 +58,10 @@ ALLOWED_EXTENSIONS = {
 S3_BUCKET_NAME = config.S3_BUCKET_NAME
 s3_client = boto3.client('s3', region_name=config.AWS_REGION)
 
+
 def allowed_file(filename, allowed_extensions):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
 
 def dcf_analysis(projected_free_cash_flows, wacc, terminal_value, projection_years):
     logger.debug('Starting DCF analysis.')
@@ -71,6 +73,7 @@ def dcf_analysis(projected_free_cash_flows, wacc, terminal_value, projection_yea
     logger.debug('Completed DCF analysis.')
     return dcf_value
 
+
 def safe_divide(numerator, denominator):
     try:
         result = numerator / denominator if denominator != 0 else None
@@ -79,6 +82,7 @@ def safe_divide(numerator, denominator):
     except Exception as e:
         logger.error(f'Error in safe_divide: {str(e)}')
         return None
+
 
 def calculate_ratios(financials, benchmarks):
     logger.debug('Starting ratio analysis.')
@@ -130,6 +134,7 @@ def calculate_ratios(financials, benchmarks):
         'Normalized Factor 2 Score': normalized_factor2_score
     }
 
+
 def calculate_cagr(beginning_value, ending_value, periods):
     try:
         if beginning_value <= 0 or periods <= 0:
@@ -141,6 +146,7 @@ def calculate_cagr(beginning_value, ending_value, periods):
     except Exception as e:
         logger.error(f'Error calculating CAGR: {str(e)}')
         return None
+
 
 def generate_plot(x, y, title, x_label, y_label):
     logger.debug(f'Generating plot: {title}')
@@ -159,6 +165,7 @@ def generate_plot(x, y, title, x_label, y_label):
     logger.debug(f'Plot generated: {title}')
     return img_data
 
+
 def generate_benchmark_comparison_plot(benchmark_comparison):
     labels = benchmark_comparison['Ratios']
     company_values = benchmark_comparison['Company']
@@ -168,8 +175,8 @@ def generate_benchmark_comparison_plot(benchmark_comparison):
     width = 0.35
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    bars_company = ax.bar(x - width/2, company_values, width, label='Company')
-    bars_industry = ax.bar(x + width/2, industry_values, width, label='Industry')
+    bars_company = ax.bar(x - width / 2, company_values, width, label='Company')
+    bars_industry = ax.bar(x + width / 2, industry_values, width, label='Industry')
 
     ax.set_ylabel('Ratio Values')
     ax.set_title('Company vs. Industry Benchmarks')
@@ -196,6 +203,7 @@ def generate_benchmark_comparison_plot(benchmark_comparison):
     img_data.seek(0)
     return img_data
 
+
 def extract_text_from_pdf(file_path):
     logger.debug(f'Extracting text from PDF: {file_path}')
     try:
@@ -217,20 +225,25 @@ def extract_text_from_pdf(file_path):
         logger.error(f'Error reading PDF file {file_path}: {str(e)}')
         return None
 
+
 semaphore = asyncio.Semaphore(5)
 
+
+# -------------------------
+# Updated GPT-4 references
+# -------------------------
 async def call_openai_summarization(text):
     retry_delay = 5
     max_retries = 3
     for attempt in range(max_retries):
         try:
             response = await openai.ChatCompletion.acreate(
-                model='gpt-3.5-turbo',
+                model='gpt-4',  # Switched to GPT-4
                 messages=[
                     {"role": "system", "content": "You are a financial analyst."},
                     {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
                 ],
-                max_tokens=500,
+                max_tokens=750,  # Optionally increased from 500
                 n=1,
                 temperature=0.5,
             )
@@ -249,48 +262,6 @@ async def call_openai_summarization(text):
     logger.error('Failed to summarize text after multiple attempts.')
     return None
 
-async def generate_summaries_and_risks(ten_k_text):
-    logger.debug('Generating company, industry summaries, and risk considerations from 10-K report.')
-
-    company_prompt = f"""
-Summarize the company based on the following 10-K report:
-{ten_k_text}
-"""
-    industry_prompt = f"""
-Summarize the industry based on the following 10-K report:
-{ten_k_text}
-"""
-    risks_prompt = f"""
-Identify and summarize the key risk considerations from the 10-K report:
-{ten_k_text}
-"""
-
-    async def summarize_with_token_check(prompt, max_tokens=500):
-        encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
-        max_context_length = 7000
-
-        tokens = encoding.encode(prompt)
-        if len(tokens) > max_context_length - max_tokens:
-            logger.warning('Prompt too long, chunking...')
-            chunk_size = max_context_length - max_tokens
-            chunks = [encoding.decode(tokens[i:i + chunk_size]) for i in range(0, len(tokens), chunk_size)]
-            summaries = []
-            for chunk in chunks:
-                summary = await call_openai_summarization(chunk)
-                if summary:
-                    summaries.append(summary)
-            return " ".join(summaries)
-        return await call_openai_summarization(prompt)
-
-    company_summary_task = summarize_with_token_check(company_prompt)
-    industry_summary_task = summarize_with_token_check(industry_prompt)
-    risks_task = summarize_with_token_check(risks_prompt)
-    company_summary, industry_summary, risks_summary = await asyncio.gather(
-        company_summary_task, industry_summary_task, risks_task
-    )
-
-    logger.debug('Summaries generated for 10-K data.')
-    return company_summary, industry_summary, risks_summary
 
 async def call_openai_analyze_sentiment(text, context):
     retry_delay = 5
@@ -309,9 +280,9 @@ Explanation: [brief explanation]
 """
     for attempt in range(max_retries):
         try:
-            logger.debug(f'Attempting sentiment analysis, attempt {attempt+1}.')
+            logger.debug(f'Attempting sentiment analysis, attempt {attempt + 1}.')
             response = await openai.ChatCompletion.acreate(
-                model="gpt-3.5-turbo",
+                model="gpt-4",  # Switched to GPT-4
                 messages=[
                     {
                         "role": "system",
@@ -319,7 +290,7 @@ Explanation: [brief explanation]
                     },
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=500,
+                max_tokens=750,  # Optionally increased from 500
                 n=1,
                 temperature=0.5,
             )
@@ -349,9 +320,11 @@ Explanation: [brief explanation]
     logger.error('Failed sentiment analysis after multiple attempts.')
     return None, ""
 
+
 async def summarize_text_async(text):
     logger.debug('Starting text summarization.')
     max_tokens_per_chunk = 3800
+    # You can optionally use gpt-4's encoding below, but it's okay to keep 3.5 for token counting
     encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
     tokens = encoding.encode(text)
     token_count = len(tokens)
@@ -371,6 +344,7 @@ async def summarize_text_async(text):
     combined_summary = ' '.join(filter(None, summaries))
     logger.debug('Text summarization completed.')
     return combined_summary
+
 
 async def process_documents(earnings_call_text, industry_report_text, economic_report_text):
     logger.debug('Summarizing extracted texts for earnings, industry, and economic reports.')
@@ -393,6 +367,7 @@ async def process_documents(earnings_call_text, industry_report_text, economic_r
     )
     return sentiments
 
+
 def run_async_function(coroutine):
     try:
         loop = asyncio.get_event_loop()
@@ -406,6 +381,7 @@ def run_async_function(coroutine):
         result = loop.run_until_complete(coroutine)
         loop.close()
         return result
+
 
 def process_financial_csv(file_path, csv_name):
     logger.debug(f'Processing CSV file: {file_path}')
@@ -432,6 +408,7 @@ def process_financial_csv(file_path, csv_name):
         logger.error(f"Error processing {csv_name} CSV: {str(e)}")
         return None
 
+
 def standardize_columns(df, column_mappings, csv_name):
     logger.debug(f'Standardizing columns for {csv_name}.')
     df_columns = df.columns.tolist()
@@ -445,7 +422,9 @@ def standardize_columns(df, column_mappings, csv_name):
     logger.debug(f'After standardization, columns in {csv_name}: {df.columns.tolist()}')
     return df
 
+
 from .pdf_generation import generate_pdf_report
+
 
 @system1_bp.route('/analyze', methods=['POST'])
 def analyze_financials():
@@ -852,7 +831,6 @@ def analyze_financials():
             'factor6_score': factor6_score,
         }
 
-        # We'll store all final data in a dictionary, then put it in session
         analysis_data = {
             "company_summary": company_summary or "",
             "industry_summary": industry_summary or "",
@@ -865,11 +843,9 @@ def analyze_financials():
             "factor_scores": factor_scores,
         }
 
-        # Put your final data in session
         session['analysis_result'] = analysis_data
         logger.info("Analysis results saved in session for the dashboard to retrieve.")
 
-        # Now generate PDF for optional download
         pdf_output = generate_pdf_report(
             financials=financials,
             ratios=ratios,
@@ -913,22 +889,17 @@ def analyze_financials():
             logger.error(f"Error uploading PDF to S3: {e}")
             return jsonify({'error': 'Failed to store PDF in S3.'}), 500
 
-        # Finally, redirect to the dashboard
         return redirect(url_for('dashboard'))
 
     except Exception as e:
         logger.exception('An unexpected error occurred during analysis.')
         return jsonify({'error': 'An unexpected error occurred.'}), 500
 
-#
-# Updated endpoints to read from session instead of returning static placeholders
-#
 
 @system1_bp.route('/company_report_data', methods=['GET'])
 def company_report_data():
     analysis = session.get('analysis_result')
     if not analysis:
-        # If the user hasn't run the analysis yet
         return jsonify({
             "executive_summary": "No analysis found in session.",
             "company_summary": "",
@@ -954,7 +925,6 @@ def financial_analysis_data():
             "time_series_analysis": {}
         })
 
-    # You can expand time_series_analysis if you have CAGR data etc. stored
     return jsonify({
         "dcf_intrinsic_value": analysis.get("dcf_intrinsic_value", 0),
         "ratios": analysis.get("ratios", {}),
@@ -1005,7 +975,6 @@ def data_visualizations_data():
     if not analysis:
         return jsonify({"error": "No analysis data in session. Please run analysis first."}), 400
 
-    # You can store more complex time-series or chart data in the session if you want
     return jsonify({
         "benchmark_comparison": {
             "Ratios": ["Debt-to-Equity Ratio", "Current Ratio", "P/E Ratio", "P/B Ratio"],
@@ -1036,7 +1005,6 @@ def final_recommendation():
 
 @system1_bp.route('/company_info_data', methods=['GET'])
 def company_info_data():
-    # Possibly also dynamic; for now you can keep placeholders or fill from analysis
     return jsonify({
         "c_suite_executives": "John Doe (CEO), Jane Smith (CFO), Alex Johnson (CTO)",
         "shares_outstanding": 1500000000,
@@ -1065,3 +1033,48 @@ def get_report():
     except Exception as e:
         logger.error(f"Error fetching PDF: {e}")
         return "Report not found", 404
+
+
+# This function is used above to generate 10-K summaries (company, industry, risk).
+async def generate_summaries_and_risks(ten_k_text):
+    logger.debug('Generating company, industry summaries, and risk considerations from 10-K report.')
+
+    company_prompt = f"""
+Summarize the company based on the following 10-K report:
+{ten_k_text}
+"""
+    industry_prompt = f"""
+Summarize the industry based on the following 10-K report:
+{ten_k_text}
+"""
+    risks_prompt = f"""
+Identify and summarize the key risk considerations from the 10-K report:
+{ten_k_text}
+"""
+
+    async def summarize_with_token_check(prompt, max_tokens=500):
+        encoding = tiktoken.encoding_for_model("gpt-4")
+        max_context_length = 7000
+
+        tokens = encoding.encode(prompt)
+        if len(tokens) > max_context_length - max_tokens:
+            logger.warning('Prompt too long, chunking...')
+            chunk_size = max_context_length - max_tokens
+            chunks = [encoding.decode(tokens[i:i + chunk_size]) for i in range(0, len(tokens), chunk_size)]
+            summaries = []
+            for chunk in chunks:
+                summary = await call_openai_summarization(chunk)
+                if summary:
+                    summaries.append(summary)
+            return " ".join(summaries)
+        return await call_openai_summarization(prompt)
+
+    company_summary_task = summarize_with_token_check(company_prompt)
+    industry_summary_task = summarize_with_token_check(industry_prompt)
+    risks_task = summarize_with_token_check(risks_prompt)
+    company_summary, industry_summary, risks_summary = await asyncio.gather(
+        company_summary_task, industry_summary_task, risks_task
+    )
+
+    logger.debug('Summaries generated for 10-K data.')
+    return company_summary, industry_summary, risks_summary

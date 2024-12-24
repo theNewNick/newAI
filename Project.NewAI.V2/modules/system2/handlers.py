@@ -376,9 +376,9 @@ def get_response_from_openai(query, context_texts):
             {"role": "user", "content": f"Context:\n{context}\n\nQuestion:\n{query}"}
         ]
         response = openai.ChatCompletion.create(
-            model='gpt-3.5-turbo',
+            model='gpt-4',  # Updated from gpt-3.5-turbo
             messages=messages,
-            max_tokens=200,
+            max_tokens=400,  # Optionally increased from 200
             temperature=0.7,
             n=1,
         )
