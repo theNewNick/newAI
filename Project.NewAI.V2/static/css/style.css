@@ -4,17 +4,18 @@
    1. GLOBAL & BASE STYLES
    ----------------------------------------------------- */
 
-   html, body {
+/* 
+   Prevent full-page scrolling so that only the expanded tile 
+   can scroll internally.
+*/
+html, body {
     margin: 0;
     padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden; 
     background-color: #f8f9fa;
     font-family: 'Roboto', sans-serif;
-    height: 100%; /* In case you want a full-viewport layout */
-}
-
-body {
-    /* Keep extra bottom padding so a fixed footer won't overlap content */
-    padding-bottom: 80px;
 }
 
 /* Navbar */
@@ -28,7 +29,7 @@ body {
     color: #d4d4d4;
 }
 
-/* Footer */
+/* Footer (fixed at bottom) */
 .footer {
     background-color: #343a40;
     color: white;
@@ -60,37 +61,41 @@ body {
    ----------------------------------------------------- */
 
 /* 
-   The dashboard uses a 2-row × 4-column grid by default (eight tiles).
-   After user clicks a tile, we dynamically reassign classes to create a 
-   "3-row layout" (4 top, 1 middle expanded, 4 bottom).
+   The dashboard uses a 2-row × 4-column grid by default (8 tiles).
+   We avoid page scrolling by having overflow hidden, 
+   so only the expanded tile scrolls internally.
 */
 .dashboard-grid {
     display: grid;
+    /* 4 columns, 2 rows => 8 squares initially */
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, auto);
+    grid-template-rows: repeat(2, 1fr);
     gap: 1rem;
-    width: 100%;
-    min-height: calc(100vh - 100px); /* Leaves room for navbar & footer if desired */
-    box-sizing: border-box;
     margin-top: 1rem;
+    width: 100%;
+    /* Adjust the height as needed if you have a navbar/footer */
+    height: calc(100% - 80px);
+    box-sizing: border-box;
+    overflow: hidden; /* no full-page scroll, only tile scroll if expanded */
 }
 
-/* A tile in the default state. 
-   Each tile is the same size in a 2×4 layout. */
+/* Each tile is a perfect square via aspect-ratio in modern browsers */
 .dashboard-tile {
     background-color: #fff;
     border-radius: 0.5rem;
-    position: relative; /* so we can stack or adjust if needed */
-    transition: transform 0.3s ease,
-                grid-column 0.3s ease,
-                grid-row 0.3s ease,
-                width 0.3s ease,
-                height 0.3s ease,
-                opacity 0.3s ease;
+    position: relative;
     cursor: pointer;
-    min-height: 200px; /* default tile size */
+    aspect-ratio: 1 / 1; /* fallback: padding-bottom:100% for older browsers */
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    transition:
+        transform 0.3s ease,
+        grid-column 0.3s ease,
+        grid-row 0.3s ease,
+        width 0.3s ease,
+        height 0.3s ease,
+        opacity 0.3s ease;
 }
 
 /* The .card inside each tile */
@@ -100,61 +105,118 @@ body {
     box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
     transition: box-shadow 0.3s ease;
     height: 100%;
-    overflow: hidden; /* prevent overlap if content is large */
 }
 
 .dashboard-tile .card:hover {
     box-shadow: 0px 4px 10px rgba(0,0,0,0.15);
 }
 
+/* Short summary text so it doesn't overflow the square in default state */
+.dashboard-tile .card-body {
+    flex: 1;
+    padding: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* roughly 4 lines before cutting off */
+    -webkit-box-orient: vertical;
+    white-space: normal;
+}
+
 /* -----------------------------------------------------
-   3. THREE-ROW LAYOUT CLASSES
+   3. THREE-ROW LAYOUT CLASSES (FOR EXPANDED TILE)
    ----------------------------------------------------- */
 
 /* 
-   When a tile is expanded, we want a 3-row layout:
-     - row 1: up to 4 smaller tiles (.top-row)
-     - row 2: 1 expanded tile (.middle-row, .expanded)
-     - row 3: 3 smaller tiles + "Customize Dashboard" tile (.bottom-row)
+   When a tile is expanded, we switch to a 3-row layout:
+     - row 1: up to 4 smaller tiles (top-row)
+     - row 2: the expanded tile (middle-row, .expanded)
+     - row 3: 3 smaller tiles + "Customize Dashboard" (bottom-row)
 */
 
-/* For the top row in the expanded state (mini tiles) */
+/* Top row (flattened) */
 .top-row {
     grid-row: 1 / 2;
+    aspect-ratio: auto; /* remove fixed ratio */
+    height: auto;
+    transform: scale(0.95);
 }
 
-/* For the middle expanded tile */
+/* Middle row for the expanded tile */
 .middle-row {
     grid-row: 2 / 3;
 }
 
-/* For the bottom row in the expanded state */
+/* Bottom row (3 tiles + "Customize") */
 .bottom-row {
     grid-row: 3 / 4;
+    aspect-ratio: auto;
+    height: auto;
+    transform: scale(0.95);
 }
 
-/* 
-   We also want the expanded tile to span all 4 columns 
-   (i.e., grid-column: 1 / 5), so it occupies the middle row fully.
-*/
+/* .expanded => spanned across all columns, bigger, scrolls inside */
 .expanded {
-    grid-column: 1 / 5;  /* span all 4 columns */
-    z-index: 99;         /* ensure it sits on top */
+    grid-column: 1 / 5; /* occupy all 4 columns */
+    z-index: 99;
     transform: scale(1.01);
-    min-height: 600px;   /* or bigger, depending on how tall you want it */
+    min-height: 60vh; /* enough space for internal scroll area */
+}
+
+/* The expanded tile’s body can scroll internally */
+.expanded .card-body {
+    overflow-y: auto;
+    max-height: calc(60vh - 3rem); /* leaving space for card header/footer */
 }
 
 /* Minimizing tiles if you want them slightly smaller or faded */
 .minimized {
     opacity: 0.75;
-    transform: scale(0.95);
 }
 
+/* The "Customize Dashboard" tile: hidden until a tile is expanded */
+#tile-customize-dashboard.hidden {
+    display: none !important;
+}
+
+/* -----------------------------------------------------
+   4. THREE-STATE CONTENT APPROACH
+   ----------------------------------------------------- */
+
 /* 
-   The "Customize Dashboard" tile can appear in the bottom row. 
-   By default, we keep it hidden (.hidden) until a tile is expanded.
+   Each tile has three content blocks:
+     - .state-default     => Shown by default
+     - .state-collapsed   => Shown if tile has .collapsed
+     - .state-enlarged    => Shown if tile has .enlarged
 */
-#tile-customize-dashboard {
-    /* No special overrides are strictly needed here;
-       it's controlled by .hidden or .bottom-row. */
+
+/* By default, show .state-default; hide collapsed & enlarged */
+.state-default {
+    display: block;
+}
+.state-collapsed,
+.state-enlarged {
+    display: none;
+}
+
+/* If a tile has .collapsed => hide .state-default, show .state-collapsed */
+.dashboard-tile.collapsed .state-default {
+    display: none;
+}
+.dashboard-tile.collapsed .state-collapsed {
+    display: block;
+}
+.dashboard-tile.collapsed .state-enlarged {
+    display: none;
+}
+
+/* If a tile has .enlarged => hide default/collapsed, show .state-enlarged */
+.dashboard-tile.enlarged .state-default {
+    display: none;
+}
+.dashboard-tile.enlarged .state-collapsed {
+    display: none;
+}
+.dashboard-tile.enlarged .state-enlarged {
+    display: block;
 }

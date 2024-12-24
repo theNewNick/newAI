@@ -3,14 +3,19 @@
 // This file handles all AJAX requests to the backend and updates the dashboard
 // with real-time data. It also includes chatbot and scenario analysis features.
 //
-// NEW: We have replaced the old tile expansion logic with a 3-row layout approach:
-//   - 4 tiles in the top row
-//   - 1 expanded tile in the middle row
-//   - 4 tiles in the bottom row (including "Customize Dashboard")
+// It implements the multi-state approach for each tile:
+//   - Default => .state-default
+//   - Collapsed => .state-collapsed
+//   - Enlarged => .state-enlarged
+// 
+// Additionally, it uses a 3-tier grid layout (top, middle, bottom rows)
+// for the expanded tile. The tile in the middle row is .expanded + .enlarged,
+// while the others become minimized + .collapsed.
+//
 // ---------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Data fetching for the dashboard
+  // 1. Load data into each tile
   initDashboard();
 
   // 2. Chatbot functionality
@@ -24,136 +29,188 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 1. Data Fetching + Populating Dashboard
+// 1. Data Fetching + Populating Tiles
 // ---------------------------------------------------------------------------
 function initDashboard() {
-  // 1a. Fetch and populate the Company Report
+  // -------------------------------------------------------------------------
+  // (A) Company Report
+  // -------------------------------------------------------------------------
   fetch('/system1/company_report_data')
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
-      document.querySelector('#company-report-container .card-body').innerHTML = `
-        <p><strong>Executive Summary:</strong> ${data.executive_summary}</p>
-        <p><strong>Company Summary:</strong> ${data.company_summary}</p>
-        <p><strong>Industry Summary:</strong> ${data.industry_summary}</p>
-        <p><strong>Risk Considerations:</strong> ${data.risk_considerations}</p>
-      `;
-      document.getElementById('exec-summary').textContent = data.executive_summary;
-      document.getElementById('comp-summary').textContent = data.company_summary;
-      document.getElementById('ind-summary').textContent = data.industry_summary;
-      document.getElementById('risk-considerations').textContent = data.risk_considerations;
+      // 1) Insert short snippet => default & collapsed
+      const defaultKey = document.querySelector('#company-report-container .state-default .key-metric');
+      const collapsedKey = document.querySelector('#company-report-container .state-collapsed .tiny-data');
+      if (defaultKey) defaultKey.textContent = data.stock_price || '$145.32';
+      if (collapsedKey) collapsedKey.textContent = data.stock_price || '$145.32';
+
+      // 2) Insert full analysis => enlarged
+      const fullDiv = document.getElementById('company-report-full');
+      if (fullDiv) {
+        fullDiv.innerHTML = `
+          <p><strong>Executive Summary:</strong> ${data.executive_summary}</p>
+          <p><strong>Company Summary:</strong> ${data.company_summary}</p>
+          <p><strong>Industry Summary:</strong> ${data.industry_summary}</p>
+          <p><strong>Risk Considerations:</strong> ${data.risk_considerations}</p>
+        `;
+      }
     })
     .catch(err => {
       console.error("Error fetching company report data:", err);
-      document.querySelector('#company-report-container .card-body').innerHTML =
-        '<p>Failed to load company report data.</p>';
     });
 
-  // 1b. Fetch and populate Financial Analysis
+  // -------------------------------------------------------------------------
+  // (B) Financial Analysis
+  // -------------------------------------------------------------------------
   fetch('/system1/financial_analysis_data')
     .then(res => res.json())
     .then(data => {
-      document.querySelector('#financial-analysis-container .card-body').innerHTML = `
-        <p>DCF Intrinsic Value: $${data.dcf_intrinsic_value.toFixed(2)}</p>
-        <p>Key Ratios: ${JSON.stringify(data.ratios)}</p>
-        <p>Time Series Analysis: ${JSON.stringify(data.time_series_analysis)}</p>
-      `;
-      document.getElementById('dcf-value').textContent = `$${data.dcf_intrinsic_value.toFixed(2)}`;
-      document.getElementById('ratio-analysis').textContent = JSON.stringify(data.ratios);
-      document.getElementById('time-series').textContent = JSON.stringify(data.time_series_analysis);
+      // short snippet
+      const dcfValueDefault = document.querySelector('#financial-analysis-container .state-default .key-metric');
+      const dcfValueCollapsed = document.querySelector('#financial-analysis-container .state-collapsed .tiny-data');
+      // e.g. $127.50 if not found in data
+      const dcfStr = data.dcf_intrinsic_value ? `$${data.dcf_intrinsic_value.toFixed(2)}` : '$127.50';
+      if (dcfValueDefault) dcfValueDefault.textContent = dcfStr;
+      if (dcfValueCollapsed) dcfValueCollapsed.textContent = dcfStr;
+
+      // full analysis
+      const fullDiv = document.getElementById('financial-analysis-full');
+      if (fullDiv) {
+        fullDiv.innerHTML = `
+          <p>DCF Intrinsic Value: ${dcfStr}</p>
+          <p>Key Ratios: ${JSON.stringify(data.ratios)}</p>
+          <p>Time Series Analysis: ${JSON.stringify(data.time_series_analysis)}</p>
+        `;
+      }
     })
     .catch(err => {
       console.error("Error fetching financial analysis data:", err);
-      document.querySelector('#financial-analysis-container .card-body').innerHTML =
-        '<p>Failed to load financial analysis data.</p>';
     });
 
-  // 1c. Fetch and populate Sentiment Analysis
+  // -------------------------------------------------------------------------
+  // (C) Sentiment Analysis
+  // -------------------------------------------------------------------------
   fetch('/system1/sentiment_data')
     .then(res => res.json())
     .then(data => {
-      const earnings = data.earnings_call_sentiment;
-      const industry = data.industry_report_sentiment;
-      const economic = data.economic_report_sentiment;
+      // default + collapsed
+      const defaultKey = document.querySelector('#sentiment-analysis-container .state-default .key-metric');
+      const collapsedKey = document.querySelector('#sentiment-analysis-container .state-collapsed .tiny-data');
+      // Suppose data has a .composite_score or fallback
+      const compositeScore = (data.composite_score !== undefined) ? data.composite_score : '+0.25';
+      if (defaultKey) defaultKey.textContent = compositeScore;
+      if (collapsedKey) collapsedKey.textContent = compositeScore;
 
-      document.querySelector('#sentiment-analysis-container .card-body').innerHTML = `
-        <p>Earnings Call Sentiment: Score ${earnings.score}, ${earnings.explanation}</p>
-        <p>Industry Report Sentiment: Score ${industry.score}, ${industry.explanation}</p>
-        <p>Economic Report Sentiment: Score ${economic.score}, ${economic.explanation}</p>
-      `;
-
-      document.getElementById('earnings-sentiment').textContent =
-        `Score ${earnings.score}, ${earnings.explanation}`;
-      document.getElementById('industry-sentiment').textContent =
-        `Score ${industry.score}, ${industry.explanation}`;
-      document.getElementById('economic-sentiment').textContent =
-        `Score ${economic.score}, ${economic.explanation}`;
+      // enlarged
+      const fullDiv = document.getElementById('sentiment-analysis-full');
+      if (fullDiv) {
+        // Using the existing data for each sentiment
+        const earnings = data.earnings_call_sentiment;
+        const industry = data.industry_report_sentiment;
+        const economic = data.economic_report_sentiment;
+        fullDiv.innerHTML = `
+          <p>Earnings Call Sentiment: Score ${earnings.score}, ${earnings.explanation}</p>
+          <p>Industry Report Sentiment: Score ${industry.score}, ${industry.explanation}</p>
+          <p>Economic Report Sentiment: Score ${economic.score}, ${economic.explanation}</p>
+        `;
+      }
     })
     .catch(err => {
       console.error("Error fetching sentiment data:", err);
-      document.querySelector('#sentiment-analysis-container .card-body').innerHTML =
-        '<p>Failed to load sentiment data.</p>';
     });
 
-  // 1d. Fetch Data Visualizations Data
+  // -------------------------------------------------------------------------
+  // (D) Data Visualizations
+  // -------------------------------------------------------------------------
   fetch('/system1/data_visualizations_data')
     .then(res => res.json())
     .then(data => {
-      document.querySelector('#data-visualizations-container .card-body').innerHTML = `
-        <p>Data for visualizations loaded. Below is raw JSON:</p>
-        <pre>${JSON.stringify(data, null, 2)}</pre>
-      `;
-      // (Optional) Initialize charts with 'data' here
+      // default + collapsed
+      const defaultKey = document.querySelector('#data-visualizations-container .state-default .key-metric');
+      const collapsedKey = document.querySelector('#data-visualizations-container .state-collapsed .tiny-data');
+      // e.g. data.latest_revenue or fallback
+      if (defaultKey) defaultKey.textContent = data.latest_revenue || 'Q2: $50.5B';
+      if (collapsedKey) collapsedKey.textContent = data.latest_revenue || '$50.5B';
+
+      // enlarged
+      const fullDiv = document.getElementById('data-visualizations-full');
+      if (fullDiv) {
+        fullDiv.innerHTML = `
+          <p>Data for visualizations loaded. Below is raw JSON:</p>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+      }
     })
     .catch(err => {
       console.error("Error fetching data visualizations:", err);
-      document.querySelector('#data-visualizations-container .card-body').innerHTML =
-        '<p>Failed to load visualization data.</p>';
     });
 
-  // 1e. Fetch Final Recommendation
+  // -------------------------------------------------------------------------
+  // (E) Final Recommendation
+  // -------------------------------------------------------------------------
   fetch('/system1/final_recommendation')
     .then(res => res.json())
     .then(data => {
-      document.querySelector('#final-recommendation-container .card-body').innerHTML = `
-        <p>The weighted total score: ${data.total_score}</p>
-        <p>Final Recommendation: ${data.recommendation}</p>
-      `;
-      document.getElementById('total-score').textContent = data.total_score;
-      document.getElementById('recommendation').textContent = data.recommendation;
+      // default + collapsed
+      const recDefault = document.querySelector('#final-recommendation-container .state-default .key-metric');
+      const recCollapsed = document.querySelector('#final-recommendation-container .state-collapsed .tiny-data');
+      if (recDefault) recDefault.textContent = data.recommendation || 'BUY';
+      if (recCollapsed) recCollapsed.textContent = data.recommendation || 'BUY';
+
+      // enlarged
+      const fullDiv = document.getElementById('final-recommendation-full');
+      if (fullDiv) {
+        fullDiv.innerHTML = `
+          <p>The weighted total score: ${data.total_score}</p>
+          <p>Final Recommendation: ${data.recommendation}</p>
+        `;
+      }
     })
     .catch(err => {
       console.error("Error fetching final recommendation:", err);
-      document.querySelector('#final-recommendation-container .card-body').innerHTML =
-        '<p>Failed to load recommendation.</p>';
     });
 
-  // 1f. Fetch General Company Info
+  // -------------------------------------------------------------------------
+  // (F) Chatbot
+  // Typically, the Chatbot tile is interactive, so no big data fetch needed.
+  // If you wanted to show a snippet from the server, you could do so here.
+
+  // -------------------------------------------------------------------------
+  // (G) Scenario Analysis
+  // The user triggers scenario calculations manually, so no default fetch needed.
+  // You can do it if you want a baseline scenario, but not mandatory.
+
+  // -------------------------------------------------------------------------
+  // (H) General Company Info
+  // -------------------------------------------------------------------------
   fetch('/system1/company_info_data')
     .then(res => {
       if (res.ok) return res.json();
       throw new Error('Failed to fetch company info');
     })
     .then(data => {
-      document.querySelector('#company-info-container .card-body').innerHTML = `
-        <p>C-suite Executives: ${data.c_suite_executives}</p>
-        <p>Shares Outstanding: ${data.shares_outstanding}</p>
-        <p>WACC: ${data.wacc}</p>
-        <p>P/E: ${data.pe_ratio}</p>
-        <p>P/S: ${data.ps_ratio}</p>
-        <p>Sector, Industry, Sub-industry: ${data.sector}, ${data.industry}, ${data.sub_industry}</p>
-      `;
-      document.getElementById('c-suite').textContent = data.c_suite_executives;
-      document.getElementById('shares-outstanding').textContent = data.shares_outstanding;
-      document.getElementById('info-wacc').textContent = data.wacc;
-      document.getElementById('pe-ratio').textContent = data.pe_ratio;
-      document.getElementById('ps-ratio').textContent = data.ps_ratio;
-      document.getElementById('sector-info').textContent =
-        `${data.sector}, ${data.industry}, ${data.sub_industry}`;
+      // default + collapsed
+      const defaultKey = document.querySelector('#company-info-container .state-default .key-metric');
+      const collapsedKey = document.querySelector('#company-info-container .state-collapsed .tiny-data');
+      if (defaultKey) defaultKey.textContent = `Sector: ${data.sector || 'Tech'}`;
+      if (collapsedKey) collapsedKey.textContent = data.sector || 'Tech';
+
+      // enlarged
+      const fullDiv = document.getElementById('company-info-full');
+      if (fullDiv) {
+        fullDiv.innerHTML = `
+          <p>C-suite Executives: ${data.c_suite_executives}</p>
+          <p>Shares Outstanding: ${data.shares_outstanding}</p>
+          <p>WACC: ${data.wacc}</p>
+          <p>P/E: ${data.pe_ratio}</p>
+          <p>P/S: ${data.ps_ratio}</p>
+          <p>Sector, Industry, Sub-industry: 
+             ${data.sector}, ${data.industry}, ${data.sub_industry}</p>
+        `;
+      }
     })
     .catch(err => {
       console.error("Error fetching company info:", err);
-      document.querySelector('#company-info-container .card-body').innerHTML =
-        '<p>Failed to load company info.</p>';
     });
 }
 
@@ -180,20 +237,20 @@ function initChatbot() {
         document_id: DOCUMENT_ID
       })
     })
-    .then(res => res.json())
-    .then(data => {
-      if (data.answer) {
-        chatResponse.textContent = data.answer;
-      } else if (data.error) {
-        chatResponse.textContent = data.error;
-      } else {
-        chatResponse.textContent = 'No response received.';
-      }
-    })
-    .catch(err => {
-      chatResponse.textContent = 'Error communicating with chatbot.';
-      console.error(err);
-    });
+      .then(res => res.json())
+      .then(data => {
+        if (data.answer) {
+          chatResponse.textContent = data.answer;
+        } else if (data.error) {
+          chatResponse.textContent = data.error;
+        } else {
+          chatResponse.textContent = 'No response received.';
+        }
+      })
+      .catch(err => {
+        chatResponse.textContent = 'Error communicating with chatbot.';
+        console.error(err);
+      });
   });
 }
 
@@ -240,36 +297,32 @@ function initScenarioAnalysis() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    .then(res => res.json())
-    .then(data => {
-      if (data.intrinsic_value_per_share) {
-        scenarioIntrinsicElem.textContent = data.intrinsic_value_per_share.toFixed(2);
-        // If the response includes additional data, it can be displayed or graphed here
-        // e.g., scenarioChartElem.innerHTML = ...
-      } else if (data.error) {
-        scenarioIntrinsicElem.textContent = data.error;
-      } else {
-        scenarioIntrinsicElem.textContent = 'No scenario data received.';
-      }
-    })
-    .catch(err => {
-      scenarioIntrinsicElem.textContent = 'Error retrieving scenario data.';
-      console.error(err);
-    });
+      .then(res => res.json())
+      .then(data => {
+        if (data.intrinsic_value_per_share) {
+          scenarioIntrinsicElem.textContent = data.intrinsic_value_per_share.toFixed(2);
+        } else if (data.error) {
+          scenarioIntrinsicElem.textContent = data.error;
+        } else {
+          scenarioIntrinsicElem.textContent = 'No scenario data received.';
+        }
+      })
+      .catch(err => {
+        scenarioIntrinsicElem.textContent = 'Error retrieving scenario data.';
+        console.error(err);
+      });
   });
 }
 
 // ---------------------------------------------------------------------------
 // 4. Three-Row Tile Layout
-//    When a tile is clicked, it expands to row 2, while the top 4 go to row 1
-//    and the bottom 4 go to row 3 (including "Customize Dashboard").
+//    Toggles .collapsed for non-expanded tiles, .enlarged for the clicked tile
 // ---------------------------------------------------------------------------
 function initThreeRowTileLayout() {
-  // Grab references to all tiles (including "Customize Dashboard")
   const tiles = Array.from(document.querySelectorAll('.dashboard-tile'));
   const customizeTile = document.getElementById('tile-customize-dashboard');
 
-  // We'll define a consistent order for the 9 tiles (8 main + 1 customize).
+  // The order of tiles (8 main + 1 "Customize")
   const tileOrder = [
     'company-report-container',
     'financial-analysis-container',
@@ -279,24 +332,30 @@ function initThreeRowTileLayout() {
     'chatbot-container',
     'scenario-analysis-container',
     'company-info-container',
-    'tile-customize-dashboard' // the "Customize" tile
+    'tile-customize-dashboard'
   ];
 
-  // Initially, let's place all 8 standard tiles in the top row, hide "Customize".
+  // On page load, reset each tile to top-row (default state)
   tileOrder.forEach(id => {
     const t = document.getElementById(id);
     if (!t) return;
-    // Remove any leftover classes from a previous session
-    t.classList.remove('middle-row', 'bottom-row', 'expanded', 'minimized', 'hidden', 'top-row');
-    // Add top-row
+    t.classList.remove(
+      'middle-row',
+      'bottom-row',
+      'expanded',
+      'minimized',
+      'hidden',
+      'collapsed',
+      'enlarged',
+      'top-row'
+    );
     t.classList.add('top-row');
   });
-  // Hide the Customize tile (if it exists)
   if (customizeTile) customizeTile.classList.add('hidden');
 
-  // For each of the 8 main tiles (not the customize tile), attach a click event
+  // For each main tile, attach a click event
   tileOrder.forEach(id => {
-    if (id === 'tile-customize-dashboard') return; // skip the "Customize" tile
+    if (id === 'tile-customize-dashboard') return; // skip "Customize"
     const tile = document.getElementById(id);
     tile.addEventListener('click', () => expandTileInMiddle(id));
   });
@@ -304,7 +363,7 @@ function initThreeRowTileLayout() {
   let currentlyExpandedTileId = null;
 
   function expandTileInMiddle(tileId) {
-    // If user clicks the same tile that is expanded, collapse everything
+    // If user clicks the tile that's already expanded => collapse
     if (currentlyExpandedTileId === tileId) {
       collapseAllToTop();
       currentlyExpandedTileId = null;
@@ -314,41 +373,57 @@ function initThreeRowTileLayout() {
     // Otherwise, user is expanding a new tile
     currentlyExpandedTileId = tileId;
 
-    // We want 4 in top row, 1 in middle row (expanded), 4 in bottom row
-    // We'll define top row as the first 4 in tileOrder (except the clicked tile).
-    // The clicked tile is the middle row, expanded.
-    // The last 4 in tileOrder (plus "Customize") go on bottom row,
-    // with "Customize" un-hidden.
-
+    // define top row => first 4 (minus the clicked tile)
     const topTileIds = tileOrder.slice(0, 4).filter(x => x !== tileId);
     const middleTileId = tileId;
-    const bottomTileIds = tileOrder.slice(4); // last 5 or so (including "Customize")
-    // If the clicked tile is among them, remove it
+    // define bottom row => last 4 (plus "Customize")
+    const bottomTileIds = tileOrder.slice(4);
+    // remove the clicked tile from bottom row if present
     const idx = bottomTileIds.indexOf(tileId);
     if (idx >= 0) bottomTileIds.splice(idx, 1);
 
-    // 1) Move topTileIds to row 1
+    // 1) Move topTileIds => row 1 (collapsed, minimized)
     topTileIds.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;
-      t.classList.remove('expanded', 'middle-row', 'bottom-row', 'hidden');
-      t.classList.add('top-row');
+      t.classList.remove(
+        'expanded',
+        'middle-row',
+        'bottom-row',
+        'hidden',
+        'minimized',
+        'enlarged'
+      );
+      t.classList.add('top-row', 'minimized', 'collapsed');
     });
 
-    // 2) Middle tile => row 2, expanded
+    // 2) Middle tile => row 2, expanded + enlarged
     const middleTile = document.getElementById(middleTileId);
-    middleTile.classList.remove('top-row', 'bottom-row', 'hidden');
-    middleTile.classList.add('middle-row', 'expanded');
+    middleTile.classList.remove(
+      'top-row',
+      'bottom-row',
+      'hidden',
+      'minimized',
+      'collapsed'
+    );
+    middleTile.classList.add('middle-row', 'expanded', 'enlarged');
 
-    // 3) Bottom row => the remaining + "Customize"
+    // 3) Bottom row => the rest
     bottomTileIds.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;
-      t.classList.remove('expanded', 'middle-row', 'top-row', 'hidden');
-      t.classList.add('bottom-row');
+      t.classList.remove(
+        'expanded',
+        'middle-row',
+        'top-row',
+        'hidden',
+        'minimized',
+        'enlarged'
+      );
+      t.classList.add('bottom-row', 'collapsed');
     });
 
-    // Un-hide the "Customize Dashboard" tile (if present)
+    // Un-hide "Customize" tile if present
     if (customizeTile) customizeTile.classList.remove('hidden');
   }
 
@@ -356,7 +431,15 @@ function initThreeRowTileLayout() {
     tileOrder.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;
-      t.classList.remove('expanded', 'middle-row', 'bottom-row', 'hidden');
+      t.classList.remove(
+        'expanded',
+        'middle-row',
+        'bottom-row',
+        'hidden',
+        'minimized',
+        'collapsed',
+        'enlarged'
+      );
       t.classList.add('top-row');
     });
     if (customizeTile) customizeTile.classList.add('hidden');

@@ -22,11 +22,10 @@
   >
 
   <!-- 
-    Custom Styles 
-    -----------------------------------------------------------------
-    Below is an example of a 2×4 grid layout in its default state.
-    When a tile is expanded, you can reassign classes (.top-row, .middle-row,
-    .bottom-row, etc.) via JavaScript to change the grid layout dynamically.
+    Custom (or inline) Styles
+    -----------------------------------------------------------------------
+    Ensure this does not conflict with your final external style.css, which
+    contains the .collapsed/.enlarged classes, aspect-ratio squares, etc.
   -->
   <style>
     body {
@@ -57,21 +56,15 @@
       margin: 0;
     }
 
-    /* 
-      The .dashboard-grid starts as a 2-row x 4-column grid (eight tiles).
-      For each tile, we have a .dashboard-tile that can be expanded or minimized
-      via JavaScript toggles.
-    */
     .dashboard-grid {
       display: grid;
       gap: 1rem;
-      /* A 2×4 grid by default: 4 columns, 2 rows (auto row height) */
+      /* A 2×4 grid by default: 4 columns, 2 rows */
       grid-template-columns: repeat(4, 1fr);
       grid-template-rows: repeat(2, auto);
       margin-top: 1rem;
     }
 
-    /* Each tile: default styling, can be expanded or minimized. */
     .dashboard-tile {
       background-color: #fff;
       border-radius: 0.5rem;
@@ -94,25 +87,19 @@
       box-shadow: 0px 4px 10px rgba(0,0,0,0.15);
     }
 
-    /* 
-      When a tile is expanded, you might want it to span multiple columns/rows.
-      Typically, you’ll set these programmatically (e.g., .expanded {grid-column: 1 / -1;}).
-    */
     .expanded {
       grid-column: 1 / 5; /* spans 4 columns */
-      grid-row: 1 / 3;    /* spans 2 rows (essentially the entire grid’s vertical space) */
+      grid-row: 1 / 3;    
       z-index: 99;
       transform: scale(1.01);
       min-height: 600px; /* or any size you prefer for expanded view */
     }
 
-    /* Tiles that remain in the top or bottom row might be “minimized”: smaller or partially faded. */
     .minimized {
       opacity: 0.8;
       transform: scale(0.95);
     }
 
-    /* The .hidden class can be used to hide the “Customize Dashboard” tile by default. */
     .hidden {
       display: none !important;
     }
@@ -126,9 +113,9 @@
       <a class="navbar-brand" href="#">AI Financial Dashboard</a>
       <!-- Example search field if you want to let users search for other companies -->
       <input 
-        type="text" 
-        class="form-control w-25" 
-        id="search-input" 
+        type="text"
+        class="form-control w-25"
+        id="search-input"
         placeholder="Search for another company..."
       >
     </div>
@@ -143,290 +130,201 @@
     const SUB_INDUSTRY = "{{ sub_industry }}";
   </script>
 
-  <!-- Main container for our 8 modules + the hidden "Customize Dashboard" tile -->
+  <!-- Main container for our 8 modules + the hidden “Customize Dashboard” tile -->
   <div class="container my-4">
-    <!-- The grid: 2×4 by default, each tile is .dashboard-tile -->
     <div class="dashboard-grid" id="dashboardGrid">
 
       <!-- 1. Company Report -->
-      <div 
-        class="dashboard-tile" 
-        id="company-report-container"
-        data-tile="company-report"
-      >
+      <div class="dashboard-tile" id="company-report-container">
         <div class="card d-flex flex-column">
           <div class="card-header">Company Report</div>
           <div class="card-body">
-            <!-- Content loaded dynamically or static placeholders -->
-            <p>Loading company report...</p>
-          </div>
-          <div class="card-footer bg-white border-0">
-            <button 
-              class="toggle-btn btn btn-link p-0 text-decoration-none" 
-              data-bs-toggle="collapse" 
-              data-bs-target="#companyReport" 
-              aria-expanded="false" 
-              aria-controls="companyReport"
-            >
-              More Details ▼
-            </button>
-            <div class="collapse mt-2" id="companyReport">
-              <ul class="mb-0">
-                <li>
-                  <strong>Executive Summary:</strong> 
-                  <span id="exec-summary">Loading...</span>
-                </li>
-                <li>
-                  <strong>Company Summary:</strong> 
-                  <span id="comp-summary">Loading...</span>
-                </li>
-                <li>
-                  <strong>Industry Summary:</strong> 
-                  <span id="ind-summary">Loading...</span>
-                </li>
-                <li>
-                  <strong>Risk Considerations:</strong> 
-                  <span id="risk-considerations">Loading...</span>
-                </li>
-              </ul>
+            <!-- Default State -->
+            <div class="state-default">
+              <p class="key-metric"><strong>$145.32</strong></p>
+              <p class="one-liner">A quick snapshot of the company’s background.</p>
+            </div>
+
+            <!-- Collapsed State -->
+            <div class="state-collapsed" style="display: none;">
+              <p class="tiny-data"><strong>$145.32</strong></p>
+            </div>
+
+            <!-- Enlarged State -->
+            <div class="state-enlarged" style="display: none;">
+              <!-- Insert the full data from your fetch call here -->
+              <div id="company-report-full">Loading full analysis...</div>
             </div>
           </div>
+          <div class="card-footer bg-white border-0"></div>
         </div>
       </div>
 
       <!-- 2. Financial Analysis -->
-      <div 
-        class="dashboard-tile" 
-        id="financial-analysis-container"
-        data-tile="financial-analysis"
-      >
+      <div class="dashboard-tile" id="financial-analysis-container">
         <div class="card d-flex flex-column">
           <div class="card-header">Financial Analysis</div>
           <div class="card-body">
-            <p>Loading financial analysis...</p>
-          </div>
-          <div class="card-footer bg-white border-0">
-            <button 
-              class="toggle-btn btn btn-link p-0 text-decoration-none" 
-              data-bs-toggle="collapse" 
-              data-bs-target="#financialAnalysis" 
-              aria-expanded="false" 
-              aria-controls="financialAnalysis"
-            >
-              More Details ▼
-            </button>
-            <div class="collapse mt-2" id="financialAnalysis">
-              <ul class="mb-0">
-                <li>
-                  DCF Intrinsic Value:
-                  <span id="dcf-value">Loading...</span>
-                </li>
-                <li>
-                  Key Ratios:
-                  <span id="ratio-analysis">Loading...</span>
-                </li>
-                <li>
-                  Time Series Analysis:
-                  <span id="time-series">Loading...</span>
-                </li>
-              </ul>
+            <!-- Default State -->
+            <div class="state-default">
+              <p class="key-metric"><strong>$127.50</strong></p>
+              <p class="one-liner">Key ratios and DCF at a glance.</p>
+            </div>
+
+            <!-- Collapsed State -->
+            <div class="state-collapsed" style="display: none;">
+              <p class="tiny-data"><strong>$127.50</strong></p>
+            </div>
+
+            <!-- Enlarged State -->
+            <div class="state-enlarged" style="display: none;">
+              <div id="financial-analysis-full">Loading full analysis...</div>
             </div>
           </div>
+          <div class="card-footer bg-white border-0"></div>
         </div>
       </div>
 
       <!-- 3. Sentiment Analysis -->
-      <div 
-        class="dashboard-tile" 
-        id="sentiment-analysis-container"
-        data-tile="sentiment-analysis"
-      >
+      <div class="dashboard-tile" id="sentiment-analysis-container">
         <div class="card d-flex flex-column">
           <div class="card-header">Sentiment Analysis</div>
           <div class="card-body">
-            <p>Loading sentiment data...</p>
-          </div>
-          <div class="card-footer bg-white border-0">
-            <button 
-              class="toggle-btn btn btn-link p-0 text-decoration-none" 
-              data-bs-toggle="collapse" 
-              data-bs-target="#sentimentAnalysis" 
-              aria-expanded="false" 
-              aria-controls="sentimentAnalysis"
-            >
-              More Details ▼
-            </button>
-            <div class="collapse mt-2" id="sentimentAnalysis">
-              <ul class="mb-0">
-                <li>
-                  Earnings Call Sentiment:
-                  <span id="earnings-sentiment">Loading...</span>
-                </li>
-                <li>
-                  Industry Report Sentiment:
-                  <span id="industry-sentiment">Loading...</span>
-                </li>
-                <li>
-                  Economic Report Sentiment:
-                  <span id="economic-sentiment">Loading...</span>
-                </li>
-              </ul>
+            <!-- Default State -->
+            <div class="state-default">
+              <p class="key-metric"><strong>+0.25</strong></p>
+              <p class="one-liner">Brief mood check from calls/reports.</p>
+            </div>
+
+            <!-- Collapsed State -->
+            <div class="state-collapsed" style="display: none;">
+              <p class="tiny-data"><strong>+0.25</strong></p>
+            </div>
+
+            <!-- Enlarged State -->
+            <div class="state-enlarged" style="display: none;">
+              <div id="sentiment-analysis-full">Loading full analysis...</div>
             </div>
           </div>
+          <div class="card-footer bg-white border-0"></div>
         </div>
       </div>
 
       <!-- 4. Data Visualizations -->
-      <div 
-        class="dashboard-tile" 
-        id="data-visualizations-container"
-        data-tile="data-visualizations"
-      >
+      <div class="dashboard-tile" id="data-visualizations-container">
         <div class="card d-flex flex-column">
           <div class="card-header">Data Visualizations</div>
           <div class="card-body">
-            <p>Loading data for charts...</p>
-          </div>
-          <div class="card-footer bg-white border-0">
-            <button 
-              class="toggle-btn btn btn-link p-0 text-decoration-none" 
-              data-bs-toggle="collapse" 
-              data-bs-target="#dataVisualizations" 
-              aria-expanded="false" 
-              aria-controls="dataVisualizations"
-            >
-              More Details ▼
-            </button>
-            <div class="collapse mt-2" id="dataVisualizations">
-              <ul class="mb-0">
-                <li>Company vs. Industry Benchmarks</li>
-                <li>Revenue Over Time</li>
-                <li>Net Income Over Time</li>
-                <li>Operating Cash Flow Over Time</li>
-                <li>Total Assets & Liabilities Over Time</li>
-              </ul>
+            <!-- Default State -->
+            <div class="state-default">
+              <p class="key-metric"><strong>Q2: $50.5B</strong></p>
+              <p class="one-liner">Charts on revenue, net income, etc.</p>
+            </div>
+
+            <!-- Collapsed State -->
+            <div class="state-collapsed" style="display: none;">
+              <p class="tiny-data">$50.5B</p>
+            </div>
+
+            <!-- Enlarged State -->
+            <div class="state-enlarged" style="display: none;">
+              <div id="data-visualizations-full">Loading full charts...</div>
             </div>
           </div>
+          <div class="card-footer bg-white border-0"></div>
         </div>
       </div>
 
       <!-- 5. Final Recommendation -->
-      <div 
-        class="dashboard-tile" 
-        id="final-recommendation-container"
-        data-tile="final-recommendation"
-      >
+      <div class="dashboard-tile" id="final-recommendation-container">
         <div class="card d-flex flex-column">
           <div class="card-header">Final Recommendation</div>
           <div class="card-body">
-            <p>Loading recommendation...</p>
+            <!-- Default State -->
+            <div class="state-default">
+              <p class="key-metric"><strong>BUY</strong></p>
+              <p class="one-liner">See our weighted score and advice.</p>
+            </div>
+
+            <!-- Collapsed State -->
+            <div class="state-collapsed" style="display: none;">
+              <p class="tiny-data"><strong>BUY</strong></p>
+            </div>
+
+            <!-- Enlarged State -->
+            <div class="state-enlarged" style="display: none;">
+              <div id="final-recommendation-full">Loading full recommendation...</div>
+            </div>
           </div>
-          <div class="card-footer bg-white border-0">
-            <button 
-              class="toggle-btn btn btn-link p-0 text-decoration-none" 
-              data-bs-toggle="collapse" 
-              data-bs-target="#finalRecommendation" 
-              aria-expanded="false" 
-              aria-controls="finalRecommendation"
-            >
-              More Details ▼
-            </button>
-            <div class="collapse mt-2" id="finalRecommendation">
-              <p>
-                The weighted total score based on the analysis is:
-                <span id="total-score">Loading...</span>.<br/>
-                The final recommendation is:
-                <span id="recommendation">Loading...</span>.
-              </p>
-       	      <!-- ADD YOUR "Download PDF" LINK/BTN HERE -->
-              <a 
-                class="btn btn-sm btn-primary mt-2" 
-                href="/system1/get_report" 
-                role="button"
-                target="_blank"
-              >
-                Download PDF Report	
-              </a>
-           </div>
-          </div>
+          <div class="card-footer bg-white border-0"></div>
         </div>
       </div>
 
       <!-- 6. Chatbot -->
-      <div 
-        class="dashboard-tile" 
-        id="chatbot-container"
-        data-tile="chatbot"
-      >
+      <div class="dashboard-tile" id="chatbot-container">
         <div class="card d-flex flex-column">
           <div class="card-header">Chatbot</div>
           <div class="card-body">
-            <p>Ask questions or analyze 10-K filings...</p>
-          </div>
-          <div class="card-footer bg-white border-0">
-            <button 
-              class="toggle-btn btn btn-link p-0 text-decoration-none" 
-              data-bs-toggle="collapse" 
-              data-bs-target="#chatbot" 
-              aria-expanded="false" 
-              aria-controls="chatbot"
-            >
-              More Details ▼
-            </button>
-            <div class="collapse mt-2" id="chatbot">
+            <!-- Default State -->
+            <div class="state-default">
+              <p class="key-metric"><strong>Ask AI →</strong></p>
+              <p class="one-liner">Ask the AI about docs or finances.</p>
+            </div>
+
+            <!-- Collapsed State -->
+            <div class="state-collapsed" style="display: none;">
+              <p class="tiny-data">💬</p>
+            </div>
+
+            <!-- Enlarged State -->
+            <div class="state-enlarged" style="display: none;">
               <p>Interact with PDFs, ask for buy/hold/sell, scenario Q&A, etc.</p>
               <div class="mb-2">
                 <label for="chat-input" class="form-label">Message:</label>
                 <input 
-                  type="text" 
-                  class="form-control" 
-                  id="chat-input" 
+                  type="text"
+                  class="form-control"
+                  id="chat-input"
                   placeholder="Ask the chatbot..."
                 >
               </div>
               <button 
-                class="btn btn-sm btn-primary mb-2" 
+                class="btn btn-sm btn-primary mb-2"
                 id="chat-send"
               >
                 Send
               </button>
-              <div 
-                id="chat-response" 
-                class="border p-2" 
+              <div
+                id="chat-response"
+                class="border p-2"
                 style="min-height:100px;"
               ></div>
             </div>
           </div>
+          <div class="card-footer bg-white border-0"></div>
         </div>
       </div>
 
       <!-- 7. Scenario Analysis -->
-      <div 
-        class="dashboard-tile" 
-        id="scenario-analysis-container"
-        data-tile="scenario-analysis"
-      >
+      <div class="dashboard-tile" id="scenario-analysis-container">
         <div class="card d-flex flex-column">
           <div class="card-header">Scenario Analysis</div>
           <div class="card-body">
-            <p>Choose scenarios and see the effects...</p>
-          </div>
-          <div class="card-footer bg-white border-0">
-            <button 
-              class="toggle-btn btn btn-link p-0 text-decoration-none" 
-              data-bs-toggle="collapse" 
-              data-bs-target="#scenarioAnalysis" 
-              aria-expanded="false" 
-              aria-controls="scenarioAnalysis"
-            >
-              More Details ▼
-            </button>
-            <div class="collapse mt-2" id="scenarioAnalysis">
+            <!-- Default State -->
+            <div class="state-default">
+              <p class="key-metric"><strong>Base Case: $135</strong></p>
+              <p class="one-liner">Run ‘what-if’ valuations under different assumptions.</p>
+            </div>
+
+            <!-- Collapsed State -->
+            <div class="state-collapsed" style="display: none;">
+              <p class="tiny-data"><strong>$135</strong></p>
+            </div>
+
+            <!-- Enlarged State -->
+            <div class="state-enlarged" style="display: none;">
               <p>Select Scenario:</p>
-              <select 
-                id="scenario-select" 
-                class="form-select"
-              >
+              <select id="scenario-select" class="form-select">
                 <option value="Optimistic">Optimistic</option>
                 <option value="Neutral">Neutral</option>
                 <option value="Negative">Negative</option>
@@ -435,9 +333,9 @@
               <div class="mb-2">
                 <label for="wacc-input" class="form-label">WACC (%):</label>
                 <input 
-                  type="number" 
-                  class="form-control" 
-                  id="wacc-input" 
+                  type="number"
+                  class="form-control"
+                  id="wacc-input"
                   value="10"
                 >
               </div>
@@ -445,10 +343,10 @@
                 <label for="rev-growth-input" class="form-label">
                   Revenue Growth (%):
                 </label>
-                <input 
-                  type="number" 
-                  class="form-control" 
-                  id="rev-growth-input" 
+                <input
+                  type="number"
+                  class="form-control"
+                  id="rev-growth-input"
                   value="5"
                 >
               </div>
@@ -456,10 +354,10 @@
                 <label for="opex-input" class="form-label">
                   OPEX (% of Revenue):
                 </label>
-                <input 
-                  type="number" 
-                  class="form-control" 
-                  id="opex-input" 
+                <input
+                  type="number"
+                  class="form-control"
+                  id="opex-input"
                   value="20"
                 >
               </div>
@@ -467,10 +365,10 @@
                 <label for="cogs-input" class="form-label">
                   COGS (% of Revenue):
                 </label>
-                <input 
-                  type="number" 
-                  class="form-control" 
-                  id="cogs-input" 
+                <input
+                  type="number"
+                  class="form-control"
+                  id="cogs-input"
                   value="60"
                 >
               </div>
@@ -478,26 +376,23 @@
                 <label for="tax-rate-input" class="form-label">
                   Tax Rate (%):
                 </label>
-                <input 
-                  type="number" 
-                  class="form-control" 
-                  id="tax-rate-input" 
+                <input
+                  type="number"
+                  class="form-control"
+                  id="tax-rate-input"
                   value="21"
                 >
               </div>
-              <button 
-                class="btn btn-sm btn-primary" 
+              <button
+                class="btn btn-sm btn-primary"
                 id="run-scenario-btn"
               >
                 Run Scenario
               </button>
-              <div 
-                class="mt-3" 
-                id="scenario-results"
-              >
+              <div class="mt-3" id="scenario-results">
                 <p><strong>Revenue & FCF Graph:</strong></p>
-                <div 
-                  id="scenario-chart" 
+                <div
+                  id="scenario-chart"
                   style="height:200px;"
                 ></div>
                 <p>
@@ -507,67 +402,39 @@
               </div>
             </div>
           </div>
+          <div class="card-footer bg-white border-0"></div>
         </div>
       </div>
 
       <!-- 8. General Company Info -->
-      <div 
-        class="dashboard-tile" 
-        id="company-info-container"
-        data-tile="general-info"
-      >
+      <div class="dashboard-tile" id="company-info-container">
         <div class="card d-flex flex-column">
           <div class="card-header">General Company Info</div>
           <div class="card-body">
-            <p>Loading company info...</p>
-          </div>
-          <div class="card-footer bg-white border-0">
-            <button 
-              class="toggle-btn btn btn-link p-0 text-decoration-none" 
-              data-bs-toggle="collapse" 
-              data-bs-target="#companyInfo" 
-              aria-expanded="false" 
-              aria-controls="companyInfo"
-            >
-              More Details ▼
-            </button>
-            <div class="collapse mt-2" id="companyInfo">
-              <ul class="mb-0">
-                <li>
-                  C-suite Executives:
-                  <span id="c-suite">Loading...</span>
-                </li>
-                <li>
-                  Shares Outstanding:
-                  <span id="shares-outstanding">Loading...</span>
-                </li>
-                <li>
-                  WACC:
-                  <span id="info-wacc">Loading...</span>
-                </li>
-                <li>
-                  P/E:
-                  <span id="pe-ratio">Loading...</span>
-                </li>
-                <li>
-                  P/S:
-                  <span id="ps-ratio">Loading...</span>
-                </li>
-                <li>
-                  Sector, Industry, Sub-industry:
-                  <span id="sector-info">Loading...</span>
-                </li>
-              </ul>
+            <!-- Default State -->
+            <div class="state-default">
+              <p class="key-metric"><strong>Sector: Tech</strong></p>
+              <p class="one-liner">Key executive, shares, and WACC data.</p>
+            </div>
+
+            <!-- Collapsed State -->
+            <div class="state-collapsed" style="display: none;">
+              <p class="tiny-data">Tech</p>
+            </div>
+
+            <!-- Enlarged State -->
+            <div class="state-enlarged" style="display: none;">
+              <div id="company-info-full">Loading detailed info...</div>
             </div>
           </div>
+          <div class="card-footer bg-white border-0"></div>
         </div>
       </div>
 
       <!-- 9. Customize Dashboard Tile (hidden by default) -->
-      <div 
-        class="dashboard-tile hidden" 
+      <div
+        class="dashboard-tile hidden"
         id="tile-customize-dashboard"
-        data-tile="customize-dashboard"
       >
         <div class="card d-flex flex-column">
           <div class="card-header">Customize Dashboard</div>
@@ -577,6 +444,7 @@
             </p>
             <!-- Additional UI for rearranging tiles can go here -->
           </div>
+          <div class="card-footer bg-white border-0"></div>
         </div>
       </div>
 
@@ -589,11 +457,11 @@
   </footer>
 
   <!-- Bootstrap JS -->
-  <script 
+  <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js">
   </script>
 
-  <!-- Main JS that handles AJAX & tile expansion/collapse logic -->
+  <!-- Main JS that handles the multi-state tiles, AJAX fetching, etc. -->
   <script src="/static/js/main.js"></script>
 </body>
 </html>
