@@ -1,3 +1,5 @@
+# modules/system1/handlers.py
+
 import os
 import io
 import time
@@ -346,6 +348,103 @@ async def summarize_text_async(text):
     return combined_summary
 
 
+async def dynamic_multi_pass_summarize_async(
+    text: str,
+    chunk_size: int = 1000,
+    max_passes: int = 4
+) -> str:
+    """
+    Summarize repeatedly until text is short enough or we hit max_passes.
+    Uses single_pass_summarize internally, which calls call_openai_summarization.
+    """
+    pass_count = 0
+    current_text = text
+
+    while pass_count < max_passes:
+        summarized = await single_pass_summarize(current_text, chunk_size)
+        # If short enough, break
+        if await is_short_enough(summarized, chunk_size):
+            return summarized
+        current_text = summarized
+        pass_count += 1
+
+    return current_text
+
+
+async def single_pass_summarize(text: str, chunk_size: int = 1000) -> str:
+    """
+    Splits text by ~chunk_size tokens, calls GPT for each chunk,
+    then concatenates partial summaries.
+    """
+    logger.debug('Starting single-pass summarization with chunk_size=%d', chunk_size)
+    encoding = tiktoken.encoding_for_model("gpt-4")
+    tokens = encoding.encode(text)
+    token_count = len(tokens)
+
+    if token_count <= chunk_size:
+        summary = await call_openai_summarization(text)
+        return summary or ""
+
+    chunks = []
+    for i in range(0, token_count, chunk_size):
+        chunk_tokens = tokens[i:i + chunk_size]
+        chunk_text = encoding.decode(chunk_tokens)
+        chunks.append(chunk_text)
+
+    partial_summaries = []
+    for c in chunks:
+        part_sum = await call_openai_summarization(c)
+        partial_summaries.append(part_sum if part_sum else "")
+
+    combined_summary = "\n".join(s for s in partial_summaries if s)
+    return combined_summary
+
+
+async def is_short_enough(text: str, chunk_size: int = 1000) -> bool:
+    """
+    Checks if the given text is short enough to fit into 'chunk_size' tokens.
+    """
+    encoding = tiktoken.encoding_for_model("gpt-4")
+    token_count = len(encoding.encode(text))
+    return token_count <= chunk_size
+
+
+def parse_headings_in_10k(text: str):
+    """
+    Use regex to detect headings like 'ITEM 1', 'ITEM 1A', etc.
+    Splits the text into (heading, section) pairs.
+    """
+    import re
+    pattern = r'(ITEM\s+[0-9A-Z]+(?:\.[0-9A-Z]+)*)'
+
+    splits = re.split(pattern, text, flags=re.IGNORECASE)
+
+    sections = []
+    current_heading = "INTRODUCTION"
+    current_text_parts = []
+
+    for i, segment in enumerate(splits):
+        segment = segment.strip()
+        if i == 0:
+            if segment:
+                current_text_parts.append(segment)
+        else:
+            if re.match(pattern, segment, flags=re.IGNORECASE):
+                joined_text = "\n".join(current_text_parts).strip()
+                if joined_text:
+                    sections.append((current_heading, joined_text))
+                current_text_parts = []
+                current_heading = segment
+            else:
+                current_text_parts.append(segment)
+
+    leftover = "\n".join(current_text_parts).strip()
+    if leftover:
+        sections.append((current_heading, leftover))
+
+    return sections
+
+
 async def process_documents(earnings_call_text, industry_report_text, economic_report_text):
     logger.debug('Summarizing extracted texts for earnings, industry, and economic reports.')
     summaries = await asyncio.gather(
@@ -471,11 +570,14 @@ def analyze_financials():
         else:
             logger.info('Extracted text from the 10-K successfully.')
 
-        # Generate real summaries from the 10-K
+        # -------------------------------------------------------------------
+        # Instead of the old generate_summaries_and_risks, we call a new
+        # "extract_10k_insights" function to parse headings & summarize.
+        # -------------------------------------------------------------------
         company_summary, industry_summary, risks_summary = run_async_function(
-            generate_summaries_and_risks(ten_k_text)
+            extract_10k_insights(ten_k_text)
         )
-        logger.info('Generated 10-K summaries successfully.')
+        logger.info('Generated 10-K insights successfully.')
 
         # Retrieve form inputs
         wacc = float(request.form['wacc']) / 100
@@ -533,8 +635,8 @@ def analyze_financials():
         balance_df = standardize_columns(balance_df, balance_columns, 'balance_sheet')
         cashflow_df = standardize_columns(cashflow_df, cashflow_columns, 'cash_flow')
 
-        for df, name in [(income_df, 'income_statement'), (balance_df, 'balance_sheet'), (cashflow_df, 'cash_flow')]:
-            if 'Date' not in df.columns:
+        for df_obj, name in [(income_df, 'income_statement'), (balance_df, 'balance_sheet'), (cashflow_df, 'cash_flow')]:
+            if 'Date' not in df_obj.columns:
                 error_message = f"'Date' column missing in {name} CSV."
                 logger.error(error_message)
                 return jsonify({'error': error_message}), 400
@@ -1035,46 +1137,51 @@ def get_report():
         return "Report not found", 404
 
 
-# This function is used above to generate 10-K summaries (company, industry, risk).
-async def generate_summaries_and_risks(ten_k_text):
-    logger.debug('Generating company, industry summaries, and risk considerations from 10-K report.')
+# -------------------------------------------------------------------------
+# NEW FUNCTION: extract_10k_insights (replaces generate_summaries_and_risks)
+# -------------------------------------------------------------------------
+async def extract_10k_insights(ten_k_text):
+    """
+    This function replaces the old 'generate_summaries_and_risks' logic.
+    It uses parse_headings_in_10k + dynamic_multi_pass_summarize_async
+    to derive 3 summaries: 'company_summary', 'industry_summary', 'risks_summary'.
 
-    company_prompt = f"""
-Summarize the company based on the following 10-K report:
-{ten_k_text}
-"""
-    industry_prompt = f"""
-Summarize the industry based on the following 10-K report:
-{ten_k_text}
-"""
-    risks_prompt = f"""
-Identify and summarize the key risk considerations from the 10-K report:
-{ten_k_text}
-"""
+    Step 1: parse_headings_in_10k() splits the 10-K text by headings
+            like 'ITEM 1', 'ITEM 1A', 'ITEM 7', etc.
+    Step 2: We search those sections for relevant content:
+            - 'company_text' from headings referencing ITEM 1 or 'BUSINESS'
+            - 'industry_text' from headings referencing ITEM 7 or 'MANAGEMENT'S DISCUSSION'
+            - 'risks_text' from headings referencing ITEM 1A or 'RISK FACTORS'
+    Step 3: Each chunk is summarized with dynamic_multi_pass_summarize_async
 
-    async def summarize_with_token_check(prompt, max_tokens=500):
-        encoding = tiktoken.encoding_for_model("gpt-4")
-        max_context_length = 7000
+    OPTIONAL: Expand or refine logic here if your 10-K sections differ.
+              For example, if 'ITEM 2' also has important content, or
+              if you want to gather more text from multiple headings
+              for each category. You might also do additional chunking
+              or use a different approach for risk analysis specifically.
+    """
+    logger.debug('Extracting 10-K insights with new approach.')
+    sections = parse_headings_in_10k(ten_k_text)
 
-        tokens = encoding.encode(prompt)
-        if len(tokens) > max_context_length - max_tokens:
-            logger.warning('Prompt too long, chunking...')
-            chunk_size = max_context_length - max_tokens
-            chunks = [encoding.decode(tokens[i:i + chunk_size]) for i in range(0, len(tokens), chunk_size)]
-            summaries = []
-            for chunk in chunks:
-                summary = await call_openai_summarization(chunk)
-                if summary:
-                    summaries.append(summary)
-            return " ".join(summaries)
-        return await call_openai_summarization(prompt)
+    company_text = ""
+    industry_text = ""
+    risks_text = ""
 
-    company_summary_task = summarize_with_token_check(company_prompt)
-    industry_summary_task = summarize_with_token_check(industry_prompt)
-    risks_task = summarize_with_token_check(risks_prompt)
-    company_summary, industry_summary, risks_summary = await asyncio.gather(
-        company_summary_task, industry_summary_task, risks_task
-    )
+    # Example approach for discovering relevant sections:
+    # (Your real code might differ if headings differ or you want more items.)
+    for heading, content in sections:
+        heading_upper = heading.upper()
+        if "ITEM 1A" in heading_upper or "RISK FACTORS" in heading_upper:
+            risks_text += f"\n{content}"
+        elif "ITEM 1" in heading_upper or "BUSINESS" in heading_upper:
+            company_text += f"\n{content}"
+        elif "ITEM 7" in heading_upper or "MANAGEMENT'S DISCUSSION" in heading_upper:
+            industry_text += f"\n{content}"
+        # else ignore or handle other headings
 
-    logger.debug('Summaries generated for 10-K data.')
+    # Summarize each chunk. If no text is found, set 'N/A'.
+    company_summary = await dynamic_multi_pass_summarize_async(company_text, 1000, 4) if company_text else "N/A"
+    industry_summary = await dynamic_multi_pass_summarize_async(industry_text, 1000, 4) if industry_text else "N/A"
+    risks_summary = await dynamic_multi_pass_summarize_async(risks_text, 1000, 4) if risks_text else "N/A"
+
     return company_summary, industry_summary, risks_summary

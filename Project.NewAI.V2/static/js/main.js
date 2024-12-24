@@ -316,7 +316,8 @@ function initScenarioAnalysis() {
 
 // ---------------------------------------------------------------------------
 // 4. Three-Row Tile Layout
-//    Toggles .collapsed for non-expanded tiles, .enlarged for the clicked tile
+//    Toggles .collapsed for non-expanded tiles, .enlarged for the clicked tile,
+//    and toggles .expanded-layout on the #dashboardGrid parent for 3-row layout
 // ---------------------------------------------------------------------------
 function initThreeRowTileLayout() {
   const tiles = Array.from(document.querySelectorAll('.dashboard-tile'));
@@ -353,14 +354,20 @@ function initThreeRowTileLayout() {
   });
   if (customizeTile) customizeTile.classList.add('hidden');
 
-  // For each main tile, attach a click event
+  let currentlyExpandedTileId = null;
+
+  // Attach click handlers ONLY to the .card-header, so the tile
+  // doesn't instantly collapse when you click inside the body
   tileOrder.forEach(id => {
     if (id === 'tile-customize-dashboard') return; // skip "Customize"
     const tile = document.getElementById(id);
-    tile.addEventListener('click', () => expandTileInMiddle(id));
-  });
+    if (!tile) return;
 
-  let currentlyExpandedTileId = null;
+    const header = tile.querySelector('.card-header');
+    if (header) {
+      header.addEventListener('click', () => expandTileInMiddle(id));
+    }
+  });
 
   function expandTileInMiddle(tileId) {
     // If user clicks the tile that's already expanded => collapse
@@ -373,7 +380,11 @@ function initThreeRowTileLayout() {
     // Otherwise, user is expanding a new tile
     currentlyExpandedTileId = tileId;
 
-    // define top row => first 4 (minus the clicked tile)
+    // 1) Switch the main grid container to 3-row layout
+    const grid = document.getElementById('dashboardGrid');
+    grid.classList.add('expanded-layout');
+
+    // define top row => first 4 IDs (minus the clicked tile)
     const topTileIds = tileOrder.slice(0, 4).filter(x => x !== tileId);
     const middleTileId = tileId;
     // define bottom row => last 4 (plus "Customize")
@@ -382,7 +393,7 @@ function initThreeRowTileLayout() {
     const idx = bottomTileIds.indexOf(tileId);
     if (idx >= 0) bottomTileIds.splice(idx, 1);
 
-    // 1) Move topTileIds => row 1 (collapsed, minimized)
+    // 2) Move topTileIds => row 1 (collapsed, minimized)
     topTileIds.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;
@@ -397,7 +408,7 @@ function initThreeRowTileLayout() {
       t.classList.add('top-row', 'minimized', 'collapsed');
     });
 
-    // 2) Middle tile => row 2, expanded + enlarged
+    // 3) Middle tile => row 2, expanded + enlarged
     const middleTile = document.getElementById(middleTileId);
     middleTile.classList.remove(
       'top-row',
@@ -408,7 +419,7 @@ function initThreeRowTileLayout() {
     );
     middleTile.classList.add('middle-row', 'expanded', 'enlarged');
 
-    // 3) Bottom row => the rest
+    // 4) Bottom row => the rest (collapsed)
     bottomTileIds.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;
@@ -423,11 +434,15 @@ function initThreeRowTileLayout() {
       t.classList.add('bottom-row', 'collapsed');
     });
 
-    // Un-hide "Customize" tile if present
+    // 5) Un-hide "Customize" tile if present
     if (customizeTile) customizeTile.classList.remove('hidden');
   }
 
   function collapseAllToTop() {
+    // Remove 3-row layout from grid => back to 2 rows
+    const grid = document.getElementById('dashboardGrid');
+    grid.classList.remove('expanded-layout');
+
     tileOrder.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;

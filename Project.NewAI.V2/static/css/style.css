@@ -5,15 +5,12 @@
    ----------------------------------------------------- */
 
 /* 
-   Prevent full-page scrolling so that only the expanded tile 
-   can scroll internally.
+   Removed forced 100% height & overflow hidden. Now the page can resize
+   and we can see all 8 tiles without scrolling if they are small enough.
 */
 html, body {
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden; 
     background-color: #f8f9fa;
     font-family: 'Roboto', sans-serif;
 }
@@ -61,31 +58,32 @@ html, body {
    ----------------------------------------------------- */
 
 /* 
-   The dashboard uses a 2-row × 4-column grid by default (8 tiles).
-   We avoid page scrolling by having overflow hidden, 
-   so only the expanded tile scrolls internally.
+   The dashboard uses a 2-row × 4-column grid (8 tiles).
+   We removed forced height & overflow so it can auto-fit
+   smaller squares (2 rows × 4 columns) on one screen.
 */
 .dashboard-grid {
     display: grid;
-    /* 4 columns, 2 rows => 8 squares initially */
+    /* Two rows; each row auto-sized around the smaller squares */
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 1fr);
+    grid-template-rows: auto auto;
     gap: 1rem;
     margin-top: 1rem;
     width: 100%;
-    /* Adjust the height as needed if you have a navbar/footer */
-    height: calc(100% - 80px);
     box-sizing: border-box;
-    overflow: hidden; /* no full-page scroll, only tile scroll if expanded */
+    /* Removed height: calc(...); Removed overflow: hidden; */
 }
 
-/* Each tile is a perfect square via aspect-ratio in modern browsers */
+/* Each tile is a perfect square via aspect-ratio,
+   but we cap it with max-height so squares aren't huge. */
 .dashboard-tile {
     background-color: #fff;
     border-radius: 0.5rem;
     position: relative;
     cursor: pointer;
-    aspect-ratio: 1 / 1; /* fallback: padding-bottom:100% for older browsers */
+    /* Keep it square; cap the size */
+    aspect-ratio: 1 / 1;
+    max-height: 200px; /* so 2 rows × 4 can fit on one screen */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -128,16 +126,19 @@ html, body {
    ----------------------------------------------------- */
 
 /* 
-   When a tile is expanded, we switch to a 3-row layout:
-     - row 1: up to 4 smaller tiles (top-row)
-     - row 2: the expanded tile (middle-row, .expanded)
-     - row 3: 3 smaller tiles + "Customize Dashboard" (bottom-row)
+   When a tile is expanded, we switch to a 3-row layout
+   on .dashboard-grid (expanded-layout).
 */
+
+/* The parent .dashboard-grid.expanded-layout => 3 rows. */
+.dashboard-grid.expanded-layout {
+    grid-template-rows: auto auto auto;
+}
 
 /* Top row (flattened) */
 .top-row {
     grid-row: 1 / 2;
-    aspect-ratio: auto; /* remove fixed ratio */
+    aspect-ratio: auto; /* remove fixed ratio so they're smaller */
     height: auto;
     transform: scale(0.95);
 }
@@ -160,13 +161,13 @@ html, body {
     grid-column: 1 / 5; /* occupy all 4 columns */
     z-index: 99;
     transform: scale(1.01);
-    min-height: 60vh; /* enough space for internal scroll area */
+    min-height: 80vh; /* increased from 60vh for more content space */
 }
 
 /* The expanded tile’s body can scroll internally */
 .expanded .card-body {
     overflow-y: auto;
-    max-height: calc(60vh - 3rem); /* leaving space for card header/footer */
+    max-height: calc(80vh - 3rem); /* leave space for card header/footer */
 }
 
 /* Minimizing tiles if you want them slightly smaller or faded */
@@ -220,3 +221,11 @@ html, body {
 .dashboard-tile.enlarged .state-enlarged {
     display: block;
 }
+
+/* Optional override if you want to remove the line clamp in enlarged mode:
+   .dashboard-tile.enlarged .card-body {
+       display: block;
+       -webkit-line-clamp: none;
+       overflow-y: auto;
+   }
+*/
