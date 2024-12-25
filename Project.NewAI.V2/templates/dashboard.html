@@ -21,17 +21,23 @@
     rel="stylesheet"
   >
 
-  <!-- Load your main style.css instead of inline styles -->
+  <!-- Load your main style.css -->
   <link 
     rel="stylesheet" 
     href="/static/css/style.css"
   >
+
+  <!-- Load Chart.js for data visualizations -->
+  <script 
+    src="https://cdn.jsdelivr.net/npm/chart.js">
+  </script>
 </head>
 
 <body>
   <!-- Navbar -->
   <nav class="navbar navbar-dark bg-dark">
-    <div class="container-fluid">
+    <!-- Centered container with max-width -->
+    <div class="container" style="max-width:1200px; margin:0 auto;">
       <a class="navbar-brand" href="#">AI Financial Dashboard</a>
       <!-- Example search field if you want to let users search for other companies -->
       <input 
@@ -43,18 +49,9 @@
     </div>
   </nav>
 
-  <!-- Pass dynamic variables to JS -->
-  <script>
-    const DOCUMENT_ID = "{{ document_id }}";
-    const STOCK_TICKER = "{{ stock_ticker }}";
-    const SECTOR = "{{ sector }}";
-    const INDUSTRY = "{{ industry }}";
-    const SUB_INDUSTRY = "{{ sub_industry }}";
-  </script>
-
-  <!-- Main container for our 8 modules + the hidden “Customize Dashboard” tile -->
-  <!-- We add margin-bottom so the bottom row won't be overlapped by the fixed footer -->
-  <div class="container my-4" style="margin-bottom:150px;">
+  <!-- Main container for our 8 modules + hidden “Customize Dashboard” tile.
+       Centered via max-width, margin: 0 auto; plus bottom margin. -->
+  <div class="container" style="max-width:1200px; margin:0 auto; margin-bottom:150px;">
     <div class="dashboard-grid default-layout" id="dashboardGrid">
 
       <!-- 1. Company Report -->
@@ -150,7 +147,7 @@
 
             <!-- Enlarged State -->
             <div class="state-enlarged">
-              <div id="data-visualizations-full">Loading full charts...</div>
+              <div id="data-visualizations-full">Loading charts...</div>
             </div>
           </div>
           <div class="card-footer bg-white border-0"></div>
@@ -387,3 +384,4 @@
   <script src="/static/js/main.js"></script>
 </body>
 </html>
+

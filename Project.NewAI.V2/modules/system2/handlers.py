@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from nltk.tokenize import sent_tokenize
 import pinecone
 from logging.handlers import RotatingFileHandler
-import config
+import config  # <-- We now import config for multi-account approach
 
 # If you need session for cross-referencing user session or IDs:
 # from flask import session
@@ -38,12 +38,14 @@ logger.addHandler(handler)
 # Load environment variables via config
 AWS_REGION = config.AWS_REGION
 S3_BUCKET_NAME = config.S3_BUCKET_NAME
-OPENAI_API_KEY = config.OPENAI_API_KEY
+
+# We remove direct references to openai.api_key = config.OPENAI_API_KEY
+# Instead, calls to openai.Embedding.create() or openai.ChatCompletion.create() 
+# will go through the load-balancer functions in config.py
+
 PINECONE_API_KEY = config.PINECONE_API_KEY
 PINECONE_ENVIRONMENT = config.PINECONE_ENVIRONMENT
 PINECONE_INDEX_NAME = config.PINECONE_INDEX_NAME
-
-openai.api_key = OPENAI_API_KEY
 
 s3 = boto3.client('s3', region_name=AWS_REGION)
 
@@ -64,6 +66,15 @@ except LookupError:
     logger.debug("NLTK 'punkt' tokenizer not found, downloading...")
     nltk.download('punkt', download_dir=NLTK_DATA_PATH)
     logger.debug("NLTK 'punkt' tokenizer downloaded")
+
+
+##################################################################################
+# If you created a wrapper for embeddings in config.py, e.g. call_openai_embedding_with_loadbalancer
+# you would import it here. Example:
+##################################################################################
+from config import call_openai_embedding_with_loadbalancer
+# If you also have a ChatCompletion wrapper, e.g. call_gpt_4_with_loadbalancer, 
+# you could import that if you do any chat or summarization in system2.
 
 
 def download_pdf_from_s3(bucket_name, object_key, download_path):
@@ -139,15 +150,25 @@ def split_text_into_chunks(text, max_tokens=500):
 
 
 def generate_embeddings(text_chunks, document_id):
+    """
+    This function no longer calls openai.Embedding.create() directly.
+    Instead, it uses the load-balancer approach from config.py 
+    (call_openai_embedding_with_loadbalancer) to distribute usage 
+    across your 3 separate OpenAI accounts.
+    """
     logger.debug(f"Entering generate_embeddings for document_id: {document_id}")
     data = []
     batch_size = 100
+
     for i in range(0, len(text_chunks), batch_size):
         batch_chunks = text_chunks[i:i + batch_size]
         try:
             logger.debug(f"Generating embeddings for batch {i // batch_size + 1}")
-            response = openai.Embedding.create(
-                input=batch_chunks,
+
+            # Instead of: response = openai.Embedding.create(input=batch_chunks, ...)
+            # We do the load-balancer call:
+            response = call_openai_embedding_with_loadbalancer(
+                input_list=batch_chunks,
                 model='text-embedding-ada-002'
             )
             logger.debug(f"OpenAI response: {response}")
@@ -160,7 +181,6 @@ def generate_embeddings(text_chunks, document_id):
                 embedding = embedding_info['embedding']
                 chunk = batch_chunks[j]
                 chunk_index = i + j
-                # vector_id => You could also store user_id or analysis_id if you want
                 vector_id = f"{document_id}_chunk_{chunk_index}"
                 metadata = {
                     'document_id': document_id,
@@ -175,6 +195,7 @@ def generate_embeddings(text_chunks, document_id):
         except Exception as e:
             logger.error(f"General exception in generate_embeddings: {e}", exc_info=True)
             raise
+
     logger.debug(f"Generated embeddings for {len(data)} chunks")
     return data
 
@@ -333,8 +354,10 @@ def chat():
 def generate_query_embedding(query):
     logger.debug("Entering generate_query_embedding")
     try:
-        response = openai.Embedding.create(
-            input=[query],
+        # If you want to load-balance embeddings for query embeddings too, 
+        # you could call the same config-based function:
+        response = call_openai_embedding_with_loadbalancer(
+            input_list=[query],
             model='text-embedding-ada-002'
         )
         query_embedding = response['data'][0]['embedding']
@@ -351,7 +374,6 @@ def generate_query_embedding(query):
 def query_pinecone(pinecone_index, query_embedding, top_k, document_id):
     logger.debug("Entering query_pinecone")
     try:
-        # By default, we filter on 'document_id'—but you could filter by user_id or analysis_id if needed
         query_filter = {'document_id': {'$eq': document_id}}
         response = pinecone_index.query(
             vector=query_embedding,
@@ -372,13 +394,22 @@ def get_response_from_openai(query, context_texts):
     try:
         context = "\n\n".join(context_texts)
         messages = [
-            {"role": "system", "content": "You are an AI assistant that provides helpful answers based on the provided context."},
-            {"role": "user", "content": f"Context:\n{context}\n\nQuestion:\n{query}"}
+            {
+                "role": "system",
+                "content": "You are an AI assistant that provides helpful answers based on the provided context."
+            },
+            {
+                "role": "user",
+                "content": f"Context:\n{context}\n\nQuestion:\n{query}"
+            }
         ]
+        # If you want to load-balance chat calls as well, do:
+        #   response = call_gpt_4_with_loadbalancer(messages)
+        # Instead of direct openai.ChatCompletion.create
         response = openai.ChatCompletion.create(
-            model='gpt-4',  # Updated from gpt-3.5-turbo
+            model='gpt-4',
             messages=messages,
-            max_tokens=400,  # Optionally increased from 200
+            max_tokens=400,
             temperature=0.7,
             n=1,
         )
@@ -417,3 +448,31 @@ def test_nltk():
     except Exception as e:
         logger.error(f"Error testing NLTK: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+
+
+# -------------------------------------------------------------------------
+# Example route to list available documents from S3
+# (You can adapt this to your DB or your own logic.)
+# -------------------------------------------------------------------------
+@system2_bp.route('/list_documents', methods=['GET'])
+def list_documents():
+    """
+    Returns a JSON list of documents stored in S3 (limited to PDF files).
+    You could display these in a dropdown on the UI
+    so the user can pick a 'document_id' for the chatbot.
+    """
+    try:
+        response = s3.list_objects_v2(Bucket=S3_BUCKET_NAME)
+        if 'Contents' not in response:
+            return jsonify([])
+
+        documents = []
+        for obj in response['Contents']:
+            key = obj['Key']
+            if key.lower().endswith('.pdf'):
+                documents.append(key)
+
+        return jsonify(documents)
+    except Exception as e:
+        logger.error(f"Error listing documents: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to list documents.'}), 500

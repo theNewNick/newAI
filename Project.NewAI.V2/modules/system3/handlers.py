@@ -8,8 +8,6 @@ from flask import request, jsonify, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 import pandas as pd
-import openai
-from dotenv import load_dotenv
 import yfinance as yf
 import difflib
 from newsapi import NewsApiClient
@@ -22,17 +20,18 @@ system3_bp = Blueprint('system3_bp', __name__, template_folder='templates')
 
 from .def_model import DCFModel
 import config
-# from app import db  # Import db from main app
+# from app import db  # If you were using db from app, now we rely on modules/extensions
 from modules.extensions import db
 
 from config import (
-    OPENAI_API_KEY,
     NEWSAPI_KEY,
     UPLOAD_FOLDER,
     SQLALCHEMY_DATABASE_URI
 )
 
-# Logger configuration
+# -------------------------------------------------------------------------
+# LOGGING CONFIG
+# -------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():  # Avoid duplicate handlers
     log_formatter = logging.Formatter(
@@ -46,8 +45,14 @@ if not logger.hasHandlers():  # Avoid duplicate handlers
 
 logger.setLevel(logging.DEBUG)
 
-# API Keys and configurations
-openai.api_key = OPENAI_API_KEY
+# -------------------------------------------------------------------------
+# REMOVED: openai.api_key = OPENAI_API_KEY
+# Instead, we rely on call_gpt_4_with_loadbalancer from config.py
+# so we can multi-account load-balance GPT-4 calls.
+# -------------------------------------------------------------------------
+from config import call_gpt_4_with_loadbalancer
+
+# NewsAPI initialization
 newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
 
 # Allowed file extensions
@@ -81,6 +86,7 @@ class Feedback(db.Model):
     score = db.Column(db.Integer, nullable=False)
     comments = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
     # Detailed feedback on each assumption
     revenue_growth_feedback = db.Column(db.String(20), nullable=True)
     tax_rate_feedback = db.Column(db.String(20), nullable=True)
@@ -118,10 +124,6 @@ def parse_json_from_reply(reply):
     return {}
 
 def summarize_feedback(sector, industry, sub_industry, scenario):
-    """
-    Summarizes all user feedback from the Feedback table for a given
-    (sector, industry, sub_industry, scenario).
-    """
     logger.debug(f"Summarizing feedback for {sector}, {industry}, {sub_industry}, {scenario}")
     try:
         feedback_entries = Feedback.query.join(AssumptionSet).filter(
@@ -169,9 +171,6 @@ def summarize_feedback(sector, industry, sub_industry, scenario):
         return "Error retrieving feedback."
 
 def validate_assumptions(adjusted_assumptions):
-    """
-    Ensures each assumption is in a valid range (e.g. 0-1) and sets to default if not.
-    """
     logger.debug(f"Validating assumptions: {adjusted_assumptions}")
     ranges = {
         'revenue_growth_rate': (0.0, 1.0, 0.05),
@@ -187,7 +186,6 @@ def validate_assumptions(adjusted_assumptions):
         if value is not None:
             try:
                 value = float(value)
-                # If user typed e.g. 5 for 5%, we might interpret that as 0.05
                 if value > 1.0:
                     value = value / 100.0
                 value = max(min_val, min(value, max_val))
@@ -200,21 +198,24 @@ def validate_assumptions(adjusted_assumptions):
     return validated_assumptions
 
 ################################################################
-#  OPENAI & NEWS API UTILS
+#  OPENAI & NEWS API UTILS (REPLACED WITH LOAD-BALANCER)
 ################################################################
 
 def call_openai_api(prompt):
+    """
+    Replaces direct openai.ChatCompletion.create calls with call_gpt_4_with_loadbalancer
+    so we rotate among multiple accounts.
+    """
     logger.debug(f"Calling OpenAI API with prompt: {prompt[:1000]}...")
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # Updated to GPT-4
+        messages = [
+            {"role": "system", "content": "You are an expert financial analyst."},
+            {"role": "user", "content": prompt}
+        ]
+        response = config.call_gpt_4_with_loadbalancer(
+            messages=messages,
             temperature=0.2,
-            # Optionally adjust max_tokens if needed, e.g.:
-            max_tokens=750,
-            messages=[
-                {"role": "system", "content": "You are an expert financial analyst."},
-                {"role": "user", "content": prompt}
-            ]
+            max_tokens=750
         )
         assistant_reply = response['choices'][0]['message']['content']
         logger.debug(f"Agent output: {assistant_reply[:500]}...")
@@ -224,14 +225,15 @@ def call_openai_api(prompt):
         return ""
 
 def call_openai_api_with_messages(messages):
+    """
+    Same load-balanced approach, but accepts 'messages' directly.
+    """
     logger.debug(f"Calling OpenAI API with messages: {messages}")
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # Updated to GPT-4
+        response = config.call_gpt_4_with_loadbalancer(
+            messages=messages,
             temperature=0.2,
-            # Optionally adjust max_tokens if needed, e.g.:
-            max_tokens=750,
-            messages=messages
+            max_tokens=750
         )
         assistant_reply = response['choices'][0]['message']['content']
         logger.debug(f"Assistant output: {assistant_reply[:500]}...")
@@ -243,6 +245,7 @@ def call_openai_api_with_messages(messages):
 ################################################################
 #  MAPPINGS & DATA EXTRACTION
 ################################################################
+import openai  # We'll keep import so references to openai.error exist, but not set api_key
 
 custom_mappings = {
     'Revenue': [
@@ -287,6 +290,9 @@ custom_mappings = {
 def normalize_string(s):
     return re.sub(r'[^a-zA-Z0-9]', '', s).lower()
 
+# get_field_mapping_via_openai, get_field_mappings, etc. remain as is,
+# but they now call 'call_openai_api' for GPT usage.
+
 def get_field_mapping_via_openai(field, existing_labels):
     logger.debug(f"Getting field mapping for {field} using OpenAI")
     prompt = f"""
@@ -312,7 +318,6 @@ def get_field_mappings(required_fields, existing_labels):
     existing_labels_normalized = {normalize_string(label): label for label in existing_labels}
     for field in required_fields:
         mapped = False
-        # Check if we have a custom mapping for known synonyms
         if field in custom_mappings:
             for alias in custom_mappings[field]:
                 alias_normalized = normalize_string(alias)
@@ -320,7 +325,6 @@ def get_field_mappings(required_fields, existing_labels):
                     field_mapping[field] = existing_labels_normalized[alias_normalized]
                     mapped = True
                     break
-        # If not found in custom, try direct or approximate match
         if not mapped:
             field_normalized = normalize_string(field)
             if field_normalized in existing_labels_normalized:
@@ -416,6 +420,7 @@ def extract_fields(data, required_fields):
 ################################################################
 #  FINANCIAL / ECONOMIC HELPER FUNCTIONS
 ################################################################
+import time
 
 def get_risk_free_rate():
     logger.debug("Fetching risk-free rate")
@@ -450,6 +455,8 @@ def calculate_mrp():
 ################################################################
 #  MULTI-AGENT ADJUSTMENTS
 ################################################################
+# All calls to openai are replaced with call_openai_api or call_openai_api_with_messages,
+# which route through your multi-account approach.
 
 def adjust_for_sector(sector):
     logger.debug(f"Adjusting for sector: {sector}")
@@ -553,17 +560,14 @@ As a financial analyst, provide financial assumptions for a '{scenario}' scenari
 
 def adjust_for_company(stock_ticker):
     logger.debug(f"Adjusting for company: {stock_ticker}")
-    company = yf.Ticker(stock_ticker)
-    info = company.info
-    company_name = info.get('longName', 'the company')
-    industry = info.get('industry', 'the industry')
-    business_summary = info.get('longBusinessSummary', '')
-
-    prompt = f"""
+    try:
+        company = yf.Ticker(stock_ticker)
+        info = company.info
+        company_name = info.get('longName', 'the company')
+        prompt = f"""
 As a financial analyst, analyze {company_name} ({stock_ticker})...
 """
-    assistant_reply = call_openai_api(prompt)
-    try:
+        assistant_reply = call_openai_api(prompt)
         cleaned_reply = clean_json(assistant_reply)
         cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
         json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
@@ -686,7 +690,6 @@ def adjust_based_on_historical_data(stock_ticker):
             logger.warning(f"Not enough revenue data to calculate growth rates for {stock_ticker}.")
             return {}
 
-        # average revenue growth
         revenue_growth_rates = revenue.pct_change().dropna()
         average_revenue_growth = revenue_growth_rates.mean()
 
@@ -905,11 +908,11 @@ def upload_files():
             return jsonify({'error': f'Invalid file type for {file_type}'}), 400
 
     data = {}
-    for file_type, file in files.items():
-        filename = secure_filename(file.filename)
+    for file_type, f in files.items():
+        filename = secure_filename(f.filename)
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         try:
-            file.save(file_path)
+            f.save(file_path)
             file_data = process_uploaded_file(file_path, file_type)
             if file_data is None:
                 return jsonify({'error': f'File processing failed or data invalid for {file_type}'}), 400
@@ -949,7 +952,6 @@ def calculate_intrinsic_value():
         combined_data = {**income_data, **balance_sheet_data, **cash_flow_data}
         logger.debug(f"Combined data from uploads: {combined_data}")
 
-        # Make sure we have the essential fields
         required_fields = [
             'Revenue',
             'Operating Expenses',
@@ -966,12 +968,10 @@ def calculate_intrinsic_value():
         initial_revenue = combined_data['Revenue']
         combined_data['NWC'] = combined_data['Current Assets'] - combined_data['Current Liabilities']
 
-        # 1) Let the multi-agent approach adjust assumptions
         final_assumptions, validation_reasoning, agent_confidence_scores = adjust_financial_variables(
             sector, industry, sub_industry, scenario, stock_ticker
         )
 
-        # 2) Ensure required keys are present
         required_keys = [
             'revenue_growth_rate',
             'tax_rate',
@@ -985,16 +985,15 @@ def calculate_intrinsic_value():
             logger.error(f"Adjusted assumptions missing keys: {missing_keys}")
             return jsonify({'error': f'Missing adjusted assumptions: {missing_keys}'}), 500
 
-        # 3) Override with user assumptions if present
+        # If user provided overrides, apply them
         final_assumptions.update(user_assumptions)
 
-        # 4) Derive percentages from the combined_data
+        # Derive the new percentages from combined_data
         final_assumptions['operating_expenses_pct'] = combined_data['Operating Expenses'] / initial_revenue
         final_assumptions['depreciation_pct'] = combined_data['Depreciation'] / initial_revenue
         final_assumptions['capex_pct'] = combined_data['Capital Expenditures'] / initial_revenue
         final_assumptions['nwc_pct'] = combined_data['NWC'] / initial_revenue
 
-        # 5) Shares outstanding (if not provided, fetch from YFinance)
         shares_outstanding = final_assumptions.get('shares_outstanding')
         if shares_outstanding is None or shares_outstanding <= 0:
             shares_outstanding = get_shares_outstanding(stock_ticker)
@@ -1006,7 +1005,6 @@ def calculate_intrinsic_value():
 
         logger.debug(f"Final assumptions passed to DCFModel: {final_assumptions}")
 
-        # 6) Save to DB: Create a new AssumptionSet row
         assumption_set = AssumptionSet(
             sector=sector,
             industry=industry,
@@ -1023,14 +1021,12 @@ def calculate_intrinsic_value():
         db.session.add(assumption_set)
         db.session.commit()
 
-        # 7) Run the DCF Model
         results = {}
         model = DCFModel(combined_data, final_assumptions)
         model.run_model()
         model_results = model.get_results()
         results.update(model_results)
 
-        # 8) Add context data for return
         results['adjusted_assumptions'] = final_assumptions
         results['validation_reasoning'] = validation_reasoning
         results['agent_confidence_scores'] = agent_confidence_scores
@@ -1091,3 +1087,4 @@ def receive_feedback():
         db.session.rollback()
         logger.exception("Error saving feedback")
         return jsonify({'error': 'Failed to save feedback.'}), 500
+

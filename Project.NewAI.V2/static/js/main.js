@@ -7,7 +7,7 @@
 //   - Default => .state-default
 //   - Collapsed => .state-collapsed
 //   - Enlarged => .state-enlarged
-// 
+//
 // Additionally, it uses a 3-tier grid layout (top, middle, bottom rows)
 // for the expanded tile. The tile in the middle row is .expanded + .enlarged,
 // while the others become minimized + .collapsed.
@@ -68,7 +68,6 @@ function initDashboard() {
       // short snippet
       const dcfValueDefault = document.querySelector('#financial-analysis-container .state-default .key-metric');
       const dcfValueCollapsed = document.querySelector('#financial-analysis-container .state-collapsed .tiny-data');
-      // e.g. $127.50 if not found in data
       const dcfStr = data.dcf_intrinsic_value ? `$${data.dcf_intrinsic_value.toFixed(2)}` : '$127.50';
       if (dcfValueDefault) dcfValueDefault.textContent = dcfStr;
       if (dcfValueCollapsed) dcfValueCollapsed.textContent = dcfStr;
@@ -93,18 +92,14 @@ function initDashboard() {
   fetch('/system1/sentiment_data')
     .then(res => res.json())
     .then(data => {
-      // default + collapsed
       const defaultKey = document.querySelector('#sentiment-analysis-container .state-default .key-metric');
       const collapsedKey = document.querySelector('#sentiment-analysis-container .state-collapsed .tiny-data');
-      // Suppose data has a .composite_score or fallback
       const compositeScore = (data.composite_score !== undefined) ? data.composite_score : '+0.25';
       if (defaultKey) defaultKey.textContent = compositeScore;
       if (collapsedKey) collapsedKey.textContent = compositeScore;
 
-      // enlarged
       const fullDiv = document.getElementById('sentiment-analysis-full');
       if (fullDiv) {
-        // Using the existing data for each sentiment
         const earnings = data.earnings_call_sentiment;
         const industry = data.industry_report_sentiment;
         const economic = data.economic_report_sentiment;
@@ -125,20 +120,46 @@ function initDashboard() {
   fetch('/system1/data_visualizations_data')
     .then(res => res.json())
     .then(data => {
-      // default + collapsed
       const defaultKey = document.querySelector('#data-visualizations-container .state-default .key-metric');
       const collapsedKey = document.querySelector('#data-visualizations-container .state-collapsed .tiny-data');
-      // e.g. data.latest_revenue or fallback
       if (defaultKey) defaultKey.textContent = data.latest_revenue || 'Q2: $50.5B';
       if (collapsedKey) collapsedKey.textContent = data.latest_revenue || '$50.5B';
 
-      // enlarged
       const fullDiv = document.getElementById('data-visualizations-full');
       if (fullDiv) {
-        fullDiv.innerHTML = `
-          <p>Data for visualizations loaded. Below is raw JSON:</p>
-          <pre>${JSON.stringify(data, null, 2)}</pre>
-        `;
+        // Example: Chart.js usage
+        fullDiv.innerHTML = '';
+
+        const chartCanvas = document.createElement('canvas');
+        chartCanvas.id = 'revenueChart';
+        chartCanvas.width = 400;
+        chartCanvas.height = 250;
+        fullDiv.appendChild(chartCanvas);
+
+        const ctx = chartCanvas.getContext('2d');
+        const sampleLabels = (data.revenue_over_time || []).map(item => item.date || 'Unknown');
+        const sampleValues = (data.revenue_over_time || []).map(item => item.value || 0);
+
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: sampleLabels.length ? sampleLabels : ['Q1','Q2','Q3','Q4'],
+            datasets: [{
+              label: 'Revenue',
+              data: sampleValues.length ? sampleValues : [50, 60, 55, 70],
+              backgroundColor: 'rgba(75, 192, 192, 0.4)'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
       }
     })
     .catch(err => {
@@ -151,18 +172,20 @@ function initDashboard() {
   fetch('/system1/final_recommendation')
     .then(res => res.json())
     .then(data => {
-      // default + collapsed
       const recDefault = document.querySelector('#final-recommendation-container .state-default .key-metric');
       const recCollapsed = document.querySelector('#final-recommendation-container .state-collapsed .tiny-data');
       if (recDefault) recDefault.textContent = data.recommendation || 'BUY';
       if (recCollapsed) recCollapsed.textContent = data.recommendation || 'BUY';
 
-      // enlarged
       const fullDiv = document.getElementById('final-recommendation-full');
       if (fullDiv) {
         fullDiv.innerHTML = `
           <p>The weighted total score: ${data.total_score}</p>
           <p>Final Recommendation: ${data.recommendation}</p>
+          <p><strong>Rationale:</strong> ${data.rationale || 'No rationale provided.'}</p>
+          <ul>
+            ${(data.key_factors || []).map(f => `<li>${f}</li>`).join('')}
+          </ul>
         `;
       }
     })
@@ -172,13 +195,14 @@ function initDashboard() {
 
   // -------------------------------------------------------------------------
   // (F) Chatbot
-  // Typically, the Chatbot tile is interactive, so no big data fetch needed.
-  // If you wanted to show a snippet from the server, you could do so here.
+  // -------------------------------------------------------------------------
+  // Typically, no big data fetch needed. If you want a snippet from the server,
+  // you could do so here.
 
   // -------------------------------------------------------------------------
   // (G) Scenario Analysis
-  // The user triggers scenario calculations manually, so no default fetch needed.
-  // You can do it if you want a baseline scenario, but not mandatory.
+  // -------------------------------------------------------------------------
+  // The user triggers scenario calculations manually.
 
   // -------------------------------------------------------------------------
   // (H) General Company Info
@@ -188,24 +212,25 @@ function initDashboard() {
       if (res.ok) return res.json();
       throw new Error('Failed to fetch company info');
     })
-    .then(data => {
-      // default + collapsed
+    .then(basicData => {
       const defaultKey = document.querySelector('#company-info-container .state-default .key-metric');
       const collapsedKey = document.querySelector('#company-info-container .state-collapsed .tiny-data');
-      if (defaultKey) defaultKey.textContent = `Sector: ${data.sector || 'Tech'}`;
-      if (collapsedKey) collapsedKey.textContent = data.sector || 'Tech';
+      if (defaultKey) defaultKey.textContent = `Sector: ${basicData.sector || 'Tech'}`;
+      if (collapsedKey) collapsedKey.textContent = basicData.sector || 'Tech';
 
-      // enlarged
+      // Return second fetch for GPT-based analysis
+      return fetch('/system1/company_info_details');
+    })
+    .then(res => {
+      if (res.ok) return res.json();
+      throw new Error('Failed to fetch GPT-based company info');
+    })
+    .then(gptData => {
       const fullDiv = document.getElementById('company-info-full');
       if (fullDiv) {
         fullDiv.innerHTML = `
-          <p>C-suite Executives: ${data.c_suite_executives}</p>
-          <p>Shares Outstanding: ${data.shares_outstanding}</p>
-          <p>WACC: ${data.wacc}</p>
-          <p>P/E: ${data.pe_ratio}</p>
-          <p>P/S: ${data.ps_ratio}</p>
-          <p>Sector, Industry, Sub-industry: 
-             ${data.sector}, ${data.industry}, ${data.sub_industry}</p>
+          <p><strong>C-suite Executives:</strong> ${gptData.c_suite || 'N/A'}</p>
+          <p><strong>GPT-based Analysis:</strong> ${gptData.analysis || 'No analysis available.'}</p>
         `;
       }
     })
@@ -336,23 +361,29 @@ function initThreeRowTileLayout() {
     'tile-customize-dashboard'
   ];
 
-  // On page load, reset each tile to top-row (default state)
-  tileOrder.forEach(id => {
-    const t = document.getElementById(id);
-    if (!t) return;
-    t.classList.remove(
-      'middle-row',
-      'bottom-row',
-      'expanded',
-      'minimized',
-      'hidden',
-      'collapsed',
-      'enlarged',
-      'top-row'
-    );
-    t.classList.add('top-row');
-  });
-  if (customizeTile) customizeTile.classList.add('hidden');
+  // -------------------------------------------------------------------------
+  // COMMENTING OUT this forced top-row assignment so all 8 tiles
+  // appear in the natural 2×4 arrangement:
+  //
+  // tileOrder.forEach(id => {
+  //   const t = document.getElementById(id);
+  //   if (!t) return;
+  //   t.classList.remove(
+  //     'middle-row',
+  //     'bottom-row',
+  //     'expanded',
+  //     'minimized',
+  //     'hidden',
+  //     'collapsed',
+  //     'enlarged',
+  //     'top-row'
+  //   );
+  //   t.classList.add('top-row');
+  // });
+  // if (customizeTile) customizeTile.classList.add('hidden');
+  //
+  // By removing this forced setup, the HTML + CSS
+  // automatically displays 2 rows × 4 columns.
 
   let currentlyExpandedTileId = null;
 
@@ -372,7 +403,7 @@ function initThreeRowTileLayout() {
   function expandTileInMiddle(tileId) {
     // If user clicks the tile that's already expanded => collapse
     if (currentlyExpandedTileId === tileId) {
-      collapseAllToTop();
+      collapseAllToDefault();
       currentlyExpandedTileId = null;
       return;
     }
@@ -438,11 +469,13 @@ function initThreeRowTileLayout() {
     if (customizeTile) customizeTile.classList.remove('hidden');
   }
 
-  function collapseAllToTop() {
-    // Remove 3-row layout from grid => back to 2 rows
+  function collapseAllToDefault() {
+    // Remove 3-row layout from grid => back to default 2×4 layout
     const grid = document.getElementById('dashboardGrid');
     grid.classList.remove('expanded-layout');
 
+    // Optionally, you can remove .top-row, .bottom-row, etc., letting
+    // the natural 2×4 state reappear.
     tileOrder.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;
@@ -453,10 +486,11 @@ function initThreeRowTileLayout() {
         'hidden',
         'minimized',
         'collapsed',
-        'enlarged'
+        'enlarged',
+        'top-row'
       );
-      t.classList.add('top-row');
     });
     if (customizeTile) customizeTile.classList.add('hidden');
   }
 }
+

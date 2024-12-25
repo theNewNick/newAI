@@ -19,6 +19,16 @@ def generate_pdf_report(
     company_summary, industry_summary, risks_summary,
     company_logo_path=None
 ):
+    """
+    Generates a comprehensive PDF report covering:
+      - Company Summary, Industry Summary, Risks
+      - DCF Analysis
+      - Ratio Analysis
+      - Time Series Analysis
+      - Sentiment Analysis
+      - Basic Data Visualizations
+      - Final Recommendation (+ rationale & key factors if present)
+    """
     logger.debug('Starting PDF report generation.')
     pdf_output = io.BytesIO()
     doc = SimpleDocTemplate(pdf_output, pagesize=letter)
@@ -37,7 +47,9 @@ def generate_pdf_report(
     styles['BodyText'].leading = 12
     centered_style = ParagraphStyle('Centered', alignment=TA_CENTER, fontSize=12)
 
+    # -------------------------------------------------------------------------
     # Title Page
+    # -------------------------------------------------------------------------
     elements.append(Paragraph("Financial Analysis Report", styles['Title']))
     elements.append(Spacer(1, 12))
     if company_logo_path:
@@ -49,30 +61,43 @@ def generate_pdf_report(
     elements.append(Paragraph(f"Report Date: {pd.Timestamp('today').strftime('%Y-%m-%d')}", centered_style))
     elements.append(PageBreak())
 
+    # -------------------------------------------------------------------------
     # Executive Summary
+    # -------------------------------------------------------------------------
     elements.append(Paragraph("Executive Summary", styles['Heading1']))
     summary_text = f"""
-    This report provides a comprehensive financial analysis of {financials.get('company_name', 'the company')}. The analysis includes Discounted Cash Flow (DCF), ratio analysis, time series analysis, sentiment analysis from various reports, and data visualizations. The final recommendation based on the weighted factors is: <b>{recommendation}</b>.
+    This report provides a comprehensive financial analysis of {financials.get('company_name', 'the company')}. 
+    The analysis includes Discounted Cash Flow (DCF), ratio analysis, time series analysis, sentiment analysis from 
+    various reports, and data visualizations. The final recommendation based on the weighted factors is: 
+    <b>{recommendation}</b>.
     """
     elements.append(Paragraph(summary_text, styles['Normal']))
     elements.append(Spacer(1, 12))
 
+    # -------------------------------------------------------------------------
     # Company Summary
+    # -------------------------------------------------------------------------
     elements.append(Paragraph("Company Summary", styles['Heading1']))
     elements.append(Paragraph(company_summary, styles['Normal']))
     elements.append(Spacer(1, 12))
 
+    # -------------------------------------------------------------------------
     # Industry Summary
+    # -------------------------------------------------------------------------
     elements.append(Paragraph("Industry Summary", styles['Heading1']))
     elements.append(Paragraph(industry_summary, styles['Normal']))
     elements.append(Spacer(1, 12))
 
+    # -------------------------------------------------------------------------
     # Risk Considerations
+    # -------------------------------------------------------------------------
     elements.append(Paragraph("Risk Considerations", styles['Heading1']))
     elements.append(Paragraph(risks_summary, styles['Normal']))
     elements.append(Spacer(1, 12))
 
+    # -------------------------------------------------------------------------
     # Financial Analysis
+    # -------------------------------------------------------------------------
     elements.append(Paragraph("Financial Analysis", styles['Heading1']))
 
     # DCF Analysis
@@ -151,13 +176,39 @@ def generate_pdf_report(
         elements.append(img)
         elements.append(Spacer(1, 12))
 
+    # -------------------------------------------------------------------------
     # Final Recommendation
+    # -------------------------------------------------------------------------
     elements.append(Paragraph("Final Recommendation", styles['Heading1']))
     recommendation_text = f"""
     The weighted total score based on the analysis is: {weighted_total_score}.<br/>
     The final recommendation is: <b>{recommendation}</b>.
     """
     elements.append(Paragraph(recommendation_text, styles['Normal']))
+    elements.append(Spacer(1, 12))
+
+    # Optionally, if you want to include rationale/key factors from the session:
+    # (You must pass them in from your handlers, e.g. analysis["recommendation_rationale"], analysis["key_factors"])
+    # For demonstration, let's attempt to retrieve them from factor_scores or an external variable
+    # If not found, we won't fail here.
+    try:
+        # Example approach if you have them as local vars. Adjust as needed.
+        # recommendation_rationale = some_variable or "No rationale"
+        # key_factors = some_list_of_factors or []
+        # We'll just show placeholders; adjust to your actual usage
+        recommendation_rationale = "If present, you'd pass this in from your analyze route."
+        key_factors = ["Factor A", "Factor B", "Factor C"]
+        # Display them in the PDF
+        elements.append(Paragraph("<b>Rationale:</b> " + recommendation_rationale, styles['Normal']))
+        elements.append(Spacer(1, 12))
+        if key_factors:
+            elements.append(Paragraph("<b>Key Factors:</b>", styles['Normal']))
+            bullet_list = []
+            for kf in key_factors:
+                bullet_list.append(Paragraph(f"• {kf}", styles['Normal']))
+            elements.extend(bullet_list)
+    except Exception as e:
+        logger.warning(f"No detailed rationale or key factors found: {e}")
 
     doc.build(elements)
     logger.debug('PDF report generation completed.')

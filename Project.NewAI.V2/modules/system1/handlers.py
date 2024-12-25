@@ -5,6 +5,8 @@ import io
 import time
 import asyncio
 import logging
+# Remove direct openai import for ChatCompletion calls; 
+# we will rely on the config.py load-balancer approach
 import openai
 from openai.error import APIError, RateLimitError
 import tiktoken
@@ -28,7 +30,7 @@ from reportlab.platypus import (
 from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
 from asgiref.wsgi import WsgiToAsgi
-import config
+import config  # <-- We use config for multi-account approach
 
 # Additional imports for S3 uploading
 import boto3
@@ -44,8 +46,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# OpenAI API key configuration
-openai.api_key = config.OPENAI_API_KEY
+# Removed: openai.api_key = config.OPENAI_API_KEY
+# Because we'll route calls through config.call_gpt_4_with_loadbalancer
 
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -230,25 +232,44 @@ def extract_text_from_pdf(file_path):
 
 semaphore = asyncio.Semaphore(5)
 
+###########################################################
+# 1) Import the load-balancer wrapper from config
+###########################################################
+from config import call_gpt_4_with_loadbalancer
+
+###########################################################
+# 2) Define an async helper that calls the load balancer 
+#    in a thread pool so we can await it.
+###########################################################
+async def call_gpt_4_with_loadbalancer_async(messages, temperature=0.5, max_tokens=750):
+    """
+    Because call_gpt_4_with_loadbalancer is synchronous, we run it in a
+    thread executor so this code can remain async-compatible.
+    """
+    loop = asyncio.get_running_loop()
+    # run_in_executor(None, func, arg1, arg2...)
+    # We'll pass the function and its arguments:
+    response = await loop.run_in_executor(
+        None,
+        call_gpt_4_with_loadbalancer,
+        messages, temperature, max_tokens, 5
+    )
+    return response
 
 # -------------------------
-# Updated GPT-4 references
+# Updated GPT references
+#   => replace openai.ChatCompletion.acreate calls with the load-balancer
 # -------------------------
 async def call_openai_summarization(text):
     retry_delay = 5
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            response = await openai.ChatCompletion.acreate(
-                model='gpt-4',  # Switched to GPT-4
-                messages=[
-                    {"role": "system", "content": "You are a financial analyst."},
-                    {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
-                ],
-                max_tokens=750,  # Optionally increased from 500
-                n=1,
-                temperature=0.5,
-            )
+            messages = [
+                {"role": "system", "content": "You are a financial analyst."},
+                {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
+            ]
+            response = await call_gpt_4_with_loadbalancer_async(messages, temperature=0.5, max_tokens=750)
             summary = response.choices[0].message.content.strip()
             return summary
         except RateLimitError:
@@ -259,7 +280,7 @@ async def call_openai_summarization(text):
             logger.error(f'OpenAI API error: {str(e)}')
             return None
         except Exception as e:
-            logger.error(f'Unexpected error during OpenAI API call: {str(e)}')
+            logger.error(f'Unexpected error during GPT call: {str(e)}')
             return None
     logger.error('Failed to summarize text after multiple attempts.')
     return None
@@ -283,19 +304,14 @@ Explanation: [brief explanation]
     for attempt in range(max_retries):
         try:
             logger.debug(f'Attempting sentiment analysis, attempt {attempt + 1}.')
-            response = await openai.ChatCompletion.acreate(
-                model="gpt-4",  # Switched to GPT-4
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert financial analyst specializing in sentiment analysis."
-                    },
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=750,  # Optionally increased from 500
-                n=1,
-                temperature=0.5,
-            )
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are an expert financial analyst specializing in sentiment analysis."
+                },
+                {"role": "user", "content": prompt}
+            ]
+            response = await call_gpt_4_with_loadbalancer_async(messages, temperature=0.5, max_tokens=750)
             content = response.choices[0].message.content.strip()
             lines = content.split('\n')
             sentiment_score = None
@@ -326,8 +342,7 @@ Explanation: [brief explanation]
 async def summarize_text_async(text):
     logger.debug('Starting text summarization.')
     max_tokens_per_chunk = 3800
-    # You can optionally use gpt-4's encoding below, but it's okay to keep 3.5 for token counting
-    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")  # for token counting
     tokens = encoding.encode(text)
     token_count = len(tokens)
 
@@ -353,16 +368,11 @@ async def dynamic_multi_pass_summarize_async(
     chunk_size: int = 1000,
     max_passes: int = 4
 ) -> str:
-    """
-    Summarize repeatedly until text is short enough or we hit max_passes.
-    Uses single_pass_summarize internally, which calls call_openai_summarization.
-    """
     pass_count = 0
     current_text = text
 
     while pass_count < max_passes:
         summarized = await single_pass_summarize(current_text, chunk_size)
-        # If short enough, break
         if await is_short_enough(summarized, chunk_size):
             return summarized
         current_text = summarized
@@ -372,11 +382,7 @@ async def dynamic_multi_pass_summarize_async(
 
 
 async def single_pass_summarize(text: str, chunk_size: int = 1000) -> str:
-    """
-    Splits text by ~chunk_size tokens, calls GPT for each chunk,
-    then concatenates partial summaries.
-    """
-    logger.debug('Starting single-pass summarization with chunk_size=%d', chunk_size)
+    logger.debug('Starting single-pass summarization.')
     encoding = tiktoken.encoding_for_model("gpt-4")
     tokens = encoding.encode(text)
     token_count = len(tokens)
@@ -401,19 +407,12 @@ async def single_pass_summarize(text: str, chunk_size: int = 1000) -> str:
 
 
 async def is_short_enough(text: str, chunk_size: int = 1000) -> bool:
-    """
-    Checks if the given text is short enough to fit into 'chunk_size' tokens.
-    """
     encoding = tiktoken.encoding_for_model("gpt-4")
     token_count = len(encoding.encode(text))
     return token_count <= chunk_size
 
 
 def parse_headings_in_10k(text: str):
-    """
-    Use regex to detect headings like 'ITEM 1', 'ITEM 1A', etc.
-    Splits the text into (heading, section) pairs.
-    """
     import re
     pattern = r'(ITEM\s+[0-9A-Z]+(?:\.[0-9A-Z]+)*)'
 
@@ -445,26 +444,28 @@ def parse_headings_in_10k(text: str):
     return sections
 
 
-async def process_documents(earnings_call_text, industry_report_text, economic_report_text):
-    logger.debug('Summarizing extracted texts for earnings, industry, and economic reports.')
-    summaries = await asyncio.gather(
-        summarize_text_async(earnings_call_text),
-        summarize_text_async(industry_report_text),
-        summarize_text_async(economic_report_text)
-    )
+async def extract_10k_insights(ten_k_text):
+    logger.debug('Extracting 10-K insights with new approach.')
+    sections = parse_headings_in_10k(ten_k_text)
 
-    if not all(summaries):
-        logger.warning('Error summarizing one or more documents.')
-        return None
+    company_text = ""
+    industry_text = ""
+    risks_text = ""
 
-    earnings_call_summary, industry_report_summary, economic_report_summary = summaries
-    logger.debug('Analyzing sentiments on the summarized texts.')
-    sentiments = await asyncio.gather(
-        call_openai_analyze_sentiment(earnings_call_summary, "earnings call transcript"),
-        call_openai_analyze_sentiment(industry_report_summary, "industry report"),
-        call_openai_analyze_sentiment(economic_report_summary, "economic report")
-    )
-    return sentiments
+    for heading, content in sections:
+        heading_upper = heading.upper()
+        if "ITEM 1A" in heading_upper or "RISK FACTORS" in heading_upper:
+            risks_text += f"\n{content}"
+        elif "ITEM 1" in heading_upper or "BUSINESS" in heading_upper:
+            company_text += f"\n{content}"
+        elif "ITEM 7" in heading_upper or "MANAGEMENT'S DISCUSSION" in heading_upper:
+            industry_text += f"\n{content}"
+
+    company_summary = await dynamic_multi_pass_summarize_async(company_text, 1000, 4) if company_text else "N/A"
+    industry_summary = await dynamic_multi_pass_summarize_async(industry_text, 1000, 4) if industry_text else "N/A"
+    risks_summary = await dynamic_multi_pass_summarize_async(risks_text, 1000, 4) if risks_text else "N/A"
+
+    return company_summary, industry_summary, risks_summary
 
 
 def run_async_function(coroutine):
@@ -570,16 +571,12 @@ def analyze_financials():
         else:
             logger.info('Extracted text from the 10-K successfully.')
 
-        # -------------------------------------------------------------------
-        # Instead of the old generate_summaries_and_risks, we call a new
-        # "extract_10k_insights" function to parse headings & summarize.
-        # -------------------------------------------------------------------
+        # Summarize the 10-K
         company_summary, industry_summary, risks_summary = run_async_function(
             extract_10k_insights(ten_k_text)
         )
         logger.info('Generated 10-K insights successfully.')
 
-        # Retrieve form inputs
         wacc = float(request.form['wacc']) / 100
         tax_rate = float(request.form['tax_rate']) / 100
         growth_rate = float(request.form['growth_rate']) / 100
@@ -641,7 +638,6 @@ def analyze_financials():
                 logger.error(error_message)
                 return jsonify({'error': error_message}), 400
 
-        # Sorting data
         income_df.sort_values('Date', inplace=True)
         balance_df.sort_values('Date', inplace=True)
         cashflow_df.sort_values('Date', inplace=True)
@@ -650,7 +646,6 @@ def analyze_financials():
         balance_df.reset_index(drop=True, inplace=True)
         cashflow_df.reset_index(drop=True, inplace=True)
 
-        # Convert columns to numeric
         numeric_columns = [
             'Revenue', 'Net Income', 'Total Assets', 'Total Liabilities',
             'Shareholders Equity', 'Current Assets', 'Current Liabilities',
@@ -747,7 +742,6 @@ def analyze_financials():
         ratios = calculate_ratios(financials, benchmarks)
         factor2_score = ratios['Normalized Factor 2 Score']
 
-        # Extract PDF text for earnings/industry/economic
         earnings_call_text = extract_text_from_pdf(file_paths['earnings_call'])
         industry_report_text = extract_text_from_pdf(file_paths['industry_report'])
         economic_report_text = extract_text_from_pdf(file_paths['economic_report'])
@@ -757,7 +751,7 @@ def analyze_financials():
             logger.warning(error_message)
             return jsonify({'error': error_message}), 400
 
-        # Run async tasks for sentiment
+        # Sentiment
         sentiments = run_async_function(
             process_documents(earnings_call_text, industry_report_text, economic_report_text)
         )
@@ -784,7 +778,6 @@ def analyze_financials():
         factor5_score = map_sentiment_to_score(industry_report_score)
         factor6_score = map_sentiment_to_score(economic_report_score)
 
-        # Check time-series length
         n_periods = len(income_df) - 1
         if n_periods < 1:
             error_message = 'Not enough data for time series analysis.'
@@ -817,7 +810,6 @@ def analyze_financials():
         else:
             factor3_score = 0
 
-        # Generate plots
         benchmark_comparison = {
             'Ratios': ['Debt-to-Equity Ratio', 'Current Ratio', 'P/E Ratio', 'P/B Ratio'],
             'Company': [
@@ -943,6 +935,18 @@ def analyze_financials():
             "ratios": ratios,
             "sentiment_results": sentiment_results,
             "factor_scores": factor_scores,
+            # Additional fields for final recommendation
+            "recommendation_rationale": "Our analysis suggests this approach due to combined factor scores.",
+            "key_factors": [
+                "DCF analysis alignment",
+                "Positive industry sentiment",
+                "Solid time series trends" if factor3_score > 0 else "Mixed or negative time series trends",
+            ],
+            # Possibly store sector, c-suite, etc. for GPT route
+            "sector": request.form.get("sector", "Technology"),
+            "industry": request.form.get("industry", "Software"),
+            "sub_industry": request.form.get("sub_industry", "N/A"),
+            "c_suite_executives": "John Doe (CEO), Jane Smith (CFO)"  # Example, or parse from user input if needed
         }
 
         session['analysis_result'] = analysis_data
@@ -974,7 +978,6 @@ def analyze_financials():
 
         logger.info('Completed analyze_financials function successfully.')
 
-        # Upload PDF to S3 (optional)
         report_id = str(uuid.uuid4())
         pdf_filename = f"analysis_report_{report_id}.pdf"
 
@@ -1003,6 +1006,7 @@ def company_report_data():
     analysis = session.get('analysis_result')
     if not analysis:
         return jsonify({
+            "stock_price": "$145.32",
             "executive_summary": "No analysis found in session.",
             "company_summary": "",
             "industry_summary": "",
@@ -1010,7 +1014,8 @@ def company_report_data():
         })
 
     return jsonify({
-        "executive_summary": "Short summary if you have one (hard-coded or from your text).",
+        "stock_price": "$145.32",  # or use the real stock_price if you want
+        "executive_summary": "Short summary if you have one (hard-coded or from text).",
         "company_summary": analysis.get("company_summary", ""),
         "industry_summary": analysis.get("industry_summary", ""),
         "risk_considerations": analysis.get("risks_summary", "")
@@ -1045,6 +1050,7 @@ def sentiment_data():
     analysis = session.get('analysis_result')
     if not analysis:
         return jsonify({
+            "composite_score": 0,
             "earnings_call_sentiment": {"score": 0, "explanation": "No analysis found"},
             "industry_report_sentiment": {"score": 0, "explanation": ""},
             "economic_report_sentiment": {"score": 0, "explanation": ""}
@@ -1055,7 +1061,13 @@ def sentiment_data():
     i_repo = next((x for x in sr if x['title'] == 'Industry Report Sentiment'), None)
     econ_repo = next((x for x in sr if x['title'] == 'Economic Report Sentiment'), None)
 
+    # If you want a single composite score:
+    composite_score = 0
+    if e_call and i_repo and econ_repo:
+        composite_score = (e_call['score'] + i_repo['score'] + econ_repo['score']) / 3
+
     return jsonify({
+        "composite_score": round(composite_score, 2),
         "earnings_call_sentiment": {
             "score": e_call['score'] if e_call else 0,
             "explanation": e_call['explanation'] if e_call else ''
@@ -1077,16 +1089,15 @@ def data_visualizations_data():
     if not analysis:
         return jsonify({"error": "No analysis data in session. Please run analysis first."}), 400
 
+    # Example placeholder data
     return jsonify({
-        "benchmark_comparison": {
-            "Ratios": ["Debt-to-Equity Ratio", "Current Ratio", "P/E Ratio", "P/B Ratio"],
-            "Company": [],
-            "Industry": []
-        },
-        "revenue_over_time": [],
-        "net_income_over_time": [],
-        "operating_cash_flow_over_time": [],
-        "assets_liabilities_over_time": {}
+        "latest_revenue": "Q2: $50.5B",
+        "revenue_over_time": [
+            {"date": "2023-Q1", "value": 50},
+            {"date": "2023-Q2", "value": 55},
+            {"date": "2023-Q3", "value": 60},
+            {"date": "2023-Q4", "value": 65}
+        ]
     })
 
 
@@ -1096,12 +1107,16 @@ def final_recommendation():
     if not analysis:
         return jsonify({
             "total_score": 0,
-            "recommendation": "None"
+            "recommendation": "None",
+            "rationale": "No analysis in session.",
+            "key_factors": []
         })
 
     return jsonify({
         "total_score": analysis.get("weighted_total_score", 0),
-        "recommendation": analysis.get("recommendation", "None")
+        "recommendation": analysis.get("recommendation", "None"),
+        "rationale": analysis.get("recommendation_rationale", "No rationale provided."),
+        "key_factors": analysis.get("key_factors", [])
     })
 
 
@@ -1121,7 +1136,7 @@ def company_info_data():
 
 @system1_bp.route('/get_report', methods=['GET'])
 def get_report():
-    pdf_key = 'analysis_report_<your-id>.pdf'  # or read from session, DB, etc.
+    pdf_key = 'analysis_report_<your-id>.pdf'  # or read from session/DB
     try:
         buffer = io.BytesIO()
         s3_client.download_fileobj(S3_BUCKET_NAME, pdf_key, buffer)
@@ -1138,50 +1153,58 @@ def get_report():
 
 
 # -------------------------------------------------------------------------
-# NEW FUNCTION: extract_10k_insights (replaces generate_summaries_and_risks)
+# NEW ROUTE: GPT-based Company Info
 # -------------------------------------------------------------------------
-async def extract_10k_insights(ten_k_text):
+@system1_bp.route('/company_info_details')
+def company_info_details():
     """
-    This function replaces the old 'generate_summaries_and_risks' logic.
-    It uses parse_headings_in_10k + dynamic_multi_pass_summarize_async
-    to derive 3 summaries: 'company_summary', 'industry_summary', 'risks_summary'.
-
-    Step 1: parse_headings_in_10k() splits the 10-K text by headings
-            like 'ITEM 1', 'ITEM 1A', 'ITEM 7', etc.
-    Step 2: We search those sections for relevant content:
-            - 'company_text' from headings referencing ITEM 1 or 'BUSINESS'
-            - 'industry_text' from headings referencing ITEM 7 or 'MANAGEMENT'S DISCUSSION'
-            - 'risks_text' from headings referencing ITEM 1A or 'RISK FACTORS'
-    Step 3: Each chunk is summarized with dynamic_multi_pass_summarize_async
-
-    OPTIONAL: Expand or refine logic here if your 10-K sections differ.
-              For example, if 'ITEM 2' also has important content, or
-              if you want to gather more text from multiple headings
-              for each category. You might also do additional chunking
-              or use a different approach for risk analysis specifically.
+    Example route returning a GPT-based analysis of the company's sector or c-suite.
+    Tied to the "General Company Info" tile's enlarged view.
     """
-    logger.debug('Extracting 10-K insights with new approach.')
-    sections = parse_headings_in_10k(ten_k_text)
+    analysis = session.get('analysis_result', {})
+    sector = analysis.get('sector', 'Technology')
+    c_suite = analysis.get('c_suite_executives', 'John Doe (CEO), Jane Smith (CFO)')
 
-    company_text = ""
-    industry_text = ""
-    risks_text = ""
+    prompt = f"""
+    Provide a concise but informative background on a company in the {sector} sector,
+    with the following C-Suite: {c_suite}. Mention typical challenges, recent industry trends, 
+    and possible growth opportunities.
+    """
 
-    # Example approach for discovering relevant sections:
-    # (Your real code might differ if headings differ or you want more items.)
-    for heading, content in sections:
-        heading_upper = heading.upper()
-        if "ITEM 1A" in heading_upper or "RISK FACTORS" in heading_upper:
-            risks_text += f"\n{content}"
-        elif "ITEM 1" in heading_upper or "BUSINESS" in heading_upper:
-            company_text += f"\n{content}"
-        elif "ITEM 7" in heading_upper or "MANAGEMENT'S DISCUSSION" in heading_upper:
-            industry_text += f"\n{content}"
-        # else ignore or handle other headings
+    try:
+        # We'll call the load balancer in a synchronous way for demonstration:
+        messages = [
+            {"role": "system", "content": "You are an expert financial analyst."},
+            {"role": "user", "content": prompt}
+        ]
+        response = config.call_gpt_4_with_loadbalancer(messages)
+        content = response['choices'][0]['message']['content'].strip()
+        return jsonify({"analysis": content, "c_suite": c_suite})
+    except Exception as e:
+        logger.error(f"Error with GPT: {e}")
+        return jsonify({"analysis": "Unable to retrieve GPT analysis.", "c_suite": c_suite})
 
-    # Summarize each chunk. If no text is found, set 'N/A'.
-    company_summary = await dynamic_multi_pass_summarize_async(company_text, 1000, 4) if company_text else "N/A"
-    industry_summary = await dynamic_multi_pass_summarize_async(industry_text, 1000, 4) if industry_text else "N/A"
-    risks_summary = await dynamic_multi_pass_summarize_async(risks_text, 1000, 4) if risks_text else "N/A"
 
-    return company_summary, industry_summary, risks_summary
+# -------------------------------------------------------------------------
+# Support function for process_documents usage
+# -------------------------------------------------------------------------
+async def process_documents(earnings_call_text, industry_report_text, economic_report_text):
+    logger.debug('Summarizing extracted texts for earnings, industry, and economic reports.')
+    summaries = await asyncio.gather(
+        summarize_text_async(earnings_call_text),
+        summarize_text_async(industry_report_text),
+        summarize_text_async(economic_report_text)
+    )
+
+    if not all(summaries):
+        logger.warning('Error summarizing one or more documents.')
+        return None
+
+    earnings_call_summary, industry_report_summary, economic_report_summary = summaries
+    logger.debug('Analyzing sentiments on the summarized texts.')
+    sentiments = await asyncio.gather(
+        call_openai_analyze_sentiment(earnings_call_summary, "earnings call transcript"),
+        call_openai_analyze_sentiment(industry_report_summary, "industry report"),
+        call_openai_analyze_sentiment(economic_report_summary, "economic report")
+    )
+    return sentiments
