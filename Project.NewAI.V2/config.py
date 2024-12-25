@@ -17,11 +17,15 @@ load_dotenv()
 OPENAI_API_KEY_1 = os.getenv('OPENAI_API_KEY_1', '')
 OPENAI_API_KEY_2 = os.getenv('OPENAI_API_KEY_2', '')
 OPENAI_API_KEY_3 = os.getenv('OPENAI_API_KEY_3', '')
+OPENAI_API_KEY_4 = os.getenv('OPENAI_API_KEY_4', '')
+OPENAI_API_KEY_5 = os.getenv('OPENAI_API_KEY_5', '')
 
 OPENAI_ACCOUNTS = [
     {'api_key': OPENAI_API_KEY_1},
     {'api_key': OPENAI_API_KEY_2},
     {'api_key': OPENAI_API_KEY_3},
+    {'api_key': OPENAI_API_KEY_4},
+    {'api_key': OPENAI_API_KEY_5},
 ]
 
 ###############################################

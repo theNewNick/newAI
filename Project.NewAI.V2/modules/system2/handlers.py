@@ -1,6 +1,9 @@
+# modules/system2/handlers.py
+
 import os
 import io
 import uuid
+import logging
 import boto3
 import tempfile
 import pdfplumber
@@ -19,11 +22,15 @@ import config  # <-- We now import config for multi-account approach
 # If you need session for cross-referencing user session or IDs:
 # from flask import session
 
+# Import Celery tasks (the newly created tasks.py) so we can queue them
+# This import statement assumes your Celery tasks are defined in modules/system2/tasks.py
+# or a similar location. Adjust the path to match your actual structure.
+from modules.system2.tasks import process_pdf_chunks_task
+
 # Define the blueprint here
 system2_bp = Blueprint('system2_bp', __name__, template_folder='templates')
 
 # Configure logging
-import logging
 LOG_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'system2.log')
 handler = RotatingFileHandler(LOG_FILE_PATH, maxBytes=100000, backupCount=1)
 handler.setLevel(logging.DEBUG)
@@ -39,9 +46,8 @@ logger.addHandler(handler)
 AWS_REGION = config.AWS_REGION
 S3_BUCKET_NAME = config.S3_BUCKET_NAME
 
-# We remove direct references to openai.api_key = config.OPENAI_API_KEY
-# Instead, calls to openai.Embedding.create() or openai.ChatCompletion.create() 
-# will go through the load-balancer functions in config.py
+# Instead of openai.api_key = config.OPENAI_API_KEY, calls to openai.Embedding.create() or
+# openai.ChatCompletion.create() will go through our load-balancer in config.py
 
 PINECONE_API_KEY = config.PINECONE_API_KEY
 PINECONE_ENVIRONMENT = config.PINECONE_ENVIRONMENT
@@ -69,11 +75,11 @@ except LookupError:
 
 
 ##################################################################################
-# If you created a wrapper for embeddings in config.py, e.g. call_openai_embedding_with_loadbalancer
+# If you created a wrapper for embeddings in config.py, e.g. call_openai_embedding_with_loadbalancer,
 # you would import it here. Example:
 ##################################################################################
 from config import call_openai_embedding_with_loadbalancer
-# If you also have a ChatCompletion wrapper, e.g. call_gpt_4_with_loadbalancer, 
+# If you also have a ChatCompletion wrapper, e.g. call_gpt_4_with_loadbalancer,
 # you could import that if you do any chat or summarization in system2.
 
 
@@ -110,7 +116,9 @@ def extract_text_from_pdf(pdf_path):
 def preprocess_text(text):
     logger.debug("Entering preprocess_text")
     try:
+        # Remove non-ASCII
         text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+        # Normalize whitespace
         text = re.sub(r'\s+', ' ', text).strip()
         logger.debug("Completed text preprocessing")
         return text
@@ -120,6 +128,9 @@ def preprocess_text(text):
 
 
 def split_text_into_chunks(text, max_tokens=500):
+    """
+    Pre-chunk large documents: break them into smaller pieces of ~500 tokens each.
+    """
     logger.debug("Entering split_text_into_chunks")
     try:
         sentences = sent_tokenize(text)
@@ -131,14 +142,17 @@ def split_text_into_chunks(text, max_tokens=500):
         for sentence in sentences:
             sentence_tokens = sentence.split()
             sentence_token_count = len(sentence_tokens)
+            # If adding this sentence won't exceed max_tokens, add it to the current chunk.
             if token_count + sentence_token_count <= max_tokens:
                 chunk += ' ' + sentence
                 token_count += sentence_token_count
             else:
+                # Start a new chunk
                 chunks.append(chunk.strip())
                 chunk = sentence
                 token_count = sentence_token_count
 
+        # Add the last chunk if non-empty
         if chunk:
             chunks.append(chunk.strip())
 
@@ -149,81 +163,15 @@ def split_text_into_chunks(text, max_tokens=500):
         raise
 
 
-def generate_embeddings(text_chunks, document_id):
-    """
-    This function no longer calls openai.Embedding.create() directly.
-    Instead, it uses the load-balancer approach from config.py 
-    (call_openai_embedding_with_loadbalancer) to distribute usage 
-    across your 3 separate OpenAI accounts.
-    """
-    logger.debug(f"Entering generate_embeddings for document_id: {document_id}")
-    data = []
-    batch_size = 100
-
-    for i in range(0, len(text_chunks), batch_size):
-        batch_chunks = text_chunks[i:i + batch_size]
-        try:
-            logger.debug(f"Generating embeddings for batch {i // batch_size + 1}")
-
-            # Instead of: response = openai.Embedding.create(input=batch_chunks, ...)
-            # We do the load-balancer call:
-            response = call_openai_embedding_with_loadbalancer(
-                input_list=batch_chunks,
-                model='text-embedding-ada-002'
-            )
-            logger.debug(f"OpenAI response: {response}")
-
-            if 'data' not in response or not response['data']:
-                logger.error("OpenAI response missing 'data' field or it's empty.")
-                raise ValueError("Invalid response from OpenAI API: 'data' field is missing or empty.")
-
-            for j, embedding_info in enumerate(response['data']):
-                embedding = embedding_info['embedding']
-                chunk = batch_chunks[j]
-                chunk_index = i + j
-                vector_id = f"{document_id}_chunk_{chunk_index}"
-                metadata = {
-                    'document_id': document_id,
-                    'chunk_index': chunk_index,
-                    'text': chunk
-                }
-                data.append((vector_id, embedding, metadata))
-                logger.debug(f"Generated embedding for chunk {chunk_index}")
-        except openai.error.OpenAIError as e:
-            logger.error(f"OpenAI API error: {e}", exc_info=True)
-            raise
-        except Exception as e:
-            logger.error(f"General exception in generate_embeddings: {e}", exc_info=True)
-            raise
-
-    logger.debug(f"Generated embeddings for {len(data)} chunks")
-    return data
-
-
-def upsert_embeddings(pinecone_index, data):
-    logger.debug("Entering upsert_embeddings")
-    try:
-        batch_size = 100
-        for i in range(0, len(data), batch_size):
-            to_upsert = data[i:i + batch_size]
-            vectors = [
-                {
-                    'id': vector_id,
-                    'values': embedding,
-                    'metadata': metadata
-                }
-                for vector_id, embedding, metadata in to_upsert
-            ]
-            pinecone_index.upsert(vectors=vectors)
-            logger.debug(f"Upserted batch {i // batch_size + 1} to Pinecone")
-        logger.debug(f"Upserted total of {len(data)} embeddings")
-    except Exception as e:
-        logger.error(f"Error upserting embeddings to Pinecone: {e}", exc_info=True)
-        raise
-
-
 @system2_bp.route('/upload', methods=['POST'])
 def upload_files():
+    """
+    This route now:
+      1) Accepts PDF uploads
+      2) Stores them in S3
+      3) Triggers a Celery task to parse, pre-chunk, and embed the PDF
+         in the background, preventing timeouts for large files.
+    """
     logger.debug("Accessed upload_files route")
     try:
         if 'files' not in request.files:
@@ -238,6 +186,7 @@ def upload_files():
             return jsonify({'error': 'No files selected for uploading'}), 400
 
         uploaded_files = []
+        task_ids = []
 
         for file in files:
             logger.debug(f"Processing file: {file.filename}")
@@ -272,45 +221,29 @@ def upload_files():
                 logger.error(f"Error uploading {filename} to S3: {e}", exc_info=True)
                 return jsonify({'error': f'File upload failed for {filename}'}), 500
 
-            # Step 2: Download from S3 locally, process text, embeddings, upsert
-            try:
-                download_path = os.path.join(tempfile.gettempdir(), unique_filename)
-                logger.debug(f"Downloading {unique_filename} from S3 to {download_path}")
-                download_pdf_from_s3(S3_BUCKET_NAME, unique_filename, download_path)
+            # Instead of parsing/embedding here, we now queue Celery task:
+            # The Celery task will:
+            #   1) Download PDF from S3
+            #   2) Extract + preprocess + chunk text
+            #   3) Generate embeddings for each chunk
+            #   4) Upsert to Pinecone
+            task_result = process_pdf_chunks_task.delay(
+                bucket_name=S3_BUCKET_NAME,
+                object_key=unique_filename,
+                pinecone_index_name=PINECONE_INDEX_NAME
+            )
+            task_ids.append(task_result.id)
 
-                logger.debug(f"Extracting text from {download_path}")
-                raw_text = extract_text_from_pdf(download_path)
+            uploaded_files.append({
+                'original_filename': filename,
+                'stored_filename': unique_filename
+            })
 
-                logger.debug("Preprocessing extracted text")
-                clean_text = preprocess_text(raw_text)
-
-                logger.debug("Splitting text into chunks")
-                text_chunks = split_text_into_chunks(clean_text, max_tokens=500)
-
-                logger.debug("Generating embeddings for text chunks")
-                document_id = unique_filename
-                embedding_data = generate_embeddings(text_chunks, document_id)
-
-                logger.debug("Upserting embeddings to Pinecone")
-                upsert_embeddings(pinecone_index, embedding_data)
-
-                logger.debug("Cleaning up temporary files")
-                if os.path.exists(download_path):
-                    os.remove(download_path)
-                    logger.debug(f"Deleted {download_path}")
-
-                uploaded_files.append({
-                    'original_filename': filename,
-                    'stored_filename': unique_filename
-                })
-            except Exception as e:
-                logger.error(f"Error processing PDF {filename}: {e}", exc_info=True)
-                return jsonify({'error': f'File processing failed for {filename}'}), 500
-
-        logger.debug("All files uploaded and processed successfully")
+        logger.debug("All files enqueued for background processing")
         return jsonify({
-            'message': 'Files uploaded and processed successfully',
-            'files': uploaded_files
+            'message': 'Files uploaded successfully. Processing in background...',
+            'files': uploaded_files,
+            'task_ids': task_ids
         }), 200
 
     except Exception as e:
@@ -337,6 +270,7 @@ def chat():
         logger.debug(f"User message: {user_message}")
         logger.debug(f"Document ID: {document_id}")
 
+        # We'll generate a query embedding and query Pinecone to get relevant contexts
         query_embedding = generate_query_embedding(user_message)
         results = query_pinecone(pinecone_index, query_embedding, top_k=5, document_id=document_id)
         context_texts = [match['metadata']['text'] for match in results['matches']]
@@ -354,8 +288,6 @@ def chat():
 def generate_query_embedding(query):
     logger.debug("Entering generate_query_embedding")
     try:
-        # If you want to load-balance embeddings for query embeddings too, 
-        # you could call the same config-based function:
         response = call_openai_embedding_with_loadbalancer(
             input_list=[query],
             model='text-embedding-ada-002'
@@ -403,7 +335,7 @@ def get_response_from_openai(query, context_texts):
                 "content": f"Context:\n{context}\n\nQuestion:\n{query}"
             }
         ]
-        # If you want to load-balance chat calls as well, do:
+        # If you want to load-balance chat calls, do:
         #   response = call_gpt_4_with_loadbalancer(messages)
         # Instead of direct openai.ChatCompletion.create
         response = openai.ChatCompletion.create(
@@ -450,10 +382,6 @@ def test_nltk():
         return jsonify({'error': str(e)}), 500
 
 
-# -------------------------------------------------------------------------
-# Example route to list available documents from S3
-# (You can adapt this to your DB or your own logic.)
-# -------------------------------------------------------------------------
 @system2_bp.route('/list_documents', methods=['GET'])
 def list_documents():
     """
@@ -476,3 +404,10 @@ def list_documents():
     except Exception as e:
         logger.error(f"Error listing documents: {e}", exc_info=True)
         return jsonify({'error': 'Failed to list documents.'}), 500
+
+
+# -------------------------------------------------------------------------
+# END OF FILE
+# The heavy-lifting tasks are now offloaded to Celery (in tasks.py),
+# so we only store the PDF in S3 and queue the job here.
+# -------------------------------------------------------------------------

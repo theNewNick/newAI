@@ -361,30 +361,6 @@ function initThreeRowTileLayout() {
     'tile-customize-dashboard'
   ];
 
-  // -------------------------------------------------------------------------
-  // COMMENTING OUT this forced top-row assignment so all 8 tiles
-  // appear in the natural 2×4 arrangement:
-  //
-  // tileOrder.forEach(id => {
-  //   const t = document.getElementById(id);
-  //   if (!t) return;
-  //   t.classList.remove(
-  //     'middle-row',
-  //     'bottom-row',
-  //     'expanded',
-  //     'minimized',
-  //     'hidden',
-  //     'collapsed',
-  //     'enlarged',
-  //     'top-row'
-  //   );
-  //   t.classList.add('top-row');
-  // });
-  // if (customizeTile) customizeTile.classList.add('hidden');
-  //
-  // By removing this forced setup, the HTML + CSS
-  // automatically displays 2 rows × 4 columns.
-
   let currentlyExpandedTileId = null;
 
   // Attach click handlers ONLY to the .card-header, so the tile
@@ -408,74 +384,65 @@ function initThreeRowTileLayout() {
       return;
     }
 
-    // Otherwise, user is expanding a new tile
     currentlyExpandedTileId = tileId;
 
-    // 1) Switch the main grid container to 3-row layout
+    // Switch the main grid to a 3-row layout
     const grid = document.getElementById('dashboardGrid');
     grid.classList.add('expanded-layout');
 
-    // define top row => first 4 IDs (minus the clicked tile)
-    const topTileIds = tileOrder.slice(0, 4).filter(x => x !== tileId);
-    const middleTileId = tileId;
-    // define bottom row => last 4 (plus "Customize")
-    const bottomTileIds = tileOrder.slice(4);
-    // remove the clicked tile from bottom row if present
-    const idx = bottomTileIds.indexOf(tileId);
-    if (idx >= 0) bottomTileIds.splice(idx, 1);
+    // 1) Filter out the clicked tile + "Customize" from the normal 8.
+    //    That leaves 7 tiles to split top/bottom.
+    const normalTiles = tileOrder.filter(id => 
+      id !== 'tile-customize-dashboard' && id !== tileId
+    );
 
-    // 2) Move topTileIds => row 1 (collapsed, minimized)
+    // 2) First 4 => top row, next 3 => bottom row
+    const topTileIds = normalTiles.slice(0, 4);
+    const bottomTileIds = normalTiles.slice(4);
+
+    // 3) Middle tile => the clicked tile
+    const middleTileId = tileId;
+
+    // 4) Top row => collapsed
     topTileIds.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;
       t.classList.remove(
-        'expanded',
-        'middle-row',
-        'bottom-row',
-        'hidden',
-        'minimized',
-        'enlarged'
+        'expanded','middle-row','bottom-row','hidden','minimized','enlarged'
       );
-      t.classList.add('top-row', 'minimized', 'collapsed');
+      t.classList.add('top-row','minimized','collapsed');
     });
 
-    // 3) Middle tile => row 2, expanded + enlarged
+    // 5) Middle row => expanded
     const middleTile = document.getElementById(middleTileId);
     middleTile.classList.remove(
-      'top-row',
-      'bottom-row',
-      'hidden',
-      'minimized',
-      'collapsed'
+      'top-row','bottom-row','hidden','minimized','collapsed'
     );
-    middleTile.classList.add('middle-row', 'expanded', 'enlarged');
+    middleTile.classList.add('middle-row','expanded','enlarged');
 
-    // 4) Bottom row => the rest (collapsed)
+    // 6) Bottom row => collapsed
     bottomTileIds.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;
       t.classList.remove(
-        'expanded',
-        'middle-row',
-        'top-row',
-        'hidden',
-        'minimized',
-        'enlarged'
+        'expanded','middle-row','top-row','hidden','minimized','enlarged'
       );
-      t.classList.add('bottom-row', 'collapsed');
+      t.classList.add('bottom-row','collapsed');
     });
 
-    // 5) Un-hide "Customize" tile if present
-    if (customizeTile) customizeTile.classList.remove('hidden');
+    // 7) Un-hide "Customize" tile & place it in bottom row
+    if (customizeTile) {
+      customizeTile.classList.remove('hidden');
+      customizeTile.classList.remove('top-row','middle-row','enlarged','expanded');
+      customizeTile.classList.add('bottom-row','collapsed');
+    }
   }
 
   function collapseAllToDefault() {
-    // Remove 3-row layout from grid => back to default 2×4 layout
+    // Remove 3-row layout => back to default 2×4
     const grid = document.getElementById('dashboardGrid');
     grid.classList.remove('expanded-layout');
 
-    // Optionally, you can remove .top-row, .bottom-row, etc., letting
-    // the natural 2×4 state reappear.
     tileOrder.forEach(id => {
       const t = document.getElementById(id);
       if (!t) return;
@@ -493,4 +460,3 @@ function initThreeRowTileLayout() {
     if (customizeTile) customizeTile.classList.add('hidden');
   }
 }
-

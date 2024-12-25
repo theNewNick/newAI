@@ -247,8 +247,6 @@ async def call_gpt_4_with_loadbalancer_async(messages, temperature=0.5, max_toke
     thread executor so this code can remain async-compatible.
     """
     loop = asyncio.get_running_loop()
-    # run_in_executor(None, func, arg1, arg2...)
-    # We'll pass the function and its arguments:
     response = await loop.run_in_executor(
         None,
         call_gpt_4_with_loadbalancer,
@@ -542,6 +540,19 @@ def analyze_financials():
             'company_logo': 'image'
         }
 
+        # ----------------------------------------------------------
+        # CAPTURE USER INPUT (company_name, sector, etc.)
+        # ----------------------------------------------------------
+        company_name = request.form.get('company_name', 'N/A')
+        sector = request.form.get('sector', 'N/A')
+
+        # We'll store in analysis_data. 
+        # We'll fill more fields below (like ratio analysis, etc.).
+        analysis_data = {}
+        analysis_data['company_name'] = company_name
+        analysis_data['sector'] = sector
+        # You can also store other user inputs if you want.
+
         for field_name, file_type in expected_files.items():
             uploaded_file = request.files.get(field_name)
             if uploaded_file and allowed_file(uploaded_file.filename, ALLOWED_EXTENSIONS[file_type]):
@@ -594,8 +605,6 @@ def analyze_financials():
             'pb_ratio': pb_benchmark
         }
 
-        company_name = request.form.get('company_name', 'N/A')
-        financials = {'company_name': company_name}
         logger.info(f"Company Name: {company_name}")
 
         income_df = process_financial_csv(file_paths['income_statement'], 'income_statement')
@@ -724,7 +733,8 @@ def analyze_financials():
             else:
                 factor1_score = 0
 
-        financials.update({
+        financials = {
+            'company_name': company_name,
             'total_debt': total_debt,
             'shareholders_equity': shareholders_equity,
             'current_assets': current_assets,
@@ -735,7 +745,7 @@ def analyze_financials():
             'book_value_per_share': book_value_per_share,
             'net_income': net_income,
             'revenue': revenue
-        })
+        }
         logger.info('Extracted financial data successfully.')
 
         # Ratios
@@ -925,7 +935,7 @@ def analyze_financials():
             'factor6_score': factor6_score,
         }
 
-        analysis_data = {
+        analysis_data.update({
             "company_summary": company_summary or "",
             "industry_summary": industry_summary or "",
             "risks_summary": risks_summary or "",
@@ -935,19 +945,17 @@ def analyze_financials():
             "ratios": ratios,
             "sentiment_results": sentiment_results,
             "factor_scores": factor_scores,
-            # Additional fields for final recommendation
             "recommendation_rationale": "Our analysis suggests this approach due to combined factor scores.",
             "key_factors": [
                 "DCF analysis alignment",
                 "Positive industry sentiment",
                 "Solid time series trends" if factor3_score > 0 else "Mixed or negative time series trends",
             ],
-            # Possibly store sector, c-suite, etc. for GPT route
-            "sector": request.form.get("sector", "Technology"),
+            "sector": sector,
             "industry": request.form.get("industry", "Software"),
             "sub_industry": request.form.get("sub_industry", "N/A"),
-            "c_suite_executives": "John Doe (CEO), Jane Smith (CFO)"  # Example, or parse from user input if needed
-        }
+            "c_suite_executives": "No c-suite info provided"  # or fetch from user input / external source
+        })
 
         session['analysis_result'] = analysis_data
         logger.info("Analysis results saved in session for the dashboard to retrieve.")
@@ -1014,7 +1022,7 @@ def company_report_data():
         })
 
     return jsonify({
-        "stock_price": "$145.32",  # or use the real stock_price if you want
+        "stock_price": "$145.32",  # or use real stock_price if you want
         "executive_summary": "Short summary if you have one (hard-coded or from text).",
         "company_summary": analysis.get("company_summary", ""),
         "industry_summary": analysis.get("industry_summary", ""),
@@ -1061,7 +1069,6 @@ def sentiment_data():
     i_repo = next((x for x in sr if x['title'] == 'Industry Report Sentiment'), None)
     econ_repo = next((x for x in sr if x['title'] == 'Economic Report Sentiment'), None)
 
-    # If you want a single composite score:
     composite_score = 0
     if e_call and i_repo and econ_repo:
         composite_score = (e_call['score'] + i_repo['score'] + econ_repo['score']) / 3
@@ -1122,15 +1129,31 @@ def final_recommendation():
 
 @system1_bp.route('/company_info_data', methods=['GET'])
 def company_info_data():
+    """
+    Updated so it no longer returns hard-coded placeholders.
+    """
+    analysis = session.get('analysis_result', {})
+
+    company_name = analysis.get('company_name', 'N/A')
+    sector = analysis.get('sector', 'N/A')
+    c_suite = analysis.get('c_suite_executives', 'No c-suite info')
+    shares_outstanding = analysis.get('shares_outstanding', 1500000000)
+    wacc = analysis.get('wacc', 0.10)
+    pe_ratio = analysis.get('pe_ratio', 22.4)
+    ps_ratio = analysis.get('ps_ratio', 5.1)
+    industry = analysis.get('industry', 'N/A')
+    sub_industry = analysis.get('sub_industry', 'N/A')
+
     return jsonify({
-        "c_suite_executives": "John Doe (CEO), Jane Smith (CFO), Alex Johnson (CTO)",
-        "shares_outstanding": 1500000000,
-        "wacc": 0.10,
-        "pe_ratio": 22.4,
-        "ps_ratio": 5.1,
-        "sector": "Technology",
-        "industry": "Semiconductors",
-        "sub_industry": "Integrated Circuits"
+        "c_suite_executives": c_suite,
+        "company_name": company_name,
+        "sector": sector,
+        "shares_outstanding": shares_outstanding,
+        "wacc": wacc,
+        "pe_ratio": pe_ratio,
+        "ps_ratio": ps_ratio,
+        "industry": industry,
+        "sub_industry": sub_industry
     })
 
 
@@ -1158,21 +1181,22 @@ def get_report():
 @system1_bp.route('/company_info_details')
 def company_info_details():
     """
-    Example route returning a GPT-based analysis of the company's sector or c-suite.
-    Tied to the "General Company Info" tile's enlarged view.
+    Updated so it uses the actual session data for company_name & sector,
+    removing the old 'John Doe' placeholders.
     """
     analysis = session.get('analysis_result', {})
-    sector = analysis.get('sector', 'Technology')
-    c_suite = analysis.get('c_suite_executives', 'John Doe (CEO), Jane Smith (CFO)')
+    company_name = analysis.get('company_name', 'Unknown Company')
+    sector = analysis.get('sector', 'N/A')
+    c_suite = analysis.get('c_suite_executives', 'No c-suite info')
 
     prompt = f"""
-    Provide a concise but informative background on a company in the {sector} sector,
-    with the following C-Suite: {c_suite}. Mention typical challenges, recent industry trends, 
-    and possible growth opportunities.
+    Provide a concise but informative background on {company_name}, 
+    which operates in the {sector} sector,
+    with the following C-Suite: {c_suite}.
+    Mention typical challenges, recent trends, and possible growth opportunities.
     """
 
     try:
-        # We'll call the load balancer in a synchronous way for demonstration:
         messages = [
             {"role": "system", "content": "You are an expert financial analyst."},
             {"role": "user", "content": prompt}
