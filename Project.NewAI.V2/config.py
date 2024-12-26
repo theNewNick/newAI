@@ -13,13 +13,15 @@ load_dotenv()
 # OPENAI MULTI-ACCOUNT KEYS (for load balancing)
 ###############################################
 # Since you're not testing locally or using org IDs,
-# we simply read multiple API keys. Adjust as needed.
+# we simply read multiple API keys from .env.
 OPENAI_API_KEY_1 = os.getenv('OPENAI_API_KEY_1', '')
 OPENAI_API_KEY_2 = os.getenv('OPENAI_API_KEY_2', '')
 OPENAI_API_KEY_3 = os.getenv('OPENAI_API_KEY_3', '')
 OPENAI_API_KEY_4 = os.getenv('OPENAI_API_KEY_4', '')
 OPENAI_API_KEY_5 = os.getenv('OPENAI_API_KEY_5', '')
 
+# You can still keep a list if needed for any references,
+# or simply rely on your new smart_load_balancer.py
 OPENAI_ACCOUNTS = [
     {'api_key': OPENAI_API_KEY_1},
     {'api_key': OPENAI_API_KEY_2},
@@ -61,81 +63,33 @@ if not logger.hasHandlers():
 
 ###############################################
 # MULTI-ACCOUNT OPENAI API SETUP
+# (Old Round-Robin Code Removed / Disabled)
 ###############################################
-current_account_index = 0
 
-def call_gpt_4_with_loadbalancer(
-    messages,
-    temperature=0.5,
-    max_tokens=750,
-    max_retries=5
-):
-    """
-    Wrapper function to route GPT-4 requests among multiple accounts,
-    reducing the chance of rate-limit errors on a single account.
-    Round-robin approach: if we get a RateLimitError, move to the next account.
-    """
-    global current_account_index
+# If you previously used round-robin, you can remove or comment out
+# the following items:
 
-    for attempt in range(max_retries):
-        # Retrieve the current account's API key
-        account = OPENAI_ACCOUNTS[current_account_index]
-        openai.api_key = account['api_key']
+# current_account_index = 0
 
-        logger.debug(f"[GPT-4 LB] Attempt {attempt+1}/{max_retries} using account index={current_account_index}")
+# def call_gpt_4_with_loadbalancer(
+#     messages,
+#     temperature=0.5,
+#     max_tokens=750,
+#     max_retries=5
+# ):
+#     """
+#     OLD ROUND-ROBIN function removed. 
+#     Now replaced by your 'smart_load_balancer.py' approach.
+#     """
+#     raise NotImplementedError("Use call_openai_smart from smart_load_balancer.py instead.")
 
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-            return response
-        except openai.error.RateLimitError as e:
-            logger.warning(f"[GPT-4 LB] Rate limit on account {current_account_index}. Switching accounts.")
-            current_account_index = (current_account_index + 1) % len(OPENAI_ACCOUNTS)
-            time.sleep(5)  # short backoff
-        except openai.error.OpenAIError as e:
-            logger.error(f"[GPT-4 LB] OpenAIError on account {current_account_index}: {str(e)}")
-            current_account_index = (current_account_index + 1) % len(OPENAI_ACCOUNTS)
-            time.sleep(5)
-
-    raise Exception("[GPT-4 LB] All accounts or retries exhausted.")
-
-
-def call_openai_embedding_with_loadbalancer(
-    input_list,
-    model='text-embedding-ada-002',
-    max_retries=5
-):
-    """
-    Round-robin approach for openai.Embedding.create() calls,
-    cycling among your 3 OpenAI API keys (OPENAI_ACCOUNTS).
-    If a RateLimitError or other OpenAIError occurs, we switch
-    to the next account, up to max_retries attempts.
-    """
-    global current_account_index
-
-    for attempt in range(max_retries):
-        account = OPENAI_ACCOUNTS[current_account_index]
-        openai.api_key = account['api_key']
-
-        logger.debug(f"[Embedding LB] Attempt {attempt+1}/{max_retries} using account index={current_account_index}")
-
-        try:
-            response = openai.Embedding.create(
-                input=input_list,
-                model=model
-            )
-            return response
-        except openai.error.RateLimitError as e:
-            logger.warning(f"[Embedding LB] Rate limit on account {current_account_index}. Switching accounts.")
-            current_account_index = (current_account_index + 1) % len(OPENAI_ACCOUNTS)
-            time.sleep(5)
-        except openai.error.OpenAIError as e:
-            logger.error(f"[Embedding LB] OpenAIError on account {current_account_index}: {str(e)}")
-            current_account_index = (current_account_index + 1) % len(OPENAI_ACCOUNTS)
-            time.sleep(5)
-
-    raise Exception("[Embedding LB] All accounts or retries exhausted for embeddings.")
+# def call_openai_embedding_with_loadbalancer(
+#     input_list,
+#     model='text-embedding-ada-002',
+#     max_retries=5
+# ):
+#     """
+#     OLD ROUND-ROBIN function removed.
+#     Now replaced by your 'smart_load_balancer.py' approach.
+#     """
+#     raise NotImplementedError("Use a new function in smart_load_balancer.py instead.")

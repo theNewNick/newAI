@@ -1,3 +1,5 @@
+# modules/system3/handlers.py
+
 import os
 import json
 import logging
@@ -14,12 +16,13 @@ from newsapi import NewsApiClient
 from textblob import TextBlob
 import numpy as np
 import tiktoken
+import openai  # We'll keep the import so references to openai.error exist, but we won't set openai.api_key directly
 
-# Define the blueprint here
-system3_bp = Blueprint('system3_bp', __name__, template_folder='templates')
+# We now import our new SMART load-balancer calls instead of the old round-robin calls
+from smart_load_balancer import call_openai_smart, call_openai_embedding_smart
 
 from .def_model import DCFModel
-import config
+import config  # We still rely on config for environment variables, S3, etc., but no longer for round-robin
 # from app import db  # If you were using db from app, now we rely on modules/extensions
 from modules.extensions import db
 
@@ -46,11 +49,9 @@ if not logger.hasHandlers():  # Avoid duplicate handlers
 logger.setLevel(logging.DEBUG)
 
 # -------------------------------------------------------------------------
-# REMOVED: openai.api_key = OPENAI_API_KEY
-# Instead, we rely on call_gpt_4_with_loadbalancer from config.py
-# so we can multi-account load-balance GPT-4 calls.
+# BLUEPRINT DEFINITION
 # -------------------------------------------------------------------------
-from config import call_gpt_4_with_loadbalancer
+system3_bp = Blueprint('system3_bp', __name__, template_folder='templates')
 
 # NewsAPI initialization
 newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
@@ -59,9 +60,8 @@ newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
 ALLOWED_EXTENSIONS = {'csv', 'xls', 'xlsx'}
 
 ################################################################
-#  SQLAlchemy MODELS
+# SQLAlchemy MODELS
 ################################################################
-
 class AssumptionSet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sector = db.Column(db.String(50), nullable=False)
@@ -97,7 +97,7 @@ class Feedback(db.Model):
     assumption_set_id = db.Column(db.Integer, db.ForeignKey('assumption_set.id'), nullable=False)
 
 ################################################################
-#  FILE & DATA PROCESSING UTILS
+# FILE & DATA PROCESSING UTILS
 ################################################################
 
 def allowed_file(filename):
@@ -113,6 +113,7 @@ def clean_json(json_like_str):
 def parse_json_from_reply(reply):
     """Extracts JSON from GPT-like text replies."""
     cleaned_reply = clean_json(reply)
+    # Replace "WACC"/'WACC' with 'wacc' to standardize
     cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
     json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
     if json_match:
@@ -186,6 +187,7 @@ def validate_assumptions(adjusted_assumptions):
         if value is not None:
             try:
                 value = float(value)
+                # If user typed e.g. 10 -> 1000%?
                 if value > 1.0:
                     value = value / 100.0
                 value = max(min_val, min(value, max_val))
@@ -198,24 +200,27 @@ def validate_assumptions(adjusted_assumptions):
     return validated_assumptions
 
 ################################################################
-#  OPENAI & NEWS API UTILS (REPLACED WITH LOAD-BALANCER)
+# REPLACE Old Round-Robin Calls with Smart LB
 ################################################################
 
 def call_openai_api(prompt):
     """
-    Replaces direct openai.ChatCompletion.create calls with call_gpt_4_with_loadbalancer
-    so we rotate among multiple accounts.
+    Replaces direct openai.ChatCompletion.create with call_openai_smart so
+    we rotate among multiple accounts.
     """
-    logger.debug(f"Calling OpenAI API with prompt: {prompt[:1000]}...")
+    logger.debug(f"Calling OpenAI API with prompt[:1000]: {prompt[:1000]}...")
     try:
         messages = [
             {"role": "system", "content": "You are an expert financial analyst."},
             {"role": "user", "content": prompt}
         ]
-        response = config.call_gpt_4_with_loadbalancer(
+        # Instead of config.call_gpt_4_with_loadbalancer, do:
+        response = call_openai_smart(
             messages=messages,
+            model="gpt-4",
             temperature=0.2,
-            max_tokens=750
+            max_tokens=750,
+            max_retries=5
         )
         assistant_reply = response['choices'][0]['message']['content']
         logger.debug(f"Agent output: {assistant_reply[:500]}...")
@@ -230,10 +235,13 @@ def call_openai_api_with_messages(messages):
     """
     logger.debug(f"Calling OpenAI API with messages: {messages}")
     try:
-        response = config.call_gpt_4_with_loadbalancer(
+        # Instead of config.call_gpt_4_with_loadbalancer, do:
+        response = call_openai_smart(
             messages=messages,
+            model="gpt-4",
             temperature=0.2,
-            max_tokens=750
+            max_tokens=750,
+            max_retries=5
         )
         assistant_reply = response['choices'][0]['message']['content']
         logger.debug(f"Assistant output: {assistant_reply[:500]}...")
@@ -243,9 +251,8 @@ def call_openai_api_with_messages(messages):
         return ""
 
 ################################################################
-#  MAPPINGS & DATA EXTRACTION
+# MAPPINGS & DATA EXTRACTION
 ################################################################
-import openai  # We'll keep import so references to openai.error exist, but not set api_key
 
 custom_mappings = {
     'Revenue': [
@@ -290,9 +297,6 @@ custom_mappings = {
 def normalize_string(s):
     return re.sub(r'[^a-zA-Z0-9]', '', s).lower()
 
-# get_field_mapping_via_openai, get_field_mappings, etc. remain as is,
-# but they now call 'call_openai_api' for GPT usage.
-
 def get_field_mapping_via_openai(field, existing_labels):
     logger.debug(f"Getting field mapping for {field} using OpenAI")
     prompt = f"""
@@ -316,8 +320,11 @@ def get_field_mappings(required_fields, existing_labels):
     logger.debug(f"Getting field mappings for: {required_fields}")
     field_mapping = {}
     existing_labels_normalized = {normalize_string(label): label for label in existing_labels}
+
     for field in required_fields:
         mapped = False
+
+        # Use custom_mappings first if available
         if field in custom_mappings:
             for alias in custom_mappings[field]:
                 alias_normalized = normalize_string(alias)
@@ -325,23 +332,28 @@ def get_field_mappings(required_fields, existing_labels):
                     field_mapping[field] = existing_labels_normalized[alias_normalized]
                     mapped = True
                     break
+
+        # If not found in custom mappings
         if not mapped:
             field_normalized = normalize_string(field)
             if field_normalized in existing_labels_normalized:
                 field_mapping[field] = existing_labels_normalized[field_normalized]
                 mapped = True
             else:
+                # Try approximate matching with difflib
                 matches = difflib.get_close_matches(field_normalized, existing_labels_normalized.keys(), n=1, cutoff=0.0)
                 if matches:
                     field_mapping[field] = existing_labels_normalized[matches[0]]
                     mapped = True
                 else:
+                    # fallback: ask GPT
                     label = get_field_mapping_via_openai(field, existing_labels)
                     if label:
                         field_mapping[field] = label
                         mapped = True
                     else:
                         field_mapping[field] = None
+
     logger.debug(f"Field mappings result: {field_mapping}")
     return field_mapping
 
@@ -391,7 +403,9 @@ def extract_fields(data, required_fields):
     logger.debug(f"Extracting fields: {required_fields}")
     labels = data.iloc[:, 0].astype(str).str.strip().tolist()
     logger.debug(f"Existing labels: {labels}")
-    data_values = data.iloc[:, 1:].applymap(lambda x: float(str(x).replace(',', '').replace('(', '-').replace(')', '')))
+    data_values = data.iloc[:, 1:].applymap(
+        lambda x: float(str(x).replace(',', '').replace('(', '-').replace(')', ''))
+    )
 
     data_dict = dict(zip(labels, data_values.values.tolist()))
     existing_labels = list(data_dict.keys())
@@ -418,7 +432,7 @@ def extract_fields(data, required_fields):
     return processed_data
 
 ################################################################
-#  FINANCIAL / ECONOMIC HELPER FUNCTIONS
+# FINANCIAL / ECONOMIC HELPER FUNCTIONS
 ################################################################
 import time
 
@@ -453,10 +467,8 @@ def calculate_mrp():
     return mrp
 
 ################################################################
-#  MULTI-AGENT ADJUSTMENTS
+# MULTI-AGENT ADJUSTMENTS (Replace old calls with call_openai_api)
 ################################################################
-# All calls to openai are replaced with call_openai_api or call_openai_api_with_messages,
-# which route through your multi-account approach.
 
 def adjust_for_sector(sector):
     logger.debug(f"Adjusting for sector: {sector}")
@@ -730,7 +742,7 @@ def adjust_based_on_historical_data(stock_ticker):
         return {}
 
 ################################################################
-#  AGENT WEIGHTING & VALIDATION
+# AGENT WEIGHTING & VALIDATION
 ################################################################
 
 def get_agent_importance_weights():
@@ -787,7 +799,10 @@ def compute_final_adjustments_with_agents(agent_adjustments, agent_importance_we
                 final_weight = importance_weight * confidence_score
                 weighted_sum += final_weight * agent_value
                 total_weight += final_weight
-        final_adjustments[assumption] = weighted_sum / total_weight if total_weight > 0 else 0
+        if total_weight > 0:
+            final_adjustments[assumption] = weighted_sum / total_weight
+        else:
+            final_adjustments[assumption] = 0
     logger.debug(f"Final adjustments: {final_adjustments}")
     return final_adjustments
 
@@ -812,6 +827,7 @@ Check if assumptions are reasonable...
 
 def adjust_financial_variables(sector, industry, sub_industry, scenario, stock_ticker):
     logger.debug("Adjusting financial variables from all agents")
+
     sector_adjustments = validate_assumptions(adjust_for_sector(sector))
     industry_adjustments = validate_assumptions(adjust_for_industry(industry))
     sub_industry_adjustments = validate_assumptions(adjust_for_sub_industry(sub_industry))
@@ -843,10 +859,14 @@ def adjust_financial_variables(sector, industry, sub_industry, scenario, stock_t
     combined_pre_sanity = {}
     for k in assumptions_keys:
         vals = [a[k] for a in agent_adjustments.values() if k in a]
-        combined_pre_sanity[k] = sum(vals) / len(vals) if vals else 0.05
+        if vals:
+            combined_pre_sanity[k] = sum(vals) / len(vals)
+        else:
+            combined_pre_sanity[k] = 0.05
 
     historical_wacc = historical_data_adjustments.get('wacc', 0.10)
     historical_growth = historical_data_adjustments.get('revenue_growth_rate', 0.05)
+
     corrected_assumptions = pre_validation_sanity_check(
         combined_pre_sanity,
         historical_wacc,
@@ -884,7 +904,7 @@ def get_shares_outstanding(stock_ticker):
         return None
 
 ################################################################
-#  FLASK ROUTES
+# FLASK ROUTES
 ################################################################
 
 @system3_bp.route('/upload', methods=['POST'])
@@ -893,7 +913,7 @@ def upload_files():
     Example endpoint to upload CSV/Excel for income_statement, balance_sheet, cash_flow_statement
     and return the processed data in JSON.
     """
-    logger.debug("Received file upload request")
+    logger.debug("Received file upload request in system3.handlers")
     required_files = ['income_statement', 'balance_sheet', 'cash_flow_statement']
     files = {}
     for file_type in required_files:
@@ -933,7 +953,7 @@ def calculate_intrinsic_value():
       - 'sector', 'industry', 'sub_industry', 'scenario', 'stock_ticker'
     Returns the DCF results, adjusted assumptions, etc.
     """
-    logger.debug("Received /calculate request")
+    logger.debug("Received /calculate request in system3.handlers")
     try:
         content = request.get_json()
         data = content.get('data')
@@ -944,7 +964,11 @@ def calculate_intrinsic_value():
         scenario = content.get('scenario')
         stock_ticker = content.get('stock_ticker')
 
-        logger.debug(f"Input content: sector={sector}, industry={industry}, sub_industry={sub_industry}, scenario={scenario}, stock_ticker={stock_ticker}")
+        logger.debug(
+            f"Input content: sector={sector}, industry={industry}, "
+            f"sub_industry={sub_industry}, scenario={scenario}, stock_ticker={stock_ticker}"
+        )
+
         income_data = data.get('income_statement', {})
         balance_sheet_data = data.get('balance_sheet', {})
         cash_flow_data = data.get('cash_flow_statement', {})
@@ -988,7 +1012,7 @@ def calculate_intrinsic_value():
         # If user provided overrides, apply them
         final_assumptions.update(user_assumptions)
 
-        # Derive the new percentages from combined_data
+        # Derive new percentages from combined_data
         final_assumptions['operating_expenses_pct'] = combined_data['Operating Expenses'] / initial_revenue
         final_assumptions['depreciation_pct'] = combined_data['Depreciation'] / initial_revenue
         final_assumptions['capex_pct'] = combined_data['Capital Expenditures'] / initial_revenue
@@ -1005,6 +1029,7 @@ def calculate_intrinsic_value():
 
         logger.debug(f"Final assumptions passed to DCFModel: {final_assumptions}")
 
+        # Save to DB as an AssumptionSet
         assumption_set = AssumptionSet(
             sector=sector,
             industry=industry,
@@ -1087,4 +1112,3 @@ def receive_feedback():
         db.session.rollback()
         logger.exception("Error saving feedback")
         return jsonify({'error': 'Failed to save feedback.'}), 500
-

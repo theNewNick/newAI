@@ -17,15 +17,18 @@ from dotenv import load_dotenv
 from nltk.tokenize import sent_tokenize
 import pinecone
 from logging.handlers import RotatingFileHandler
-import config  # <-- We now import config for multi-account approach
+import config  # We still import config for AWS details, but no longer use round-robin from config.
 
-# If you need session for cross-referencing user session or IDs:
+# If you need session for cross-referencing user session or IDs, you could uncomment:
 # from flask import session
 
-# Import Celery tasks (the newly created tasks.py) so we can queue them
-# This import statement assumes your Celery tasks are defined in modules/system2/tasks.py
-# or a similar location. Adjust the path to match your actual structure.
+# Import Celery tasks for chunking & embedding in the background
 from modules.system2.tasks import process_pdf_chunks_task
+
+# -------------------------------------------------------------
+# NEW IMPORT: The "smart" load-balancer calls for chat & embedding
+# -------------------------------------------------------------
+from smart_load_balancer import call_openai_smart, call_openai_embedding_smart
 
 # Define the blueprint here
 system2_bp = Blueprint('system2_bp', __name__, template_folder='templates')
@@ -38,16 +41,19 @@ formatter = logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(mess
 handler.setFormatter(formatter)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+# Clear existing handlers if any, to avoid duplicate logs
 if logger.hasHandlers():
     logger.handlers.clear()
 logger.addHandler(handler)
 
-# Load environment variables via config
+# Load environment variables (region, bucket, etc.)
+load_dotenv()
+
 AWS_REGION = config.AWS_REGION
 S3_BUCKET_NAME = config.S3_BUCKET_NAME
 
-# Instead of openai.api_key = config.OPENAI_API_KEY, calls to openai.Embedding.create() or
-# openai.ChatCompletion.create() will go through our load-balancer in config.py
+# We no longer do openai.api_key = config.OPENAI_API_KEY
+# Instead, calls go through our new "smart load balancer."
 
 PINECONE_API_KEY = config.PINECONE_API_KEY
 PINECONE_ENVIRONMENT = config.PINECONE_ENVIRONMENT
@@ -56,10 +62,7 @@ PINECONE_INDEX_NAME = config.PINECONE_INDEX_NAME
 s3 = boto3.client('s3', region_name=AWS_REGION)
 
 # Initialize Pinecone using the new client method
-pinecone.init(
-    api_key=PINECONE_API_KEY,
-    environment=PINECONE_ENVIRONMENT
-)
+pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENVIRONMENT)
 pinecone_index = pinecone.Index(PINECONE_INDEX_NAME)
 
 NLTK_DATA_PATH = os.path.join(os.path.expanduser('~'), 'nltk_data')
@@ -74,14 +77,9 @@ except LookupError:
     logger.debug("NLTK 'punkt' tokenizer downloaded")
 
 
-##################################################################################
-# If you created a wrapper for embeddings in config.py, e.g. call_openai_embedding_with_loadbalancer,
-# you would import it here. Example:
-##################################################################################
-from config import call_openai_embedding_with_loadbalancer
-# If you also have a ChatCompletion wrapper, e.g. call_gpt_4_with_loadbalancer,
-# you could import that if you do any chat or summarization in system2.
-
+################################################################################
+# Helper functions for PDF handling, text preprocessing, and chunking
+################################################################################
 
 def download_pdf_from_s3(bucket_name, object_key, download_path):
     logger.debug(f"Entering download_pdf_from_s3 with object_key: {object_key}")
@@ -116,7 +114,7 @@ def extract_text_from_pdf(pdf_path):
 def preprocess_text(text):
     logger.debug("Entering preprocess_text")
     try:
-        # Remove non-ASCII
+        # Remove non-ASCII chars
         text = re.sub(r'[^\x00-\x7F]+', ' ', text)
         # Normalize whitespace
         text = re.sub(r'\s+', ' ', text).strip()
@@ -129,7 +127,7 @@ def preprocess_text(text):
 
 def split_text_into_chunks(text, max_tokens=500):
     """
-    Pre-chunk large documents: break them into smaller pieces of ~500 tokens each.
+    Break the text into smaller pieces (~500 tokens each) for embeddings, etc.
     """
     logger.debug("Entering split_text_into_chunks")
     try:
@@ -142,17 +140,16 @@ def split_text_into_chunks(text, max_tokens=500):
         for sentence in sentences:
             sentence_tokens = sentence.split()
             sentence_token_count = len(sentence_tokens)
-            # If adding this sentence won't exceed max_tokens, add it to the current chunk.
             if token_count + sentence_token_count <= max_tokens:
                 chunk += ' ' + sentence
                 token_count += sentence_token_count
             else:
-                # Start a new chunk
-                chunks.append(chunk.strip())
+                if chunk.strip():
+                    chunks.append(chunk.strip())
                 chunk = sentence
                 token_count = sentence_token_count
 
-        # Add the last chunk if non-empty
+        # Add the last chunk if it's non-empty
         if chunk:
             chunks.append(chunk.strip())
 
@@ -163,14 +160,16 @@ def split_text_into_chunks(text, max_tokens=500):
         raise
 
 
+################################################################################
+# Routes
+################################################################################
+
 @system2_bp.route('/upload', methods=['POST'])
 def upload_files():
     """
-    This route now:
-      1) Accepts PDF uploads
-      2) Stores them in S3
-      3) Triggers a Celery task to parse, pre-chunk, and embed the PDF
-         in the background, preventing timeouts for large files.
+    1) Accept PDF uploads
+    2) Store them in S3
+    3) Queue Celery task to parse, chunk, embed
     """
     logger.debug("Accessed upload_files route")
     try:
@@ -181,7 +180,7 @@ def upload_files():
         files = request.files.getlist('files')
         logger.debug(f"Received {len(files)} files")
 
-        if len(files) == 0:
+        if not files:
             logger.error("No files selected for uploading")
             return jsonify({'error': 'No files selected for uploading'}), 400
 
@@ -221,12 +220,11 @@ def upload_files():
                 logger.error(f"Error uploading {filename} to S3: {e}", exc_info=True)
                 return jsonify({'error': f'File upload failed for {filename}'}), 500
 
-            # Instead of parsing/embedding here, we now queue Celery task:
-            # The Celery task will:
-            #   1) Download PDF from S3
-            #   2) Extract + preprocess + chunk text
-            #   3) Generate embeddings for each chunk
-            #   4) Upsert to Pinecone
+            # Queue the Celery task for background processing
+            # 1) Download PDF from S3
+            # 2) Extract + preprocess + chunk text
+            # 3) Generate embeddings
+            # 4) Upsert to Pinecone
             task_result = process_pdf_chunks_task.delay(
                 bucket_name=S3_BUCKET_NAME,
                 object_key=unique_filename,
@@ -253,6 +251,13 @@ def upload_files():
 
 @system2_bp.route('/chat', methods=['POST'])
 def chat():
+    """
+    Endpoint to handle chat requests. It:
+      1) Accepts user_message & document_id
+      2) Creates an embedding for user_message
+      3) Queries Pinecone for context
+      4) Calls GPT for final answer
+    """
     logger.debug("Accessed chat route")
     try:
         data = request.get_json()
@@ -270,11 +275,19 @@ def chat():
         logger.debug(f"User message: {user_message}")
         logger.debug(f"Document ID: {document_id}")
 
-        # We'll generate a query embedding and query Pinecone to get relevant contexts
+        # 1) Generate a query embedding
         query_embedding = generate_query_embedding(user_message)
-        results = query_pinecone(pinecone_index, query_embedding, top_k=5, document_id=document_id)
+
+        # 2) Query Pinecone for relevant contexts
+        results = query_pinecone(
+            pinecone_index,
+            query_embedding,
+            top_k=5,
+            document_id=document_id
+        )
         context_texts = [match['metadata']['text'] for match in results['matches']]
 
+        # 3) Get final answer from GPT
         assistant_response = get_response_from_openai(user_message, context_texts)
 
         logger.debug(f"Assistant response: {assistant_response}")
@@ -286,14 +299,19 @@ def chat():
 
 
 def generate_query_embedding(query):
+    """
+    Replaces old round-robin embedding calls with the new smart LB approach.
+    """
     logger.debug("Entering generate_query_embedding")
     try:
-        response = call_openai_embedding_with_loadbalancer(
+        # Instead of call_openai_embedding_with_loadbalancer, we use call_openai_embedding_smart
+        response = call_openai_embedding_smart(
             input_list=[query],
-            model='text-embedding-ada-002'
+            model='text-embedding-ada-002',
+            max_retries=5
         )
         query_embedding = response['data'][0]['embedding']
-        logger.debug("Generated query embedding")
+        logger.debug("Generated query embedding via smart LB")
         return query_embedding
     except openai.error.OpenAIError as e:
         logger.error(f"Error generating query embedding: {e}", exc_info=True)
@@ -322,6 +340,9 @@ def query_pinecone(pinecone_index, query_embedding, top_k, document_id):
 
 
 def get_response_from_openai(query, context_texts):
+    """
+    Calls GPT-4 using the new smart LB for chat (call_openai_smart).
+    """
     logger.debug("Entering get_response_from_openai")
     try:
         context = "\n\n".join(context_texts)
@@ -335,18 +356,16 @@ def get_response_from_openai(query, context_texts):
                 "content": f"Context:\n{context}\n\nQuestion:\n{query}"
             }
         ]
-        # If you want to load-balance chat calls, do:
-        #   response = call_gpt_4_with_loadbalancer(messages)
-        # Instead of direct openai.ChatCompletion.create
-        response = openai.ChatCompletion.create(
-            model='gpt-4',
+        # Replace direct openai.ChatCompletion with call_openai_smart
+        response = call_openai_smart(
             messages=messages,
-            max_tokens=400,
+            model="gpt-4",
             temperature=0.7,
-            n=1,
+            max_tokens=400,
+            max_retries=3
         )
         answer = response['choices'][0]['message']['content'].strip()
-        logger.debug("Received response from OpenAI")
+        logger.debug("Received response from GPT-4 via smart LB")
         return answer
     except openai.error.OpenAIError as e:
         logger.error(f"Error getting response from OpenAI: {e}", exc_info=True)
@@ -358,6 +377,9 @@ def get_response_from_openai(query, context_texts):
 
 @system2_bp.route('/view_document/<document_id>')
 def view_document(document_id):
+    """
+    Serves a PDF from S3 so users can view it in-browser.
+    """
     logger.debug(f"Accessed view_document route with document_id: {document_id}")
     try:
         file_obj = io.BytesIO()
@@ -372,6 +394,9 @@ def view_document(document_id):
 
 @system2_bp.route('/test_nltk')
 def test_nltk():
+    """
+    Quick route to test if NLTK is working.
+    """
     try:
         text = "This is a sentence. This is another sentence."
         sentences = sent_tokenize(text)
@@ -385,9 +410,8 @@ def test_nltk():
 @system2_bp.route('/list_documents', methods=['GET'])
 def list_documents():
     """
-    Returns a JSON list of documents stored in S3 (limited to PDF files).
-    You could display these in a dropdown on the UI
-    so the user can pick a 'document_id' for the chatbot.
+    Returns a JSON list of PDF documents in S3. 
+    Useful for a dropdown of available docs to pass as document_id.
     """
     try:
         response = s3.list_objects_v2(Bucket=S3_BUCKET_NAME)
@@ -404,10 +428,3 @@ def list_documents():
     except Exception as e:
         logger.error(f"Error listing documents: {e}", exc_info=True)
         return jsonify({'error': 'Failed to list documents.'}), 500
-
-
-# -------------------------------------------------------------------------
-# END OF FILE
-# The heavy-lifting tasks are now offloaded to Celery (in tasks.py),
-# so we only store the PDF in S3 and queue the job here.
-# -------------------------------------------------------------------------

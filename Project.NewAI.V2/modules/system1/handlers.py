@@ -5,8 +5,6 @@ import io
 import time
 import asyncio
 import logging
-# Remove direct openai import for ChatCompletion calls; 
-# we will rely on the config.py load-balancer approach
 import openai
 from openai.error import APIError, RateLimitError
 import tiktoken
@@ -30,11 +28,16 @@ from reportlab.platypus import (
 from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
 from asgiref.wsgi import WsgiToAsgi
-import config  # <-- We use config for multi-account approach
+import config  # We still import config for other references if needed
 
 # Additional imports for S3 uploading
 import boto3
 import uuid
+
+# -------------------------------------------
+# NEW: Import the smart load-balancer function
+# -------------------------------------------
+from smart_load_balancer import call_openai_smart
 
 # Define the blueprint
 system1_bp = Blueprint('system1_bp', __name__, template_folder='templates')
@@ -45,9 +48,6 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-# Removed: openai.api_key = config.OPENAI_API_KEY
-# Because we'll route calls through config.call_gpt_4_with_loadbalancer
 
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -232,32 +232,27 @@ def extract_text_from_pdf(file_path):
 
 semaphore = asyncio.Semaphore(5)
 
-###########################################################
-# 1) Import the load-balancer wrapper from config
-###########################################################
-from config import call_gpt_4_with_loadbalancer
-
-###########################################################
-# 2) Define an async helper that calls the load balancer 
-#    in a thread pool so we can await it.
-###########################################################
-async def call_gpt_4_with_loadbalancer_async(messages, temperature=0.5, max_tokens=750):
+# -------------------------------------------------------------------------
+# New Async Wrapper to call the smart load-balancer in a thread executor
+# -------------------------------------------------------------------------
+async def call_openai_smart_async(messages, model="gpt-4", temperature=0.5, max_tokens=750, max_retries=5):
     """
-    Because call_gpt_4_with_loadbalancer is synchronous, we run it in a
-    thread executor so this code can remain async-compatible.
+    Because call_openai_smart is synchronous, we use run_in_executor 
+    to keep our code async-compatible if needed.
     """
     loop = asyncio.get_running_loop()
     response = await loop.run_in_executor(
         None,
-        call_gpt_4_with_loadbalancer,
-        messages, temperature, max_tokens, 5
+        call_openai_smart,
+        messages,
+        model,
+        temperature,
+        max_tokens,
+        max_retries
     )
     return response
 
-# -------------------------
-# Updated GPT references
-#   => replace openai.ChatCompletion.acreate calls with the load-balancer
-# -------------------------
+
 async def call_openai_summarization(text):
     retry_delay = 5
     max_retries = 3
@@ -267,8 +262,14 @@ async def call_openai_summarization(text):
                 {"role": "system", "content": "You are a financial analyst."},
                 {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
             ]
-            response = await call_gpt_4_with_loadbalancer_async(messages, temperature=0.5, max_tokens=750)
-            summary = response.choices[0].message.content.strip()
+            response = await call_openai_smart_async(
+                messages, 
+                model="gpt-4", 
+                temperature=0.5, 
+                max_tokens=750, 
+                max_retries=3
+            )
+            summary = response["choices"][0]["message"]["content"].strip()
             return summary
         except RateLimitError:
             logger.warning(f'Rate limit error, retrying in {retry_delay} seconds...')
@@ -309,8 +310,14 @@ Explanation: [brief explanation]
                 },
                 {"role": "user", "content": prompt}
             ]
-            response = await call_gpt_4_with_loadbalancer_async(messages, temperature=0.5, max_tokens=750)
-            content = response.choices[0].message.content.strip()
+            response = await call_openai_smart_async(
+                messages, 
+                model="gpt-4", 
+                temperature=0.5, 
+                max_tokens=750, 
+                max_retries=3
+            )
+            content = response["choices"][0]["message"]["content"].strip()
             lines = content.split('\n')
             sentiment_score = None
             explanation = ""
@@ -340,7 +347,7 @@ Explanation: [brief explanation]
 async def summarize_text_async(text):
     logger.debug('Starting text summarization.')
     max_tokens_per_chunk = 3800
-    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")  # for token counting
+    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
     tokens = encoding.encode(text)
     token_count = len(tokens)
 
@@ -546,12 +553,9 @@ def analyze_financials():
         company_name = request.form.get('company_name', 'N/A')
         sector = request.form.get('sector', 'N/A')
 
-        # We'll store in analysis_data. 
-        # We'll fill more fields below (like ratio analysis, etc.).
         analysis_data = {}
         analysis_data['company_name'] = company_name
         analysis_data['sector'] = sector
-        # You can also store other user inputs if you want.
 
         for field_name, file_type in expected_files.items():
             uploaded_file = request.files.get(field_name)
@@ -641,7 +645,11 @@ def analyze_financials():
         balance_df = standardize_columns(balance_df, balance_columns, 'balance_sheet')
         cashflow_df = standardize_columns(cashflow_df, cashflow_columns, 'cash_flow')
 
-        for df_obj, name in [(income_df, 'income_statement'), (balance_df, 'balance_sheet'), (cashflow_df, 'cash_flow')]:
+        for df_obj, name in [
+            (income_df, 'income_statement'),
+            (balance_df, 'balance_sheet'),
+            (cashflow_df, 'cash_flow')
+        ]:
             if 'Date' not in df_obj.columns:
                 error_message = f"'Date' column missing in {name} CSV."
                 logger.error(error_message)
@@ -954,7 +962,7 @@ def analyze_financials():
             "sector": sector,
             "industry": request.form.get("industry", "Software"),
             "sub_industry": request.form.get("sub_industry", "N/A"),
-            "c_suite_executives": "No c-suite info provided"  # or fetch from user input / external source
+            "c_suite_executives": "No c-suite info provided"
         })
 
         session['analysis_result'] = analysis_data
@@ -1022,7 +1030,7 @@ def company_report_data():
         })
 
     return jsonify({
-        "stock_price": "$145.32",  # or use real stock_price if you want
+        "stock_price": "$145.32",
         "executive_summary": "Short summary if you have one (hard-coded or from text).",
         "company_summary": analysis.get("company_summary", ""),
         "industry_summary": analysis.get("industry_summary", ""),
@@ -1096,7 +1104,6 @@ def data_visualizations_data():
     if not analysis:
         return jsonify({"error": "No analysis data in session. Please run analysis first."}), 400
 
-    # Example placeholder data
     return jsonify({
         "latest_revenue": "Q2: $50.5B",
         "revenue_over_time": [
@@ -1129,9 +1136,6 @@ def final_recommendation():
 
 @system1_bp.route('/company_info_data', methods=['GET'])
 def company_info_data():
-    """
-    Updated so it no longer returns hard-coded placeholders.
-    """
     analysis = session.get('analysis_result', {})
 
     company_name = analysis.get('company_name', 'N/A')
@@ -1159,7 +1163,7 @@ def company_info_data():
 
 @system1_bp.route('/get_report', methods=['GET'])
 def get_report():
-    pdf_key = 'analysis_report_<your-id>.pdf'  # or read from session/DB
+    pdf_key = 'analysis_report_<your-id>.pdf'
     try:
         buffer = io.BytesIO()
         s3_client.download_fileobj(S3_BUCKET_NAME, pdf_key, buffer)
@@ -1175,15 +1179,8 @@ def get_report():
         return "Report not found", 404
 
 
-# -------------------------------------------------------------------------
-# NEW ROUTE: GPT-based Company Info
-# -------------------------------------------------------------------------
 @system1_bp.route('/company_info_details')
 def company_info_details():
-    """
-    Updated so it uses the actual session data for company_name & sector,
-    removing the old 'John Doe' placeholders.
-    """
     analysis = session.get('analysis_result', {})
     company_name = analysis.get('company_name', 'Unknown Company')
     sector = analysis.get('sector', 'N/A')
@@ -1201,8 +1198,15 @@ def company_info_details():
             {"role": "system", "content": "You are an expert financial analyst."},
             {"role": "user", "content": prompt}
         ]
-        response = config.call_gpt_4_with_loadbalancer(messages)
-        content = response['choices'][0]['message']['content'].strip()
+        # Replaces old config-based approach; we now call the smart LB
+        response = call_openai_smart(
+            messages=messages,
+            model="gpt-4",
+            temperature=0.5,
+            max_tokens=750,
+            max_retries=3
+        )
+        content = response["choices"][0]["message"]["content"].strip()
         return jsonify({"analysis": content, "c_suite": c_suite})
     except Exception as e:
         logger.error(f"Error with GPT: {e}")
