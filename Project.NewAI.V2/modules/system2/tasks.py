@@ -8,7 +8,7 @@ import nltk
 import pinecone
 import boto3
 from celery import shared_task
-from config import call_openai_embedding_with_loadbalancer
+from smart_load_balancer import call_openai_embedding_smart
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +40,12 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
                     logger.warning(f"No text on page {page_num}")
 
         # 3) Preprocess + chunk text
-        # If needed, ensure nltk 'punkt' is installed
         nltk.data.path.append(os.path.join(os.path.expanduser('~'), 'nltk_data'))
         try:
             nltk.data.find('tokenizers/punkt')
         except LookupError:
             nltk.download('punkt', download_dir=os.path.join(os.path.expanduser('~'), 'nltk_data'))
 
-        # Basic cleanup
         text = re.sub(r'[^\x00-\x7F]+', ' ', text)
         text = re.sub(r'\s+', ' ', text).strip()
 
@@ -58,6 +56,7 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
         chunks = []
         chunk = ""
         token_count = 0
+
         for sentence in sentences:
             words = sentence.split()
             if token_count + len(words) <= max_tokens:
@@ -77,7 +76,7 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
 
         vectors = []
         for i, c_text in enumerate(chunks):
-            resp = call_openai_embedding_with_loadbalancer(
+            resp = call_openai_embedding_smart(
                 input_list=[c_text],
                 model='text-embedding-ada-002'
             )
@@ -86,7 +85,6 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
             metadata = {"document_id": object_key, "chunk_index": i, "text": c_text}
             vectors.append({"id": vector_id, "values": embedding, "metadata": metadata})
 
-        # Upsert in small batches if needed
         batch_size = 50
         for start in range(0, len(vectors), batch_size):
             subset = vectors[start:start+batch_size]
@@ -98,4 +96,3 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
     except Exception as e:
         logger.exception(f"Error in process_pdf_chunks_task for {object_key}: {e}")
         return {"status": "error", "error": str(e)}
-
