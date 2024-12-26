@@ -21,9 +21,11 @@ import openai  # We'll keep the import so references to openai.error exist, but 
 # We now import our new SMART load-balancer calls instead of the old round-robin calls
 from smart_load_balancer import call_openai_smart, call_openai_embedding_smart
 
+# NEW IMPORT: The "model_selector" helper (choose_model_for_task, etc.)
+from model_selector import choose_model_for_task
+
 from .def_model import DCFModel
 import config  # We still rely on config for environment variables, S3, etc., but no longer for round-robin
-# from app import db  # If you were using db from app, now we rely on modules/extensions
 from modules.extensions import db
 
 from config import (
@@ -32,9 +34,6 @@ from config import (
     SQLALCHEMY_DATABASE_URI
 )
 
-# -------------------------------------------------------------------------
-# LOGGING CONFIG
-# -------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():  # Avoid duplicate handlers
     log_formatter = logging.Formatter(
@@ -48,15 +47,10 @@ if not logger.hasHandlers():  # Avoid duplicate handlers
 
 logger.setLevel(logging.DEBUG)
 
-# -------------------------------------------------------------------------
-# BLUEPRINT DEFINITION
-# -------------------------------------------------------------------------
 system3_bp = Blueprint('system3_bp', __name__, template_folder='templates')
 
-# NewsAPI initialization
 newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
 
-# Allowed file extensions
 ALLOWED_EXTENSIONS = {'csv', 'xls', 'xlsx'}
 
 ################################################################
@@ -99,7 +93,6 @@ class Feedback(db.Model):
 ################################################################
 # FILE & DATA PROCESSING UTILS
 ################################################################
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -214,10 +207,12 @@ def call_openai_api(prompt):
             {"role": "system", "content": "You are an expert financial analyst."},
             {"role": "user", "content": prompt}
         ]
-        # Instead of config.call_gpt_4_with_loadbalancer, do:
+        # Use the dynamic model approach:
+        chosen_model = choose_model_for_task("long_research_summarization")
+
         response = call_openai_smart(
             messages=messages,
-            model="gpt-4",
+            model=chosen_model,
             temperature=0.2,
             max_tokens=750,
             max_retries=5
@@ -235,10 +230,11 @@ def call_openai_api_with_messages(messages):
     """
     logger.debug(f"Calling OpenAI API with messages: {messages}")
     try:
-        # Instead of config.call_gpt_4_with_loadbalancer, do:
+        chosen_model = choose_model_for_task("long_research_summarization")
+
         response = call_openai_smart(
             messages=messages,
-            model="gpt-4",
+            model=chosen_model,
             temperature=0.2,
             max_tokens=750,
             max_retries=5
@@ -333,7 +329,6 @@ def get_field_mappings(required_fields, existing_labels):
                     mapped = True
                     break
 
-        # If not found in custom mappings
         if not mapped:
             field_normalized = normalize_string(field)
             if field_normalized in existing_labels_normalized:
@@ -346,7 +341,6 @@ def get_field_mappings(required_fields, existing_labels):
                     field_mapping[field] = existing_labels_normalized[matches[0]]
                     mapped = True
                 else:
-                    # fallback: ask GPT
                     label = get_field_mapping_via_openai(field, existing_labels)
                     if label:
                         field_mapping[field] = label
@@ -906,6 +900,8 @@ def get_shares_outstanding(stock_ticker):
 ################################################################
 # FLASK ROUTES
 ################################################################
+
+system3_bp = Blueprint('system3_bp', __name__, template_folder='templates')
 
 @system3_bp.route('/upload', methods=['POST'])
 def upload_files():

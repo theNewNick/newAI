@@ -17,17 +17,15 @@ from dotenv import load_dotenv
 from nltk.tokenize import sent_tokenize
 import pinecone
 from logging.handlers import RotatingFileHandler
-import config  # We still import config for AWS details, but no longer use round-robin from config.
-
-# If you need session for cross-referencing user session or IDs, you could uncomment:
-# from flask import session
+import config  # We still rely on config for AWS details, but no longer use round-robin from config.
 
 # Import Celery tasks for chunking & embedding in the background
 from modules.system2.tasks import process_pdf_chunks_task
 
-# -------------------------------------------------------------
-# NEW IMPORT: The "smart" load-balancer calls for chat & embedding
-# -------------------------------------------------------------
+# Import the "model_selector" helper
+from model_selector import choose_model_for_task
+
+# Import the “smart” load-balancer calls for chat & embedding
 from smart_load_balancer import call_openai_smart, call_openai_embedding_smart
 
 # Define the blueprint here
@@ -304,10 +302,13 @@ def generate_query_embedding(query):
     """
     logger.debug("Entering generate_query_embedding")
     try:
-        # Instead of call_openai_embedding_with_loadbalancer, we use call_openai_embedding_smart
+        from model_selector import choose_model_for_task
+        # We'll treat embeddings as task_type="embedding"
+        embedding_model = choose_model_for_task("embedding")
+
         response = call_openai_embedding_smart(
             input_list=[query],
-            model='text-embedding-ada-002',
+            model=embedding_model,
             max_retries=5
         )
         query_embedding = response['data'][0]['embedding']
@@ -341,7 +342,7 @@ def query_pinecone(pinecone_index, query_embedding, top_k, document_id):
 
 def get_response_from_openai(query, context_texts):
     """
-    Calls GPT-4 using the new smart LB for chat (call_openai_smart).
+    Calls GPT-4 (or dynamically chosen model) using the new smart LB for chat.
     """
     logger.debug("Entering get_response_from_openai")
     try:
@@ -356,16 +357,20 @@ def get_response_from_openai(query, context_texts):
                 "content": f"Context:\n{context}\n\nQuestion:\n{query}"
             }
         ]
-        # Replace direct openai.ChatCompletion with call_openai_smart
+        # --------------------------------------------------------------------
+        # Replace model="gpt-4" with a dynamic approach:
+        # --------------------------------------------------------------------
+        chosen_model = choose_model_for_task("short_summarization")
+
         response = call_openai_smart(
             messages=messages,
-            model="gpt-4",
+            model=chosen_model,     # replaced "gpt-4"
             temperature=0.7,
             max_tokens=400,
             max_retries=3
         )
         answer = response['choices'][0]['message']['content'].strip()
-        logger.debug("Received response from GPT-4 via smart LB")
+        logger.debug("Received response from GPT via smart LB")
         return answer
     except openai.error.OpenAIError as e:
         logger.error(f"Error getting response from OpenAI: {e}", exc_info=True)

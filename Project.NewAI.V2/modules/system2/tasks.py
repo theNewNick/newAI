@@ -10,6 +10,9 @@ import boto3
 from celery import shared_task
 from smart_load_balancer import call_openai_embedding_smart
 
+# NEW IMPORT: The "model_selector" helper for choosing embedding models
+from model_selector import choose_embedding_model
+
 logger = logging.getLogger(__name__)
 
 @shared_task
@@ -71,14 +74,23 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
             chunks.append(chunk.strip())
 
         # 4) Initialize Pinecone + embed + upsert
-        pinecone.init(api_key=os.getenv('PINECONE_API_KEY',''), environment=os.getenv('PINECONE_ENVIRONMENT',''))
+        pinecone.init(
+            api_key=os.getenv('PINECONE_API_KEY',''),
+            environment=os.getenv('PINECONE_ENVIRONMENT','')
+        )
         index = pinecone.Index(pinecone_index_name)
 
         vectors = []
+
+        # Dynamically choose which embedding model to use, if desired:
+        chosen_embedding_model = choose_embedding_model("large_document")
+        # or if you want a simpler approach, you can do:
+        # chosen_embedding_model = choose_embedding_model("basic_embedding")
+
         for i, c_text in enumerate(chunks):
             resp = call_openai_embedding_smart(
                 input_list=[c_text],
-                model='text-embedding-ada-002'
+                model=chosen_embedding_model
             )
             embedding = resp['data'][0]['embedding']
             vector_id = f"{object_key}_chunk_{i}"

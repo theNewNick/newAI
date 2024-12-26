@@ -35,8 +35,11 @@ import boto3
 import uuid
 
 # -------------------------------------------
-# NEW: Import the smart load-balancer function
+# NEW IMPORT: The "model_selector" helper
 # -------------------------------------------
+from model_selector import choose_model_for_task
+
+# Import the smart load-balancer function
 from smart_load_balancer import call_openai_smart
 
 # Define the blueprint
@@ -233,7 +236,7 @@ def extract_text_from_pdf(file_path):
 semaphore = asyncio.Semaphore(5)
 
 # -------------------------------------------------------------------------
-# New Async Wrapper to call the smart load-balancer in a thread executor
+# We have an async wrapper to call the smart load-balancer in a thread pool
 # -------------------------------------------------------------------------
 async def call_openai_smart_async(messages, model="gpt-4", temperature=0.5, max_tokens=750, max_retries=5):
     """
@@ -241,15 +244,15 @@ async def call_openai_smart_async(messages, model="gpt-4", temperature=0.5, max_
     to keep our code async-compatible if needed.
     """
     loop = asyncio.get_running_loop()
-    response = await loop.run_in_executor(
-        None,
-        call_openai_smart,
-        messages,
-        model,
-        temperature,
-        max_tokens,
-        max_retries
-    )
+    def sync_call():
+        return call_openai_smart(
+            messages,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            max_retries=max_retries
+        )
+    response = await loop.run_in_executor(None, sync_call)
     return response
 
 
@@ -262,11 +265,16 @@ async def call_openai_summarization(text):
                 {"role": "system", "content": "You are a financial analyst."},
                 {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
             ]
+            # ---------------------------
+            # Use dynamic model selection:
+            # ---------------------------
+            chosen_model = choose_model_for_task("long_research_summarization")
+
             response = await call_openai_smart_async(
-                messages, 
-                model="gpt-4", 
-                temperature=0.5, 
-                max_tokens=750, 
+                messages,
+                model=chosen_model,  # replaced "gpt-4"
+                temperature=0.5,
+                max_tokens=750,
                 max_retries=3
             )
             summary = response["choices"][0]["message"]["content"].strip()
@@ -310,11 +318,16 @@ Explanation: [brief explanation]
                 },
                 {"role": "user", "content": prompt}
             ]
+            # ---------------------------
+            # Use dynamic model selection:
+            # ---------------------------
+            chosen_model = choose_model_for_task("long_research_summarization")
+
             response = await call_openai_smart_async(
-                messages, 
-                model="gpt-4", 
-                temperature=0.5, 
-                max_tokens=750, 
+                messages,
+                model=chosen_model,  # replaced "gpt-4"
+                temperature=0.5,
+                max_tokens=750,
                 max_retries=3
             )
             content = response["choices"][0]["message"]["content"].strip()
@@ -1198,10 +1211,14 @@ def company_info_details():
             {"role": "system", "content": "You are an expert financial analyst."},
             {"role": "user", "content": prompt}
         ]
+
+        # Use dynamic model selection here as well if desired
+        chosen_model = choose_model_for_task("short_summarization")
+
         # Replaces old config-based approach; we now call the smart LB
         response = call_openai_smart(
             messages=messages,
-            model="gpt-4",
+            model=chosen_model,
             temperature=0.5,
             max_tokens=750,
             max_retries=3
