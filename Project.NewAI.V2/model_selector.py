@@ -2,7 +2,7 @@
 
 """
 This file contains helper functions that decide which OpenAI model to use
-for various tasks (e.g., short summarization, long summarization, embeddings).
+for various tasks (e.g., embedding, summarization, or advanced analysis).
 It allows you to centralize and evolve your model-selection logic without
 changing the load-balancer code.
 """
@@ -14,36 +14,39 @@ def choose_model_for_task(task_type: str, message_length: int = 0) -> str:
     Arguments:
     ----------
     task_type : str
-        A string identifying the type of task. Examples might include:
-        "embedding", "short_summarization", "long_research_summarization", etc.
+        A string identifying the type of task. For example:
+        "embedding", "complex_deep_analysis", or any summarization label
+        such as "short_summarization", "long_summarization", etc.
     message_length : int
         (Optional) The approximate number of tokens or length of the user message.
-        You can use this to switch to GPT-4 if the message is very long, or stay
-        on GPT-3.5 if it's short. Default is 0.
+        You could use this to apply different logic if needed. Default is 0.
 
     Returns:
     --------
     str
         The name of the model to be used (e.g., "gpt-3.5-turbo", "gpt-4",
         "text-embedding-ada-002", etc.).
+
+    Updated Logic:
+    -------------
+    - "embedding" -> Always "text-embedding-ada-002".
+    - "complex_deep_analysis" (or any advanced agentic tasks) -> "gpt-4".
+    - All other cases (including short or long summaries) -> "gpt-3.5-turbo".
+
+    This ensures GPT-3.5 is the default for typical summarization, while GPT-4
+    is reserved for specialized tasks.
     """
 
-    # Example logic below. Adjust according to your needs:
+    # Use text-embedding-ada-002 for embeddings
     if task_type == "embedding":
-        # Use the standard embedding model
         return "text-embedding-ada-002"
 
-    elif task_type == "long_research_summarization":
-        # For complex or long tasks, choose GPT-4
+    # Reserve gpt-4 for complex or deep analysis tasks
+    elif task_type == "complex_deep_analysis":
         return "gpt-4"
 
-    elif task_type == "short_summarization":
-        # For shorter or simpler tasks, choose GPT-3.5-turbo
-        return "gpt-3.5-turbo"
-
-    else:
-        # Fallback or default to GPT-3.5-turbo
-        return "gpt-3.5-turbo"
+    # Fallback to gpt-3.5-turbo for everything else (e.g., summarization)
+    return "gpt-3.5-turbo"
 
 
 def choose_embedding_model(task_type: str) -> str:
@@ -53,19 +56,22 @@ def choose_embedding_model(task_type: str) -> str:
     Arguments:
     ----------
     task_type : str
-        A string that indicates the type of embedding task. You might categorize
-        tasks as "large_document", "basic_embedding", etc.
+        A string indicating the type of embedding task. For example:
+        "large_document", "basic_embedding", etc.
 
     Returns:
     --------
     str
         The name of the embedding model to be used (e.g., "text-embedding-ada-002",
         "text-embedding-babbage-001", etc.).
+
+    Default Behavior:
+    ----------------
+    - If task_type == "large_document": Use "text-embedding-babbage-001".
+    - Else: Use "text-embedding-ada-002".
     """
 
-    # Example logic below. Adjust as needed:
     if task_type == "large_document":
-        # Possibly use a different model if dealing with very large content
         return "text-embedding-babbage-001"
 
     # Default if no special case is matched

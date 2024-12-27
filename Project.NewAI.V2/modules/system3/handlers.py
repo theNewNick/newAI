@@ -71,6 +71,7 @@ class AssumptionSet(db.Model):
     operating_expenses_pct = db.Column(db.Float, nullable=False)
     feedbacks = db.relationship('Feedback', backref='assumption_set', lazy=True)
 
+
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sector = db.Column(db.String(50), nullable=False)
@@ -90,11 +91,13 @@ class Feedback(db.Model):
 
     assumption_set_id = db.Column(db.Integer, db.ForeignKey('assumption_set.id'), nullable=False)
 
+
 ################################################################
 # FILE & DATA PROCESSING UTILS
 ################################################################
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def clean_json(json_like_str):
     """Cleans common JSON issues like trailing commas or JS comments."""
@@ -102,6 +105,7 @@ def clean_json(json_like_str):
     cleaned = re.sub(r',\s*}', '}', cleaned)
     cleaned = re.sub(r',\s*\]', ']', cleaned)
     return cleaned
+
 
 def parse_json_from_reply(reply):
     """Extracts JSON from GPT-like text replies."""
@@ -116,6 +120,7 @@ def parse_json_from_reply(reply):
             logger.exception("JSON parsing failed in parse_json_from_reply")
             return {}
     return {}
+
 
 def summarize_feedback(sector, industry, sub_industry, scenario):
     logger.debug(f"Summarizing feedback for {sector}, {industry}, {sub_industry}, {scenario}")
@@ -164,6 +169,7 @@ def summarize_feedback(sector, industry, sub_industry, scenario):
         logger.exception("Error summarizing feedback")
         return "Error retrieving feedback."
 
+
 def validate_assumptions(adjusted_assumptions):
     logger.debug(f"Validating assumptions: {adjusted_assumptions}")
     ranges = {
@@ -180,7 +186,6 @@ def validate_assumptions(adjusted_assumptions):
         if value is not None:
             try:
                 value = float(value)
-                # If user typed e.g. 10 -> 1000%?
                 if value > 1.0:
                     value = value / 100.0
                 value = max(min_val, min(value, max_val))
@@ -192,6 +197,7 @@ def validate_assumptions(adjusted_assumptions):
     logger.debug(f"Validated assumptions: {validated_assumptions}")
     return validated_assumptions
 
+
 ################################################################
 # REPLACE Old Round-Robin Calls with Smart LB
 ################################################################
@@ -199,7 +205,8 @@ def validate_assumptions(adjusted_assumptions):
 def call_openai_api(prompt):
     """
     Replaces direct openai.ChatCompletion.create with call_openai_smart so
-    we rotate among multiple accounts.
+    we rotate among multiple accounts. 
+    This is for advanced logic => GPT-4 usage in system3.
     """
     logger.debug(f"Calling OpenAI API with prompt[:1000]: {prompt[:1000]}...")
     try:
@@ -207,8 +214,8 @@ def call_openai_api(prompt):
             {"role": "system", "content": "You are an expert financial analyst."},
             {"role": "user", "content": prompt}
         ]
-        # Use the dynamic model approach:
-        chosen_model = choose_model_for_task("long_research_summarization")
+        # We'll use the plan's GPT-4 path => 'complex_deep_analysis'
+        chosen_model = choose_model_for_task("complex_deep_analysis")
 
         response = call_openai_smart(
             messages=messages,
@@ -224,13 +231,14 @@ def call_openai_api(prompt):
         logger.exception("Error in OpenAI API call")
         return ""
 
+
 def call_openai_api_with_messages(messages):
     """
-    Same load-balanced approach, but accepts 'messages' directly.
+    Same load-balanced approach, but accepts 'messages' directly => GPT-4 for system3 tasks.
     """
     logger.debug(f"Calling OpenAI API with messages: {messages}")
     try:
-        chosen_model = choose_model_for_task("long_research_summarization")
+        chosen_model = choose_model_for_task("complex_deep_analysis")
 
         response = call_openai_smart(
             messages=messages,
@@ -245,6 +253,7 @@ def call_openai_api_with_messages(messages):
     except Exception as e:
         logger.exception("Error in OpenAI API call with messages")
         return ""
+
 
 ################################################################
 # MAPPINGS & DATA EXTRACTION
@@ -290,8 +299,10 @@ custom_mappings = {
     ],
 }
 
+
 def normalize_string(s):
     return re.sub(r'[^a-zA-Z0-9]', '', s).lower()
+
 
 def get_field_mapping_via_openai(field, existing_labels):
     logger.debug(f"Getting field mapping for {field} using OpenAI")
@@ -311,6 +322,7 @@ Only use labels exactly as they appear in the available labels. Do not include a
     else:
         logger.error("Failed to extract JSON from the assistant's reply.")
         return None
+
 
 def get_field_mappings(required_fields, existing_labels):
     logger.debug(f"Getting field mappings for: {required_fields}")
@@ -351,6 +363,7 @@ def get_field_mappings(required_fields, existing_labels):
     logger.debug(f"Field mappings result: {field_mapping}")
     return field_mapping
 
+
 def process_uploaded_file(file_path, file_type):
     logger.debug(f"Processing uploaded file: {file_path} of type {file_type}")
     try:
@@ -378,20 +391,24 @@ def process_uploaded_file(file_path, file_type):
         if os.path.exists(file_path):
             os.remove(file_path)
 
+
 def process_income_statement(data):
     logger.debug("Processing income statement")
     required_fields = ['Revenue', 'COGS', 'Operating Expenses']
     return extract_fields(data, required_fields)
+
 
 def process_balance_sheet(data):
     logger.debug("Processing balance sheet")
     required_fields = ['Current Assets', 'Current Liabilities']
     return extract_fields(data, required_fields)
 
+
 def process_cash_flow_statement(data):
     logger.debug("Processing cash flow statement")
     required_fields = ['Depreciation', 'Capital Expenditures']
     return extract_fields(data, required_fields)
+
 
 def extract_fields(data, required_fields):
     logger.debug(f"Extracting fields: {required_fields}")
@@ -425,9 +442,11 @@ def extract_fields(data, required_fields):
     logger.debug(f"Extracted data: {processed_data}")
     return processed_data
 
+
 ################################################################
 # FINANCIAL / ECONOMIC HELPER FUNCTIONS
 ################################################################
+
 import time
 
 def get_risk_free_rate():
@@ -440,6 +459,7 @@ def get_risk_free_rate():
         return current_yield
     else:
         return 0.02
+
 
 def calculate_mrp():
     logger.debug("Calculating MRP")
@@ -460,8 +480,9 @@ def calculate_mrp():
     logger.debug(f"MRP: {mrp}")
     return mrp
 
+
 ################################################################
-# MULTI-AGENT ADJUSTMENTS (Replace old calls with call_openai_api)
+# MULTI-AGENT ADJUSTMENTS (Now using GPT-4 for advanced tasks)
 ################################################################
 
 def adjust_for_sector(sector):
@@ -489,6 +510,7 @@ As a financial analyst specializing in the {sector} sector...
         logger.exception("Error parsing JSON in adjust_for_sector")
         return {}
 
+
 def adjust_for_industry(industry):
     logger.debug(f"Adjusting for industry: {industry}")
     prompt = f"""
@@ -513,6 +535,7 @@ As a financial analyst specializing in the {industry} industry...
     except json.JSONDecodeError:
         logger.exception("Error parsing JSON in adjust_for_industry")
         return {}
+
 
 def adjust_for_sub_industry(sub_industry):
     logger.debug(f"Adjusting for sub_industry: {sub_industry}")
@@ -539,6 +562,7 @@ As a financial analyst specializing in the {sub_industry} sub-industry...
         logger.exception("Error parsing JSON in adjust_for_sub_industry")
         return {}
 
+
 def adjust_for_scenario(scenario):
     logger.debug(f"Adjusting for scenario: {scenario}")
     prompt = f"""
@@ -563,6 +587,7 @@ As a financial analyst, provide financial assumptions for a '{scenario}' scenari
     except json.JSONDecodeError:
         logger.exception("Error parsing JSON in adjust_for_scenario")
         return {}
+
 
 def adjust_for_company(stock_ticker):
     logger.debug(f"Adjusting for company: {stock_ticker}")
@@ -595,6 +620,7 @@ As a financial analyst, analyze {company_name} ({stock_ticker})...
         logger.exception(f"Error adjusting for company {stock_ticker}")
         return {}
 
+
 def adjust_based_on_feedback(sector, industry, sub_industry, scenario):
     logger.debug("Adjusting based on feedback")
     feedback_summary = summarize_feedback(sector, industry, sub_industry, scenario)
@@ -621,6 +647,7 @@ You have received user feedback...
     except json.JSONDecodeError:
         logger.exception("Error parsing JSON in adjust_based_on_feedback")
         return {}
+
 
 def adjust_based_on_sentiment(stock_ticker):
     logger.debug(f"Adjusting based on sentiment for {stock_ticker}")
@@ -669,6 +696,7 @@ def adjust_based_on_sentiment(stock_ticker):
     except Exception as e:
         logger.exception(f"Error in adjust_based_on_sentiment for {stock_ticker}")
         return {}
+
 
 def adjust_based_on_historical_data(stock_ticker):
     logger.debug(f"Adjusting based on historical data for {stock_ticker}")
@@ -735,6 +763,7 @@ def adjust_based_on_historical_data(stock_ticker):
         logger.exception(f"Error adjusting based on historical data for {stock_ticker}")
         return {}
 
+
 ################################################################
 # AGENT WEIGHTING & VALIDATION
 ################################################################
@@ -755,6 +784,7 @@ You are a financial expert. Assign an importance weight between 0 and 1...
     logger.debug(f"Agent importance weights: {agent_weights}")
     return agent_weights
 
+
 def validation_agent(final_adjustments, sector, industry, sub_industry, scenario, stock_ticker, agent_adjustments):
     logger.debug("Running validation agent")
     prompt = f"""
@@ -770,6 +800,7 @@ You are a Validation Agent tasked with reviewing and validating the financial as
         return reasoning, confidence_scores
     else:
         return "", {}
+
 
 def compute_final_adjustments_with_agents(agent_adjustments, agent_importance_weights, agent_confidence_scores):
     logger.debug("Computing final adjustments with agents")
@@ -800,6 +831,7 @@ def compute_final_adjustments_with_agents(agent_adjustments, agent_importance_we
     logger.debug(f"Final adjustments: {final_adjustments}")
     return final_adjustments
 
+
 def pre_validation_sanity_check(adjusted_assumptions, historical_wacc, historical_growth, stock_ticker):
     logger.debug("Running pre-validation sanity check")
     prompt = f"""
@@ -818,6 +850,7 @@ Check if assumptions are reasonable...
         return corrected
     else:
         return adjusted_assumptions
+
 
 def adjust_financial_variables(sector, industry, sub_industry, scenario, stock_ticker):
     logger.debug("Adjusting financial variables from all agents")
@@ -882,6 +915,7 @@ def adjust_financial_variables(sector, industry, sub_industry, scenario, stock_t
     logger.debug(f"Validation reasoning: {reasoning}, Confidence scores: {agent_confidence_scores}")
     return final_adjustments, reasoning, agent_confidence_scores
 
+
 def get_shares_outstanding(stock_ticker):
     logger.debug(f"Fetching shares outstanding for {stock_ticker}")
     try:
@@ -897,11 +931,13 @@ def get_shares_outstanding(stock_ticker):
         logger.exception(f"Error fetching shares outstanding for {stock_ticker}")
         return None
 
+
 ################################################################
 # FLASK ROUTES
 ################################################################
 
 system3_bp = Blueprint('system3_bp', __name__, template_folder='templates')
+
 
 @system3_bp.route('/upload', methods=['POST'])
 def upload_files():
@@ -939,6 +975,7 @@ def upload_files():
 
     logger.debug(f"Files uploaded successfully: {data}")
     return jsonify({'message': 'Files uploaded successfully', 'data': data}), 200
+
 
 @system3_bp.route('/calculate', methods=['POST'])
 def calculate_intrinsic_value():
@@ -1058,6 +1095,7 @@ def calculate_intrinsic_value():
     except Exception as e:
         logger.exception("Error in /calculate route")
         return jsonify({'error': 'An error occurred during calculation.'}), 500
+
 
 @system3_bp.route('/feedback', methods=['POST'])
 def receive_feedback():

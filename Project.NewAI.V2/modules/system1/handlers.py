@@ -34,9 +34,9 @@ import config  # We still import config for other references if needed
 import boto3
 import uuid
 
-# -------------------------------------------
+# --------------------------------------------------
 # NEW IMPORT: The "model_selector" helper
-# -------------------------------------------
+# --------------------------------------------------
 from model_selector import choose_model_for_task
 
 # Import the smart load-balancer function
@@ -235,15 +235,17 @@ def extract_text_from_pdf(file_path):
 
 semaphore = asyncio.Semaphore(5)
 
+
 # -------------------------------------------------------------------------
 # We have an async wrapper to call the smart load-balancer in a thread pool
 # -------------------------------------------------------------------------
-async def call_openai_smart_async(messages, model="gpt-4", temperature=0.5, max_tokens=750, max_retries=5):
+async def call_openai_smart_async(messages, model="gpt-3.5-turbo", temperature=0.5, max_tokens=750, max_retries=5):
     """
     Because call_openai_smart is synchronous, we use run_in_executor 
     to keep our code async-compatible if needed.
     """
     loop = asyncio.get_running_loop()
+
     def sync_call():
         return call_openai_smart(
             messages,
@@ -252,27 +254,29 @@ async def call_openai_smart_async(messages, model="gpt-4", temperature=0.5, max_
             max_tokens=max_tokens,
             max_retries=max_retries
         )
+
     response = await loop.run_in_executor(None, sync_call)
     return response
 
 
 async def call_openai_summarization(text):
+    """
+    Single-pass summarization using gpt-3.5-turbo (short_summarization).
+    """
     retry_delay = 5
     max_retries = 3
     for attempt in range(max_retries):
         try:
             messages = [
-                {"role": "system", "content": "You are a financial analyst."},
+                {"role": "system", "content": "You are a financial analyst. Provide a concise summary."},
                 {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
             ]
-            # ---------------------------
-            # Use dynamic model selection:
-            # ---------------------------
-            chosen_model = choose_model_for_task("long_research_summarization")
+            # Use dynamic model selection => short_summarization => gpt-3.5-turbo
+            chosen_model = choose_model_for_task("short_summarization")
 
             response = await call_openai_smart_async(
                 messages,
-                model=chosen_model,  # replaced "gpt-4"
+                model=chosen_model,
                 temperature=0.5,
                 max_tokens=750,
                 max_retries=3
@@ -294,6 +298,9 @@ async def call_openai_summarization(text):
 
 
 async def call_openai_analyze_sentiment(text, context):
+    """
+    Analyzes sentiment in a single pass using gpt-3.5-turbo (short_summarization).
+    """
     retry_delay = 5
     max_retries = 5
     prompt = f"""
@@ -318,14 +325,12 @@ Explanation: [brief explanation]
                 },
                 {"role": "user", "content": prompt}
             ]
-            # ---------------------------
-            # Use dynamic model selection:
-            # ---------------------------
-            chosen_model = choose_model_for_task("long_research_summarization")
+            # Use dynamic model selection => short_summarization => gpt-3.5-turbo
+            chosen_model = choose_model_for_task("short_summarization")
 
             response = await call_openai_smart_async(
                 messages,
-                model=chosen_model,  # replaced "gpt-4"
+                model=chosen_model,
                 temperature=0.5,
                 max_tokens=750,
                 max_retries=3
@@ -358,6 +363,10 @@ Explanation: [brief explanation]
 
 
 async def summarize_text_async(text):
+    """
+    Simple approach: if text < 3800 tokens (for gpt-3.5-turbo), do a single pass.
+    Otherwise, split into ~3800-token chunks and summarize each, then combine.
+    """
     logger.debug('Starting text summarization.')
     max_tokens_per_chunk = 3800
     encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
@@ -368,6 +377,7 @@ async def summarize_text_async(text):
         summary = await call_openai_summarization(text)
         return summary
 
+    # Split into multiple ~3800-token chunks
     chunks = []
     for i in range(0, token_count, max_tokens_per_chunk):
         chunk_tokens = tokens[i:i + max_tokens_per_chunk]
@@ -384,8 +394,14 @@ async def summarize_text_async(text):
 async def dynamic_multi_pass_summarize_async(
     text: str,
     chunk_size: int = 1000,
-    max_passes: int = 4
+    max_passes: int = 2
 ) -> str:
+    """
+    Reduced to max_passes=2. 
+    We do at most two passes of summarization:
+      1) Summarize large text in chunks (or single pass if small).
+      2) If needed, summarize the result again if it's still too large.
+    """
     pass_count = 0
     current_text = text
 
@@ -400,8 +416,12 @@ async def dynamic_multi_pass_summarize_async(
 
 
 async def single_pass_summarize(text: str, chunk_size: int = 1000) -> str:
+    """
+    Single-pass approach with gpt-3.5-turbo. If the text is bigger than chunk_size,
+    we chunk it, summarize each chunk, and then combine.
+    """
     logger.debug('Starting single-pass summarization.')
-    encoding = tiktoken.encoding_for_model("gpt-4")
+    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
     tokens = encoding.encode(text)
     token_count = len(tokens)
 
@@ -409,6 +429,7 @@ async def single_pass_summarize(text: str, chunk_size: int = 1000) -> str:
         summary = await call_openai_summarization(text)
         return summary or ""
 
+    # Split into multiple ~chunk_size token chunks
     chunks = []
     for i in range(0, token_count, chunk_size):
         chunk_tokens = tokens[i:i + chunk_size]
@@ -425,7 +446,10 @@ async def single_pass_summarize(text: str, chunk_size: int = 1000) -> str:
 
 
 async def is_short_enough(text: str, chunk_size: int = 1000) -> bool:
-    encoding = tiktoken.encoding_for_model("gpt-4")
+    """
+    Checks if 'text' is under 'chunk_size' tokens for gpt-3.5-turbo.
+    """
+    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
     token_count = len(encoding.encode(text))
     return token_count <= chunk_size
 
@@ -463,6 +487,10 @@ def parse_headings_in_10k(text: str):
 
 
 async def extract_10k_insights(ten_k_text):
+    """
+    Extract insights by splitting the 10-K into sections, 
+    then summarizing them with the new 2-pass max approach.
+    """
     logger.debug('Extracting 10-K insights with new approach.')
     sections = parse_headings_in_10k(ten_k_text)
 
@@ -479,14 +507,18 @@ async def extract_10k_insights(ten_k_text):
         elif "ITEM 7" in heading_upper or "MANAGEMENT'S DISCUSSION" in heading_upper:
             industry_text += f"\n{content}"
 
-    company_summary = await dynamic_multi_pass_summarize_async(company_text, 1000, 4) if company_text else "N/A"
-    industry_summary = await dynamic_multi_pass_summarize_async(industry_text, 1000, 4) if industry_text else "N/A"
-    risks_summary = await dynamic_multi_pass_summarize_async(risks_text, 1000, 4) if risks_text else "N/A"
+    # Summarize each chunk with up to 2 passes total
+    company_summary = await dynamic_multi_pass_summarize_async(company_text, 1000, 2) if company_text else "N/A"
+    industry_summary = await dynamic_multi_pass_summarize_async(industry_text, 1000, 2) if industry_text else "N/A"
+    risks_summary = await dynamic_multi_pass_summarize_async(risks_text, 1000, 2) if risks_text else "N/A"
 
     return company_summary, industry_summary, risks_summary
 
 
 def run_async_function(coroutine):
+    """
+    Utility to run an async function from sync code.
+    """
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -546,6 +578,10 @@ from .pdf_generation import generate_pdf_report
 
 @system1_bp.route('/analyze', methods=['POST'])
 def analyze_financials():
+    """
+    Main endpoint to handle financial CSVs, PDFs, run DCF analysis, 
+    sentiment, and produce final PDF.
+    """
     try:
         logger.info('Starting analyze_financials function.')
         file_paths = {}
@@ -583,6 +619,7 @@ def analyze_financials():
                 logger.info(f"Received file: {field_name} - {filename}")
             else:
                 if field_name == 'company_logo':
+                    # Optional file
                     file_paths[field_name] = None
                     logger.warning('No company logo uploaded or invalid file type.')
                 else:
@@ -599,12 +636,13 @@ def analyze_financials():
         else:
             logger.info('Extracted text from the 10-K successfully.')
 
-        # Summarize the 10-K
+        # Summarize the 10-K (2 passes max)
         company_summary, industry_summary, risks_summary = run_async_function(
             extract_10k_insights(ten_k_text)
         )
         logger.info('Generated 10-K insights successfully.')
 
+        # Gather form inputs for DCF & ratio analysis
         wacc = float(request.form['wacc']) / 100
         tax_rate = float(request.form['tax_rate']) / 100
         growth_rate = float(request.form['growth_rate']) / 100
@@ -782,7 +820,7 @@ def analyze_financials():
             logger.warning(error_message)
             return jsonify({'error': error_message}), 400
 
-        # Sentiment
+        # Sentiment (each doc summarized once, then a single pass sentiment)
         sentiments = run_async_function(
             process_documents(earnings_call_text, industry_report_text, economic_report_text)
         )
@@ -1212,10 +1250,9 @@ def company_info_details():
             {"role": "user", "content": prompt}
         ]
 
-        # Use dynamic model selection here as well if desired
+        # Use dynamic model selection => short_summarization => gpt-3.5-turbo
         chosen_model = choose_model_for_task("short_summarization")
 
-        # Replaces old config-based approach; we now call the smart LB
         response = call_openai_smart(
             messages=messages,
             model=chosen_model,
@@ -1234,6 +1271,10 @@ def company_info_details():
 # Support function for process_documents usage
 # -------------------------------------------------------------------------
 async def process_documents(earnings_call_text, industry_report_text, economic_report_text):
+    """
+    Summarizes the extracted texts for earnings, industry, and economic reports 
+    using single-pass or chunk-based summarization, then calls sentiment analysis.
+    """
     logger.debug('Summarizing extracted texts for earnings, industry, and economic reports.')
     summaries = await asyncio.gather(
         summarize_text_async(earnings_call_text),

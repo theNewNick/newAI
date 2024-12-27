@@ -28,18 +28,20 @@ from model_selector import choose_model_for_task
 # Import the “smart” load-balancer calls for chat & embedding
 from smart_load_balancer import call_openai_smart, call_openai_embedding_smart
 
-# Define the blueprint here
+# Define the blueprint
 system2_bp = Blueprint('system2_bp', __name__, template_folder='templates')
 
-# Configure logging
+# Configure logging to modules/system2/system2.log
 LOG_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'system2.log')
 handler = RotatingFileHandler(LOG_FILE_PATH, maxBytes=100000, backupCount=1)
 handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
 handler.setFormatter(formatter)
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-# Clear existing handlers if any, to avoid duplicate logs
+
+# Clear existing handlers (avoid duplication) and add the new one
 if logger.hasHandlers():
     logger.handlers.clear()
 logger.addHandler(handler)
@@ -51,7 +53,7 @@ AWS_REGION = config.AWS_REGION
 S3_BUCKET_NAME = config.S3_BUCKET_NAME
 
 # We no longer do openai.api_key = config.OPENAI_API_KEY
-# Instead, calls go through our new "smart load balancer."
+# Instead, calls go through our new "smart_load_balancer."
 
 PINECONE_API_KEY = config.PINECONE_API_KEY
 PINECONE_ENVIRONMENT = config.PINECONE_ENVIRONMENT
@@ -75,9 +77,10 @@ except LookupError:
     logger.debug("NLTK 'punkt' tokenizer downloaded")
 
 
-################################################################################
-# Helper functions for PDF handling, text preprocessing, and chunking
-################################################################################
+##############################################################################
+# Helper functions for PDF handling, text preprocessing, etc.
+# (Note: chunking & embeddings now typically occur in tasks.py)
+##############################################################################
 
 def download_pdf_from_s3(bucket_name, object_key, download_path):
     logger.debug(f"Entering download_pdf_from_s3 with object_key: {object_key}")
@@ -110,11 +113,12 @@ def extract_text_from_pdf(pdf_path):
 
 
 def preprocess_text(text):
+    """
+    Basic text cleanup, removing non-ASCII and normalizing whitespace.
+    """
     logger.debug("Entering preprocess_text")
     try:
-        # Remove non-ASCII chars
-        text = re.sub(r'[^\x00-\x7F]+', ' ', text)
-        # Normalize whitespace
+        text = re.sub(r'[^\x00-\x7F]+', ' ', text)  # Remove non-ASCII
         text = re.sub(r'\s+', ' ', text).strip()
         logger.debug("Completed text preprocessing")
         return text
@@ -123,11 +127,17 @@ def preprocess_text(text):
         raise
 
 
+# NOTE: We used to do chunking here with `split_text_into_chunks`. 
+# However, we now do chunking + embedding in tasks.py (process_pdf_chunks_task).
+# If you want to keep a local chunk function for smaller usage, you can, 
+# but it won't be used in the new embedding pipeline.
 def split_text_into_chunks(text, max_tokens=500):
     """
-    Break the text into smaller pieces (~500 tokens each) for embeddings, etc.
+    Legacy approach: Splits text by sentences until ~500 words are reached.
+    Kept here for reference, but the new pipeline in tasks.py uses 
+    tiktoken-based token chunking and runs in Celery.
     """
-    logger.debug("Entering split_text_into_chunks")
+    logger.debug("Entering split_text_into_chunks (legacy sentence-based approach)")
     try:
         sentences = sent_tokenize(text)
         logger.debug(f"Tokenized text into {len(sentences)} sentences")
@@ -147,27 +157,26 @@ def split_text_into_chunks(text, max_tokens=500):
                 chunk = sentence
                 token_count = sentence_token_count
 
-        # Add the last chunk if it's non-empty
         if chunk:
             chunks.append(chunk.strip())
 
-        logger.debug(f"Split text into {len(chunks)} chunks")
+        logger.debug(f"Split text into {len(chunks)} chunks (sentence-based, ~{max_tokens} words each)")
         return chunks
     except Exception as e:
         logger.error(f"Error splitting text into chunks: {e}", exc_info=True)
         raise
 
 
-################################################################################
+##############################################################################
 # Routes
-################################################################################
+##############################################################################
 
 @system2_bp.route('/upload', methods=['POST'])
 def upload_files():
     """
     1) Accept PDF uploads
     2) Store them in S3
-    3) Queue Celery task to parse, chunk, embed
+    3) Queue Celery task (process_pdf_chunks_task) to parse, chunk, embed
     """
     logger.debug("Accessed upload_files route")
     try:
@@ -219,10 +228,6 @@ def upload_files():
                 return jsonify({'error': f'File upload failed for {filename}'}), 500
 
             # Queue the Celery task for background processing
-            # 1) Download PDF from S3
-            # 2) Extract + preprocess + chunk text
-            # 3) Generate embeddings
-            # 4) Upsert to Pinecone
             task_result = process_pdf_chunks_task.delay(
                 bucket_name=S3_BUCKET_NAME,
                 object_key=unique_filename,
@@ -253,8 +258,8 @@ def chat():
     Endpoint to handle chat requests. It:
       1) Accepts user_message & document_id
       2) Creates an embedding for user_message
-      3) Queries Pinecone for context
-      4) Calls GPT for final answer
+      3) Queries Pinecone for the relevant context
+      4) Calls GPT for a final answer
     """
     logger.debug("Accessed chat route")
     try:
@@ -298,14 +303,12 @@ def chat():
 
 def generate_query_embedding(query):
     """
-    Replaces old round-robin embedding calls with the new smart LB approach.
+    Replaces old round-robin embedding calls with the new smart LB approach,
+    using choose_model_for_task("embedding").
     """
     logger.debug("Entering generate_query_embedding")
     try:
-        from model_selector import choose_model_for_task
-        # We'll treat embeddings as task_type="embedding"
         embedding_model = choose_model_for_task("embedding")
-
         response = call_openai_embedding_smart(
             input_list=[query],
             model=embedding_model,
@@ -323,6 +326,9 @@ def generate_query_embedding(query):
 
 
 def query_pinecone(pinecone_index, query_embedding, top_k, document_id):
+    """
+    Performs a vector similarity search in Pinecone, filtering by document_id.
+    """
     logger.debug("Entering query_pinecone")
     try:
         query_filter = {'document_id': {'$eq': document_id}}
@@ -342,36 +348,49 @@ def query_pinecone(pinecone_index, query_embedding, top_k, document_id):
 
 def get_response_from_openai(query, context_texts):
     """
-    Calls GPT-4 (or dynamically chosen model) using the new smart LB for chat.
+    Calls GPT for a short Q&A summary of the retrieved context, 
+    defaulting to gpt-3.5-turbo (short_summarization).
     """
     logger.debug("Entering get_response_from_openai")
     try:
+        # Combine context chunks
         context = "\n\n".join(context_texts)
+
+        # Provide strong instructions for brevity
         messages = [
             {
                 "role": "system",
-                "content": "You are an AI assistant that provides helpful answers based on the provided context."
+                "content": (
+                    "You are an AI assistant. "
+                    "Provide concise answers. Limit your response to 100 words or fewer. "
+                    "Use bullet points if necessary, but keep it short."
+                )
             },
             {
                 "role": "user",
-                "content": f"Context:\n{context}\n\nQuestion:\n{query}"
+                "content": (
+                    f"Context:\n{context}\n\n"
+                    f"Question:\n{query}"
+                )
             }
         ]
-        # --------------------------------------------------------------------
-        # Replace model="gpt-4" with a dynamic approach:
-        # --------------------------------------------------------------------
+
+        # We choose "short_summarization" => gpt-3.5-turbo in model_selector
         chosen_model = choose_model_for_task("short_summarization")
 
+        # Cap max_tokens to keep responses short
         response = call_openai_smart(
             messages=messages,
-            model=chosen_model,     # replaced "gpt-4"
+            model=chosen_model,
             temperature=0.7,
-            max_tokens=400,
+            max_tokens=300,
             max_retries=3
         )
+
         answer = response['choices'][0]['message']['content'].strip()
         logger.debug("Received response from GPT via smart LB")
         return answer
+
     except openai.error.OpenAIError as e:
         logger.error(f"Error getting response from OpenAI: {e}", exc_info=True)
         raise
@@ -415,8 +434,8 @@ def test_nltk():
 @system2_bp.route('/list_documents', methods=['GET'])
 def list_documents():
     """
-    Returns a JSON list of PDF documents in S3. 
-    Useful for a dropdown of available docs to pass as document_id.
+    Returns a JSON list of PDF documents in S3, for use in a dropdown 
+    of available docs to pass as document_id, etc.
     """
     try:
         response = s3.list_objects_v2(Bucket=S3_BUCKET_NAME)
