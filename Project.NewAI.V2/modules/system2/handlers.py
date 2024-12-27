@@ -1,5 +1,3 @@
-# modules/system2/handlers.py
-
 import os
 import io
 import uuid

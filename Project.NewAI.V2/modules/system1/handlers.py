@@ -1,5 +1,3 @@
-# modules/system1/handlers.py
-
 import os
 import io
 import time
@@ -236,9 +234,6 @@ def extract_text_from_pdf(file_path):
 semaphore = asyncio.Semaphore(5)
 
 
-# -------------------------------------------------------------------------
-# We have an async wrapper to call the smart load-balancer in a thread pool
-# -------------------------------------------------------------------------
 async def call_openai_smart_async(messages, model="gpt-3.5-turbo", temperature=0.5, max_tokens=750, max_retries=5):
     """
     Because call_openai_smart is synchronous, we use run_in_executor 
@@ -271,7 +266,6 @@ async def call_openai_summarization(text):
                 {"role": "system", "content": "You are a financial analyst. Provide a concise summary."},
                 {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
             ]
-            # Use dynamic model selection => short_summarization => gpt-3.5-turbo
             chosen_model = choose_model_for_task("short_summarization")
 
             response = await call_openai_smart_async(
@@ -325,7 +319,6 @@ Explanation: [brief explanation]
                 },
                 {"role": "user", "content": prompt}
             ]
-            # Use dynamic model selection => short_summarization => gpt-3.5-turbo
             chosen_model = choose_model_for_task("short_summarization")
 
             response = await call_openai_smart_async(
@@ -397,10 +390,9 @@ async def dynamic_multi_pass_summarize_async(
     max_passes: int = 2
 ) -> str:
     """
-    Reduced to max_passes=2. 
-    We do at most two passes of summarization:
-      1) Summarize large text in chunks (or single pass if small).
-      2) If needed, summarize the result again if it's still too large.
+    This function previously performed up to 2 passes of summarization
+    on large text. We are no longer using it for 10-K, but we keep
+    it here for reference so as not to omit code.
     """
     pass_count = 0
     current_text = text
@@ -486,12 +478,39 @@ def parse_headings_in_10k(text: str):
     return sections
 
 
+async def single_pass_short_summary(text: str, max_tokens: int = 300) -> str:
+    """
+    Calls GPT once to produce a short summary (3-5 sentences)
+    with a small max_tokens limit.
+    """
+    prompt = (
+        "You are an expert financial analyst. "
+        "Summarize the following text in 3–5 concise sentences:\n\n"
+        + text
+    )
+
+    messages = [
+        {"role": "system", "content": "Provide a concise, factual summary."},
+        {"role": "user", "content": prompt}
+    ]
+
+    response = await call_openai_smart_async(
+        messages=messages,
+        model="gpt-3.5-turbo",
+        temperature=0.5,
+        max_tokens=max_tokens,
+        max_retries=3
+    )
+    return response["choices"][0]["message"]["content"].strip()
+
+
 async def extract_10k_insights(ten_k_text):
     """
-    Extract insights by splitting the 10-K into sections, 
-    then summarizing them with the new 2-pass max approach.
+    Extracts only the relevant sections (ITEM 1, ITEM 1A, ITEM 7) from the 10-K
+    and does a single-pass short summary for each. This avoids summarizing
+    the entire 10-K unnecessarily.
     """
-    logger.debug('Extracting 10-K insights with new approach.')
+    logger.debug('Extracting 10-K insights with updated single-pass approach.')
     sections = parse_headings_in_10k(ten_k_text)
 
     company_text = ""
@@ -502,17 +521,27 @@ async def extract_10k_insights(ten_k_text):
         heading_upper = heading.upper()
         if "ITEM 1A" in heading_upper or "RISK FACTORS" in heading_upper:
             risks_text += f"\n{content}"
-        elif "ITEM 1" in heading_upper or "BUSINESS" in heading_upper:
+        elif "ITEM 1" in heading_upper and "1A" not in heading_upper:
+            # 'ITEM 1' but not 'ITEM 1A'
             company_text += f"\n{content}"
         elif "ITEM 7" in heading_upper or "MANAGEMENT'S DISCUSSION" in heading_upper:
             industry_text += f"\n{content}"
 
-    # Summarize each chunk with up to 2 passes total
-    company_summary = await dynamic_multi_pass_summarize_async(company_text, 1000, 2) if company_text else "N/A"
-    industry_summary = await dynamic_multi_pass_summarize_async(industry_text, 1000, 2) if industry_text else "N/A"
-    risks_summary = await dynamic_multi_pass_summarize_async(risks_text, 1000, 2) if risks_text else "N/A"
+    # Single-pass short summaries
+    company_summary = ""
+    industry_summary = ""
+    final_risks_summary = ""
 
-    return company_summary, industry_summary, risks_summary
+    if company_text.strip():
+        company_summary = await single_pass_short_summary(company_text, 300)
+
+    if industry_text.strip():
+        industry_summary = await single_pass_short_summary(industry_text, 300)
+
+    if risks_text.strip():
+        final_risks_summary = await single_pass_short_summary(risks_text, 300)
+
+    return company_summary, industry_summary, final_risks_summary
 
 
 def run_async_function(coroutine):
@@ -636,7 +665,7 @@ def analyze_financials():
         else:
             logger.info('Extracted text from the 10-K successfully.')
 
-        # Summarize the 10-K (2 passes max)
+        # Summarize only relevant 10-K sections (ITEM 1, 1A, 7) in single-pass
         company_summary, industry_summary, risks_summary = run_async_function(
             extract_10k_insights(ten_k_text)
         )
@@ -820,7 +849,9 @@ def analyze_financials():
             logger.warning(error_message)
             return jsonify({'error': error_message}), 400
 
-        # Sentiment (each doc summarized once, then a single pass sentiment)
+        # Summarize each doc once, then do sentiment in a separate call
+        # This code calls process_documents which does chunk-based summarization
+        # for each PDF. We keep it separate for clarity/quality.
         sentiments = run_async_function(
             process_documents(earnings_call_text, industry_report_text, economic_report_text)
         )
@@ -1250,7 +1281,6 @@ def company_info_details():
             {"role": "user", "content": prompt}
         ]
 
-        # Use dynamic model selection => short_summarization => gpt-3.5-turbo
         chosen_model = choose_model_for_task("short_summarization")
 
         response = call_openai_smart(
@@ -1272,7 +1302,7 @@ def company_info_details():
 # -------------------------------------------------------------------------
 async def process_documents(earnings_call_text, industry_report_text, economic_report_text):
     """
-    Summarizes the extracted texts for earnings, industry, and economic reports 
+    Summarizes the extracted texts for earnings, industry, and economic reports
     using single-pass or chunk-based summarization, then calls sentiment analysis.
     """
     logger.debug('Summarizing extracted texts for earnings, industry, and economic reports.')

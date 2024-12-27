@@ -187,18 +187,9 @@ def generate_pdf_report(
     elements.append(Paragraph(recommendation_text, styles['Normal']))
     elements.append(Spacer(1, 12))
 
-    # Optionally, if you want to include rationale/key factors from the session:
-    # (You must pass them in from your handlers, e.g. analysis["recommendation_rationale"], analysis["key_factors"])
-    # For demonstration, let's attempt to retrieve them from factor_scores or an external variable
-    # If not found, we won't fail here.
     try:
-        # Example approach if you have them as local vars. Adjust as needed.
-        # recommendation_rationale = some_variable or "No rationale"
-        # key_factors = some_list_of_factors or []
-        # We'll just show placeholders; adjust to your actual usage
         recommendation_rationale = "If present, you'd pass this in from your analyze route."
         key_factors = ["Factor A", "Factor B", "Factor C"]
-        # Display them in the PDF
         elements.append(Paragraph("<b>Rationale:</b> " + recommendation_rationale, styles['Normal']))
         elements.append(Spacer(1, 12))
         if key_factors:

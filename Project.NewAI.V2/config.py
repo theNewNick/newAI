@@ -24,10 +24,10 @@ OPENAI_API_KEY_5 = os.getenv('OPENAI_API_KEY_5', '')
 # or simply rely on your new smart_load_balancer.py
 OPENAI_ACCOUNTS = [
     {'api_key': OPENAI_API_KEY_1},
-#    {'api_key': OPENAI_API_KEY_2},
-#    {'api_key': OPENAI_API_KEY_3},
-#    {'api_key': OPENAI_API_KEY_4},
-#    {'api_key': OPENAI_API_KEY_5},
+    {'api_key': OPENAI_API_KEY_2},
+    {'api_key': OPENAI_API_KEY_3},
+    {'api_key': OPENAI_API_KEY_4},
+    {'api_key': OPENAI_API_KEY_5},
 ]
 
 ###############################################

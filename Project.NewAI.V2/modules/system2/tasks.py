@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 CHOSEN_EMBEDDING_MODEL = "text-embedding-ada-002"
 
 # How many tokens per chunk (approx.) for embedding
-CHUNK_SIZE = 500
+CHUNK_SIZE = 2000
 
 @shared_task
 def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
