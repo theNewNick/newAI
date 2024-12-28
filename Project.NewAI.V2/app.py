@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import config
@@ -18,6 +18,10 @@ from modules.extensions import db
 from modules.system1 import system1_bp
 from modules.system2 import system2_bp
 from modules.system3 import system3_bp
+
+# NEW IMPORT: bring in your call_local_llama function
+# If llama_client.py is in the same folder as app.py, do:
+from llama_client import call_local_llama
 
 # Flask app setup
 app = Flask(__name__, static_folder='static', template_folder='templates')
@@ -45,6 +49,26 @@ def homepage():
 @app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
+
+
+# ---------------------------
+# NEW ROUTE: ask_llama
+# ---------------------------
+@app.route('/ask_llama', methods=['POST'])
+def ask_llama():
+    """
+    This route receives a prompt from the client
+    and calls your home Llama server (via Tailscale IP).
+    """
+    user_prompt = request.form.get('prompt', '')
+    if not user_prompt:
+        return jsonify({"error": "No prompt provided"}), 400
+
+    # We use the function from llama_client.py
+    llama_answer = call_local_llama(user_prompt, max_tokens=300)
+
+    return jsonify({"llama_answer": llama_answer})
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

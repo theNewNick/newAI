@@ -1,5 +1,3 @@
-# celery_app.py
-
 import os
 import sys
 import logging
@@ -66,4 +64,3 @@ GUIDE:
 No more "ModuleNotFoundError: No module named 'modules'" errors.
 --------------------------------------------------------------------------------
 """
-

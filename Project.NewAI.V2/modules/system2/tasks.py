@@ -1,5 +1,3 @@
-# modules/system2/tasks.py
-
 import os
 import re
 import logging

@@ -1,5 +1,3 @@
-# smart_load_balancer.py
-
 import time
 import logging
 import openai
