@@ -47,12 +47,11 @@ function initDashboard() {
       // 2) Insert full analysis => enlarged
       const fullDiv = document.getElementById('company-report-full');
       if (fullDiv) {
-        fullDiv.innerHTML = `
-          <p><strong>Executive Summary:</strong> ${data.executive_summary}</p>
+        fullDiv.innerHTML = 
+          `<p><strong>Executive Summary:</strong> ${data.executive_summary}</p>
           <p><strong>Company Summary:</strong> ${data.company_summary}</p>
           <p><strong>Industry Summary:</strong> ${data.industry_summary}</p>
-          <p><strong>Risk Considerations:</strong> ${data.risk_considerations}</p>
-        `;
+          <p><strong>Risk Considerations:</strong> ${data.risk_considerations}</p>`;
       }
     })
     .catch(err => {
@@ -75,11 +74,10 @@ function initDashboard() {
       // full analysis
       const fullDiv = document.getElementById('financial-analysis-full');
       if (fullDiv) {
-        fullDiv.innerHTML = `
-          <p>DCF Intrinsic Value: ${dcfStr}</p>
+        fullDiv.innerHTML = 
+          `<p>DCF Intrinsic Value: ${dcfStr}</p>
           <p>Key Ratios: ${JSON.stringify(data.ratios)}</p>
-          <p>Time Series Analysis: ${JSON.stringify(data.time_series_analysis)}</p>
-        `;
+          <p>Time Series Analysis: ${JSON.stringify(data.time_series_analysis)}</p>`;
       }
     })
     .catch(err => {
@@ -103,11 +101,10 @@ function initDashboard() {
         const earnings = data.earnings_call_sentiment;
         const industry = data.industry_report_sentiment;
         const economic = data.economic_report_sentiment;
-        fullDiv.innerHTML = `
-          <p>Earnings Call Sentiment: Score ${earnings.score}, ${earnings.explanation}</p>
+        fullDiv.innerHTML = 
+          `<p>Earnings Call Sentiment: Score ${earnings.score}, ${earnings.explanation}</p>
           <p>Industry Report Sentiment: Score ${industry.score}, ${industry.explanation}</p>
-          <p>Economic Report Sentiment: Score ${economic.score}, ${economic.explanation}</p>
-        `;
+          <p>Economic Report Sentiment: Score ${economic.score}, ${economic.explanation}</p>`;
       }
     })
     .catch(err => {
@@ -179,14 +176,13 @@ function initDashboard() {
 
       const fullDiv = document.getElementById('final-recommendation-full');
       if (fullDiv) {
-        fullDiv.innerHTML = `
-          <p>The weighted total score: ${data.total_score}</p>
+        fullDiv.innerHTML = 
+          `<p>The weighted total score: ${data.total_score}</p>
           <p>Final Recommendation: ${data.recommendation}</p>
           <p><strong>Rationale:</strong> ${data.rationale || 'No rationale provided.'}</p>
           <ul>
             ${(data.key_factors || []).map(f => `<li>${f}</li>`).join('')}
-          </ul>
-        `;
+          </ul>`;
       }
     })
     .catch(err => {
@@ -228,10 +224,9 @@ function initDashboard() {
     .then(gptData => {
       const fullDiv = document.getElementById('company-info-full');
       if (fullDiv) {
-        fullDiv.innerHTML = `
-          <p><strong>C-suite Executives:</strong> ${gptData.c_suite || 'N/A'}</p>
-          <p><strong>GPT-based Analysis:</strong> ${gptData.analysis || 'No analysis available.'}</p>
-        `;
+        fullDiv.innerHTML = 
+          `<p><strong>C-suite Executives:</strong> ${gptData.c_suite || 'N/A'}</p>
+          <p><strong>GPT-based Analysis:</strong> ${gptData.analysis || 'No analysis available.'}</p>`;
       }
     })
     .catch(err => {

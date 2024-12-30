@@ -1104,12 +1104,8 @@ def analyze_financials():
         )
         logger.info('Completed analyze_financials function successfully.')
 
-        return send_file(
-            pdf_output,
-            mimetype='application/pdf',
-            as_attachment=True,
-            download_name='financial_report.pdf'
-        )
+        # REMOVE send_file(...) AND REPLACE WITH REDIRECT
+        return redirect(url_for('dashboard'))
 
     except Exception as e:
         logger.exception('An unexpected error occurred during analysis.')
