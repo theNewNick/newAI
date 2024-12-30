@@ -37,13 +37,14 @@ import openai
 import pinecone
 from logging.handlers import RotatingFileHandler
 
+# -------------------------------
+# NEW IMPORTS for Smart LB & Model Selector
+# -------------------------------
+from model_selector import choose_model_for_task
+from smart_load_balancer import call_openai_smart_async
+
 # Import Celery tasks for chunking & embedding in the background (optional)
 # from modules.system2.tasks import process_pdf_chunks_task
-
-# Import the "model_selector" helper if you still want to choose gpt-3.5 vs. gpt-4
-# from model_selector import choose_model_for_task
-
-# But for this example, we’ll keep it simple and just use gpt-3.5-turbo
 
 # Blueprint
 system1_bp = Blueprint('system1_bp', __name__, template_folder='templates')
@@ -274,18 +275,21 @@ async def call_openai_summarization(text):
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            response = await openai.ChatCompletion.acreate(
-                model='gpt-3.5-turbo',
+            # Use your model_selector
+            model_for_summarization = choose_model_for_task("short_summarization")
+            # Use your smart load-balancer (async)
+            response = await call_openai_smart_async(
                 messages=[
                     {"role": "system", "content": "You are a financial analyst."},
                     {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
                 ],
-                max_tokens=500,
-                n=1,
+                model=model_for_summarization,
                 temperature=0.5,
+                max_tokens=500
             )
-            summary = response.choices[0].message.content.strip()
+            summary = response["choices"][0]["message"]["content"].strip()
             return summary
+
         except RateLimitError:
             logger.warning(f'Rate limit error, retrying in {retry_delay} seconds...')
             await asyncio.sleep(retry_delay)
@@ -317,8 +321,9 @@ Explanation: [brief explanation]
     for attempt in range(max_retries):
         try:
             logger.debug(f'Attempting sentiment analysis, attempt {attempt+1}.')
-            response = await openai.ChatCompletion.acreate(
-                model="gpt-3.5-turbo",
+
+            model_for_sentiment = choose_model_for_task("short_summarization")
+            response = await call_openai_smart_async(
                 messages=[
                     {
                         "role": "system",
@@ -326,11 +331,12 @@ Explanation: [brief explanation]
                     },
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=500,
-                n=1,
+                model=model_for_sentiment,
                 temperature=0.5,
+                max_tokens=500
             )
-            content = response.choices[0].message.content.strip()
+
+            content = response["choices"][0]["message"]["content"].strip()
             lines = content.split('\n')
             sentiment_score = None
             explanation = ""
@@ -343,6 +349,7 @@ Explanation: [brief explanation]
                 elif "Explanation:" in line:
                     explanation = line.split("Explanation:", 1)[1].strip()
             return sentiment_score, explanation
+
         except RateLimitError:
             logger.warning(f'Rate limit exceeded during sentiment analysis. Retrying in {retry_delay} seconds...')
             await asyncio.sleep(retry_delay)
@@ -644,7 +651,7 @@ def standardize_columns(df, column_mappings, csv_name):
 def analyze_financials():
     """
     Main entry point for the aggressive approach:
-    - Extract only ITEM 1, 1A, 7 from the 10-K
+    - Extract only ITEM 1, ITEM 1A, 7 from the 10-K
     - Summarize each item once
     - Perform sentiment on those summaries
     - Do CSV-based DCF analysis, ratio analysis, time-series

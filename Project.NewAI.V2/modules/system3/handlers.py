@@ -723,7 +723,7 @@ def adjust_based_on_historical_data(stock_ticker):
             return {}
 
         revenue_growth_rates = revenue.pct_change().dropna()
-        average_revenue_growth = revenue_growth_rates.mean()
+        average_growth_rate = revenue_growth_rates.mean()
 
         income_before_tax = income_statement.loc['Income Before Tax']
         income_tax_expense = income_statement.loc['Income Tax Expense']
@@ -747,7 +747,7 @@ def adjust_based_on_historical_data(stock_ticker):
         average_wacc = cost_of_equity
 
         adjusted_assumptions = {
-            'revenue_growth_rate': average_revenue_growth,
+            'revenue_growth_rate': average_growth_rate,
             'tax_rate': average_tax_rate,
             'cogs_pct': cogs_pct,
             'operating_expenses_pct': opex_pct,
@@ -848,5 +848,4 @@ Check if assumptions are reasonable...
         return corrected
     else:
         return adjusted_assumptions
-
 
