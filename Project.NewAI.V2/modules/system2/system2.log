@@ -321,3 +321,903 @@ Traceback (most recent call last):
   File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 594, in increment
     raise MaxRetryError(_pool, url, error or ResponseError(cause))
 urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east1-aws.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f29865b55b0>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+[2024-12-31 07:24:10,390] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 07:27:08,777] DEBUG in handlers: Accessed chat route
+[2024-12-31 07:27:08,778] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 07:27:08,778] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 07:27:08,778] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 07:27:09,252] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 07:27:09,252] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 07:27:09,270] ERROR in handlers: Error querying Pinecone: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east1-aws.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f6049e25b50>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 174, in _new_conn
+    conn = connection.create_connection(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/connection.py", line 72, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+  File "/usr/lib64/python3.9/socket.py", line 966, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 363, in connect
+    self.sock = conn = self._new_conn()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 186, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPSConnection object at 0x7f6049e25b50>: Failed to establish a new connection: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 594, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east1-aws.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f6049e25b50>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+[2024-12-31 07:27:09,271] ERROR in handlers: Error in chat endpoint: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east1-aws.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f6049e25b50>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 174, in _new_conn
+    conn = connection.create_connection(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/connection.py", line 72, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+  File "/usr/lib64/python3.9/socket.py", line 966, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 363, in connect
+    self.sock = conn = self._new_conn()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 186, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPSConnection object at 0x7f6049e25b50>: Failed to establish a new connection: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 283, in chat
+    results = query_pinecone(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 594, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east1-aws.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f6049e25b50>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+[2024-12-31 07:37:12,933] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 07:37:24,028] DEBUG in handlers: Accessed chat route
+[2024-12-31 07:37:24,029] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 07:37:24,029] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 07:37:24,029] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 07:37:24,368] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 07:37:24,368] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 07:37:24,422] ERROR in handlers: Error querying Pinecone: Failed to connect; did you specify the correct index name?
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 419, in connect
+    self.sock = ssl_wrap_socket(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 458, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 502, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib64/python3.9/ssl.py", line 501, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib64/python3.9/ssl.py", line 1074, in _create
+    self.do_handshake()
+  File "/usr/lib64/python3.9/ssl.py", line 1343, in do_handshake
+    self._sslobj.do_handshake()
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 552, in increment
+    raise six.reraise(type(error), error, _stacktrace)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/packages/six.py", line 769, in reraise
+    raise value.with_traceback(tb)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 419, in connect
+    self.sock = ssl_wrap_socket(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 458, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 502, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib64/python3.9/ssl.py", line 501, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib64/python3.9/ssl.py", line 1074, in _create
+    self.do_handshake()
+  File "/usr/lib64/python3.9/ssl.py", line 1343, in do_handshake
+    self._sslobj.do_handshake()
+urllib3.exceptions.ProtocolError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 25, in inner_func
+    raise PineconeProtocolError(f'Failed to connect; did you specify the correct index name?') from e
+pinecone.core.exceptions.PineconeProtocolError: Failed to connect; did you specify the correct index name?
+[2024-12-31 07:37:24,428] ERROR in handlers: Error in chat endpoint: Failed to connect; did you specify the correct index name?
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 419, in connect
+    self.sock = ssl_wrap_socket(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 458, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 502, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib64/python3.9/ssl.py", line 501, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib64/python3.9/ssl.py", line 1074, in _create
+    self.do_handshake()
+  File "/usr/lib64/python3.9/ssl.py", line 1343, in do_handshake
+    self._sslobj.do_handshake()
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 552, in increment
+    raise six.reraise(type(error), error, _stacktrace)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/packages/six.py", line 769, in reraise
+    raise value.with_traceback(tb)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 419, in connect
+    self.sock = ssl_wrap_socket(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 458, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 502, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib64/python3.9/ssl.py", line 501, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib64/python3.9/ssl.py", line 1074, in _create
+    self.do_handshake()
+  File "/usr/lib64/python3.9/ssl.py", line 1343, in do_handshake
+    self._sslobj.do_handshake()
+urllib3.exceptions.ProtocolError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 283, in chat
+    results = query_pinecone(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 25, in inner_func
+    raise PineconeProtocolError(f'Failed to connect; did you specify the correct index name?') from e
+pinecone.core.exceptions.PineconeProtocolError: Failed to connect; did you specify the correct index name?
+[2024-12-31 07:38:14,497] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 07:38:21,520] DEBUG in handlers: Accessed chat route
+[2024-12-31 07:38:21,520] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 07:38:21,520] DEBUG in handlers: Document ID: analysis_report_61d54de3-26a9-4617-a9b5-d2a151565fb7.pdf
+[2024-12-31 07:38:21,520] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 07:38:21,822] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 07:38:21,822] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 07:38:21,875] ERROR in handlers: Error querying Pinecone: Failed to connect; did you specify the correct index name?
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 419, in connect
+    self.sock = ssl_wrap_socket(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 458, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 502, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib64/python3.9/ssl.py", line 501, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib64/python3.9/ssl.py", line 1074, in _create
+    self.do_handshake()
+  File "/usr/lib64/python3.9/ssl.py", line 1343, in do_handshake
+    self._sslobj.do_handshake()
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 552, in increment
+    raise six.reraise(type(error), error, _stacktrace)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/packages/six.py", line 769, in reraise
+    raise value.with_traceback(tb)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 419, in connect
+    self.sock = ssl_wrap_socket(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 458, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 502, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib64/python3.9/ssl.py", line 501, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib64/python3.9/ssl.py", line 1074, in _create
+    self.do_handshake()
+  File "/usr/lib64/python3.9/ssl.py", line 1343, in do_handshake
+    self._sslobj.do_handshake()
+urllib3.exceptions.ProtocolError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 25, in inner_func
+    raise PineconeProtocolError(f'Failed to connect; did you specify the correct index name?') from e
+pinecone.core.exceptions.PineconeProtocolError: Failed to connect; did you specify the correct index name?
+[2024-12-31 07:38:21,877] ERROR in handlers: Error in chat endpoint: Failed to connect; did you specify the correct index name?
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 419, in connect
+    self.sock = ssl_wrap_socket(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 458, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 502, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib64/python3.9/ssl.py", line 501, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib64/python3.9/ssl.py", line 1074, in _create
+    self.do_handshake()
+  File "/usr/lib64/python3.9/ssl.py", line 1343, in do_handshake
+    self._sslobj.do_handshake()
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 552, in increment
+    raise six.reraise(type(error), error, _stacktrace)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/packages/six.py", line 769, in reraise
+    raise value.with_traceback(tb)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 419, in connect
+    self.sock = ssl_wrap_socket(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 458, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/ssl_.py", line 502, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib64/python3.9/ssl.py", line 501, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib64/python3.9/ssl.py", line 1074, in _create
+    self.do_handshake()
+  File "/usr/lib64/python3.9/ssl.py", line 1343, in do_handshake
+    self._sslobj.do_handshake()
+urllib3.exceptions.ProtocolError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 283, in chat
+    results = query_pinecone(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 25, in inner_func
+    raise PineconeProtocolError(f'Failed to connect; did you specify the correct index name?') from e
+pinecone.core.exceptions.PineconeProtocolError: Failed to connect; did you specify the correct index name?
+[2024-12-31 07:43:41,428] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 07:43:49,446] DEBUG in handlers: Accessed chat route
+[2024-12-31 07:43:49,447] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 07:43:49,447] DEBUG in handlers: Document ID: analysis_report_214e5605-7b73-4695-9d38-7438921e0814.pdf
+[2024-12-31 07:43:49,447] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 07:43:49,860] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 07:43:49,860] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 07:43:49,875] ERROR in handlers: Error querying Pinecone: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east-1.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f2b8a6cac10>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 174, in _new_conn
+    conn = connection.create_connection(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/connection.py", line 72, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+  File "/usr/lib64/python3.9/socket.py", line 966, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 363, in connect
+    self.sock = conn = self._new_conn()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 186, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPSConnection object at 0x7f2b8a6cac10>: Failed to establish a new connection: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 594, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east-1.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f2b8a6cac10>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+[2024-12-31 07:43:49,877] ERROR in handlers: Error in chat endpoint: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east-1.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f2b8a6cac10>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 174, in _new_conn
+    conn = connection.create_connection(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/connection.py", line 72, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+  File "/usr/lib64/python3.9/socket.py", line 966, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 363, in connect
+    self.sock = conn = self._new_conn()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 186, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPSConnection object at 0x7f2b8a6cac10>: Failed to establish a new connection: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 283, in chat
+    results = query_pinecone(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 594, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east-1.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f2b8a6cac10>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+[2024-12-31 08:01:13,925] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 08:01:32,931] DEBUG in handlers: Accessed chat route
+[2024-12-31 08:01:32,931] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 08:01:32,931] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 08:01:32,931] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 08:01:33,249] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 08:01:33,249] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 08:01:33,267] ERROR in handlers: Error querying Pinecone: HTTPSConnectionPool(host='business4-unknown.svc.us-east-1.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f85351ef9a0>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 174, in _new_conn
+    conn = connection.create_connection(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/connection.py", line 72, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+  File "/usr/lib64/python3.9/socket.py", line 966, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 363, in connect
+    self.sock = conn = self._new_conn()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 186, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPSConnection object at 0x7f85351ef9a0>: Failed to establish a new connection: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 594, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='business4-unknown.svc.us-east-1.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f85351ef9a0>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+[2024-12-31 08:01:33,268] ERROR in handlers: Error in chat endpoint: HTTPSConnectionPool(host='business4-unknown.svc.us-east-1.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f85351ef9a0>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 174, in _new_conn
+    conn = connection.create_connection(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/connection.py", line 72, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+  File "/usr/lib64/python3.9/socket.py", line 966, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 363, in connect
+    self.sock = conn = self._new_conn()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 186, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPSConnection object at 0x7f85351ef9a0>: Failed to establish a new connection: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 283, in chat
+    results = query_pinecone(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 594, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='business4-unknown.svc.us-east-1.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f85351ef9a0>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+[2024-12-31 09:59:33,670] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 09:59:33,670] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 09:59:43,082] DEBUG in handlers: Accessed chat route
+[2024-12-31 09:59:43,083] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 09:59:43,083] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 09:59:43,083] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 09:59:43,287] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 09:59:43,288] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 09:59:43,416] DEBUG in handlers: Received 0 matches from Pinecone
+[2024-12-31 09:59:43,416] DEBUG in handlers: Entering get_response_from_openai
+[2024-12-31 09:59:44,065] DEBUG in handlers: Received response from GPT via smart LB
+[2024-12-31 09:59:44,065] DEBUG in handlers: Assistant response: - I am unable to read or interpret specific documents
+- If you provide me with the content or summary, I can help analyze or discuss it
+- I can provide guidance on how to understand or approach a document
+[2024-12-31 10:05:27,536] DEBUG in handlers: Accessed chat route
+[2024-12-31 10:05:27,537] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 10:05:27,537] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 10:05:27,537] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 10:05:27,712] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 10:05:27,712] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 10:05:27,833] DEBUG in handlers: Received 0 matches from Pinecone
+[2024-12-31 10:05:27,834] DEBUG in handlers: Entering get_response_from_openai
+[2024-12-31 10:05:28,229] DEBUG in handlers: Received response from GPT via smart LB
+[2024-12-31 10:05:28,229] DEBUG in handlers: Assistant response: I'm unable to read or interpret documents.
+[2024-12-31 10:11:27,109] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 10:11:27,178] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 10:12:04,348] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 10:12:04,348] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 10:14:15,827] DEBUG in handlers: Accessed chat route
+[2024-12-31 10:14:15,827] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 10:14:15,827] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 10:14:15,827] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 10:14:16,283] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 10:14:16,283] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 10:14:16,406] DEBUG in handlers: Received 0 matches from Pinecone
+[2024-12-31 10:14:16,406] DEBUG in handlers: Entering get_response_from_openai
+[2024-12-31 10:14:16,943] DEBUG in handlers: Received response from GPT via smart LB
+[2024-12-31 10:14:16,943] DEBUG in handlers: Assistant response: I'm unable to access external documents or content. If you provide me with specific information or details from the document, I can assist in summarizing or providing insights based on that information.
+[2024-12-31 10:25:05,381] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 10:25:05,467] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 10:25:37,985] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 10:25:37,985] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 10:25:40,520] DEBUG in handlers: Accessed chat route
+[2024-12-31 10:25:40,520] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 10:25:40,520] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 10:25:40,521] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 10:25:40,962] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 10:25:40,962] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 10:25:41,086] DEBUG in handlers: Received 0 matches from Pinecone
+[2024-12-31 10:25:41,086] DEBUG in handlers: Entering get_response_from_openai
+[2024-12-31 10:25:41,532] DEBUG in handlers: Received response from GPT via smart LB
+[2024-12-31 10:25:41,532] DEBUG in handlers: Assistant response: I'm unable to read or analyze documents. Please provide specific content or questions for assistance.
+[2024-12-31 10:45:53,306] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 10:45:53,357] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 10:59:02,964] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 10:59:03,043] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 10:59:59,425] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 10:59:59,425] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 11:02:33,784] DEBUG in handlers: Accessed chat route
+[2024-12-31 11:02:33,784] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 11:02:33,784] DEBUG in handlers: Document ID: analysis_report_214e5605-7b73-4695-9d38-7438921e0814.pdf
+[2024-12-31 11:02:33,784] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 11:02:34,218] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 11:02:34,218] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 11:02:34,342] DEBUG in handlers: Received 0 matches from Pinecone
+[2024-12-31 11:02:34,342] DEBUG in handlers: Entering get_response_from_openai
+[2024-12-31 11:02:34,747] DEBUG in handlers: Received response from GPT via smart LB
+[2024-12-31 11:02:34,747] DEBUG in handlers: Assistant response: - Please provide the document for analysis
+- Without the document, I cannot provide its content
+[2024-12-31 11:09:23,495] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 11:09:23,496] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 11:42:46,228] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 11:42:46,321] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 11:43:34,953] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 11:43:35,034] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 11:43:51,964] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 11:43:52,020] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 11:43:58,943] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 11:43:59,016] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 11:45:34,876] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 11:45:34,944] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 11:46:11,460] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 11:46:11,541] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 11:46:40,724] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 11:46:40,725] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 11:46:53,410] DEBUG in handlers: Accessed chat route
+[2024-12-31 11:46:53,411] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 11:46:53,411] DEBUG in handlers: Document ID: analysis_report_214e5605-7b73-4695-9d38-7438921e0814.pdf
+[2024-12-31 11:46:53,411] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 11:46:53,740] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 11:46:53,740] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 11:46:53,875] DEBUG in handlers: Received 0 matches from Pinecone
+[2024-12-31 11:46:53,875] DEBUG in handlers: Entering get_response_from_openai
+[2024-12-31 11:46:54,542] DEBUG in handlers: Received response from GPT via smart LB
+[2024-12-31 11:46:54,543] DEBUG in handlers: Assistant response: - I'm sorry, but I can't read or interpret documents.
+- You may need to review the document yourself for its contents.
+- If you have specific questions about the document, feel free to ask for help.
+[2024-12-31 11:48:43,414] DEBUG in handlers: Accessed chat route
+[2024-12-31 11:48:43,415] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 11:48:43,415] DEBUG in handlers: Document ID: analysis_report_61d54de3-26a9-4617-a9b5-d2a151565fb7.pdf
+[2024-12-31 11:48:43,415] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 11:48:43,594] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 11:48:43,594] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 11:48:43,730] DEBUG in handlers: Received 0 matches from Pinecone
+[2024-12-31 11:48:43,731] DEBUG in handlers: Entering get_response_from_openai
+[2024-12-31 11:48:44,198] DEBUG in handlers: Received response from GPT via smart LB
+[2024-12-31 11:48:44,198] DEBUG in handlers: Assistant response: - Please provide the document for review
+- I can summarize the document if you share it with me
+- I can help with specific questions or information from the document
+[2024-12-31 12:21:28,093] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 12:21:28,297] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 12:21:52,873] INFO in handlers: Index 'business4' already exists.
+[2024-12-31 12:21:52,874] DEBUG in handlers: NLTK 'punkt' tokenizer found

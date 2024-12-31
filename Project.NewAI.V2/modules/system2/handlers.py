@@ -13,7 +13,6 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from dotenv import load_dotenv
 from nltk.tokenize import sent_tokenize
-import pinecone
 from logging.handlers import RotatingFileHandler
 import config  # We still rely on config for AWS details, but no longer use round-robin from config.
 
@@ -25,6 +24,9 @@ from model_selector import choose_model_for_task
 
 # Import the “smart” load-balancer calls for chat & embedding
 from smart_load_balancer import call_openai_smart, call_openai_embedding_smart
+
+# NEW import for Pinecone 5.x
+from pinecone import Pinecone, ServerlessSpec
 
 # Define the blueprint
 system2_bp = Blueprint('system2_bp', __name__, template_folder='templates')
@@ -59,9 +61,25 @@ PINECONE_INDEX_NAME = config.PINECONE_INDEX_NAME
 
 s3 = boto3.client('s3', region_name=AWS_REGION)
 
-# Initialize Pinecone using the new client method
-pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENVIRONMENT)
-pinecone_index = pinecone.Index(PINECONE_INDEX_NAME)
+# Initialize Pinecone using the 5.x client
+pc = Pinecone(api_key=PINECONE_API_KEY)
+
+# (Optional) check if index exists; if not, create it
+existing_indexes = pc.list_indexes().names()
+if PINECONE_INDEX_NAME not in existing_indexes:
+    logger.info(f"Index '{PINECONE_INDEX_NAME}' not found. Creating it now...")
+    # Provide the dimension that matches your embeddings (e.g. 1536 for 'text-embedding-ada-002')
+    pc.create_index(
+        name=PINECONE_INDEX_NAME,
+        dimension=1536,
+        metric='cosine',
+        spec=ServerlessSpec(cloud='aws', region='us-east-1')
+    )
+else:
+    logger.info(f"Index '{PINECONE_INDEX_NAME}' already exists.")
+
+# Get a reference to the existing (or newly created) index
+pinecone_index = pc.Index(PINECONE_INDEX_NAME)
 
 NLTK_DATA_PATH = os.path.join(os.path.expanduser('~'), 'nltk_data')
 nltk.data.path.append(NLTK_DATA_PATH)
@@ -177,10 +195,13 @@ def upload_files():
     3) Queue Celery task (process_pdf_chunks_task) to parse, chunk, embed
     """
     logger.debug("Accessed upload_files route")
+    logger.info("Entering upload_files() route in system2.handlers")
     try:
         if 'files' not in request.files:
             logger.error("No files part in the request")
             return jsonify({'error': 'No files part in the request'}), 400
+
+        logger.info("upload_files(): request.files keys => %s", list(request.files.keys()))
 
         files = request.files.getlist('files')
         logger.debug(f"Received {len(files)} files")
@@ -189,6 +210,7 @@ def upload_files():
             logger.error("No files selected for uploading")
             return jsonify({'error': 'No files selected for uploading'}), 400
 
+        logger.info("Preparing to upload %d PDF(s) to S3 and enqueue tasks...", len(files))
         uploaded_files = []
         task_ids = []
 
@@ -206,6 +228,9 @@ def upload_files():
             unique_filename = f"{uuid.uuid4()}_{filename}"
             logger.debug(f"Unique filename generated: {unique_filename}")
 
+            # Extra log before uploading
+            logger.info("About to upload file '%s' to bucket '%s'", unique_filename, S3_BUCKET_NAME)
+
             # Step 1: Upload to S3
             try:
                 logger.debug(f"Uploading {unique_filename} to S3")
@@ -220,17 +245,24 @@ def upload_files():
                         }
                     }
                 )
+                logger.info("File '%s' successfully uploaded to S3 bucket '%s'",
++                            unique_filename, S3_BUCKET_NAME)
                 logger.debug(f"Uploaded {unique_filename} to S3")
             except Exception as e:
                 logger.error(f"Error uploading {filename} to S3: {e}", exc_info=True)
                 return jsonify({'error': f'File upload failed for {filename}'}), 500
 
             # Queue the Celery task for background processing
+            logger.info("Queueing Celery task for PDF: %s", unique_filename)
+
             task_result = process_pdf_chunks_task.delay(
                 bucket_name=S3_BUCKET_NAME,
                 object_key=unique_filename,
                 pinecone_index_name=PINECONE_INDEX_NAME
             )
+            # Extra log after .delay() to confirm the Task ID:
+            logger.info("Celery task queued (Task ID=%s) for PDF: %s",
+                        task_result.id, unique_filename)
             task_ids.append(task_result.id)
 
             uploaded_files.append({
@@ -259,6 +291,7 @@ def chat():
       3) Queries Pinecone for the relevant context
       4) Calls GPT for a final answer
     """
+    logger.debug("Accessed chat route in /chat")
     logger.debug("Accessed chat route")
     try:
         data = request.get_json()

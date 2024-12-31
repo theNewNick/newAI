@@ -3,11 +3,13 @@ import re
 import logging
 import pdfplumber
 import nltk
-import pinecone
 import boto3
 from celery import shared_task
 import tiktoken  # For token-based chunking
 from smart_load_balancer import call_openai_embedding_smart
+
+# NEW: import Pinecone from the new 5.x client
+from pinecone import Pinecone, ServerlessSpec
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +65,6 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
         except LookupError:
             nltk.download('punkt', download_dir=os.path.join(os.path.expanduser('~'), 'nltk_data'))
 
-        # Use tiktoken to get an actual token count
         encoder = tiktoken.encoding_for_model("gpt-3.5-turbo")
         all_tokens = encoder.encode(text)
 
@@ -77,13 +78,25 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
             start_index += CHUNK_SIZE
 
         # --------------------------------------------------
-        # 4) Initialize Pinecone, embed each chunk, upsert
+        # 4) Use the *new* Pinecone client, possibly create index if needed, then upsert
         # --------------------------------------------------
-        pinecone.init(
-            api_key=os.getenv('PINECONE_API_KEY', ''),
-            environment=os.getenv('PINECONE_ENVIRONMENT', '')
-        )
-        index = pinecone.Index(pinecone_index_name)
+        pc = Pinecone(api_key=os.getenv('PINECONE_API_KEY', ''))
+
+        # Optional check: does the index exist?
+        existing_indexes = pc.list_indexes().names()
+        if pinecone_index_name not in existing_indexes:
+            logger.info(f"Index '{pinecone_index_name}' not found. Creating...")
+            pc.create_index(
+                name=pinecone_index_name,
+                dimension=1536,      # dimension for 'text-embedding-ada-002'
+                metric='cosine',
+                spec=ServerlessSpec(cloud='aws', region='us-east-1')
+            )
+        else:
+            logger.info(f"Index '{pinecone_index_name}' already exists.")
+
+        # Finally, get a handle to the index
+        index = pc.Index(pinecone_index_name)
 
         vectors = []
         for i, c_text in enumerate(chunks):
