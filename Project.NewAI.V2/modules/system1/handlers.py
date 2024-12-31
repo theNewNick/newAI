@@ -37,14 +37,12 @@ import openai
 import pinecone
 from logging.handlers import RotatingFileHandler
 
-# -------------------------------
-# NEW IMPORTS for Smart LB & Model Selector
-# -------------------------------
+# NEW IMPORTS FOR SMART LB & MODEL SELECTOR
 from model_selector import choose_model_for_task
 from smart_load_balancer import call_openai_smart_async
 
-# Import Celery tasks for chunking & embedding in the background (optional)
-# from modules.system2.tasks import process_pdf_chunks_task
+# IMPORT ANALYSIS STORAGE FUNCTIONS
+from .analysis_storage import store_results_for_user, get_results_for_user
 
 # Blueprint
 system1_bp = Blueprint('system1_bp', __name__, template_folder='templates')
@@ -78,7 +76,7 @@ PINECONE_API_KEY = config.PINECONE_API_KEY
 PINECONE_ENVIRONMENT = config.PINECONE_ENVIRONMENT
 PINECONE_INDEX_NAME = config.PINECONE_INDEX_NAME
 
-# Configure Pinecone if you want, or remove if unneeded
+# Configure Pinecone if desired
 pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENVIRONMENT)
 pinecone_index = pinecone.Index(PINECONE_INDEX_NAME)
 
@@ -93,7 +91,7 @@ except LookupError:
     nltk.download('punkt', download_dir=NLTK_DATA_PATH)
     logger.debug("NLTK 'punkt' tokenizer downloaded")
 
-# Flask app can be used if needed
+# Flask app (if needed)
 from flask import Flask
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -102,7 +100,10 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'YOUR_FLASK_SECRET_KEY')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# 1) Basic Helpers
+###############################################################################
+# HELPERS
+###############################################################################
+
 def allowed_file(filename, allowed_extensions):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
@@ -122,7 +123,7 @@ def dcf_analysis(projected_free_cash_flows, wacc, terminal_value, projection_yea
     discounted_free_cash_flows = [
         fcf / (1 + wacc) ** i for i, fcf in enumerate(projected_free_cash_flows, 1)
     ]
-    discounted_terminal_value = terminal_value / (1 + wacc) ** projection_years
+    discounted_terminal_value = terminal_value / ((1 + wacc) ** projection_years)
     dcf_value = sum(discounted_free_cash_flows) + discounted_terminal_value
     logger.debug('Completed DCF analysis.')
     return dcf_value
@@ -191,7 +192,10 @@ def calculate_cagr(beginning_value, ending_value, periods):
         logger.error(f'Error calculating CAGR: {str(e)}')
         return None
 
-# 2) Plotting Functions
+###############################################################################
+# PLOTTING FUNCTIONS
+###############################################################################
+
 def generate_plot(x, y, title, x_label, y_label):
     logger.debug(f'Generating plot: {title}')
     plt.figure(figsize=(8, 4))
@@ -244,7 +248,9 @@ def generate_benchmark_comparison_plot(benchmark_comparison):
     img_data.seek(0)
     return img_data
 
-# 3) PDF & AI Summarization / Sentiment Logic
+###############################################################################
+# PDF & AI SUMMARIZATION / SENTIMENT LOGIC
+###############################################################################
 
 def extract_text_from_pdf(file_path):
     logger.debug(f'Extracting text from PDF: {file_path}')
@@ -267,7 +273,6 @@ def extract_text_from_pdf(file_path):
         logger.error(f'Error reading PDF file {file_path}: {str(e)}')
         return None
 
-# Async/OpenAI Summaries
 semaphore = asyncio.Semaphore(5)
 
 async def call_openai_summarization(text):
@@ -275,9 +280,7 @@ async def call_openai_summarization(text):
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            # Use your model_selector
             model_for_summarization = choose_model_for_task("short_summarization")
-            # Use your smart load-balancer (async)
             response = await call_openai_smart_async(
                 messages=[
                     {"role": "system", "content": "You are a financial analyst."},
@@ -370,7 +373,7 @@ def run_async_function(coroutine):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
         return loop.run_until_complete(coroutine)
-    except RuntimeError as e:
+    except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         result = loop.run_until_complete(coroutine)
@@ -378,10 +381,6 @@ def run_async_function(coroutine):
         return result
 
 def parse_headings_in_10k(text):
-    """
-    Generic function that attempts to identify headings like ITEM 1, ITEM 1A, ITEM 7.
-    We'll do a simple regex approach.
-    """
     pattern = r'(ITEM\s+[0-9A-Z]+(?:\.[0-9A-Z]+)*)'
     splits = re.split(pattern, text, flags=re.IGNORECASE)
 
@@ -410,10 +409,6 @@ def parse_headings_in_10k(text):
     return sections
 
 def parse_10k_by_headings(ten_k_text):
-    """
-    We only want ITEM 1, ITEM 1A, ITEM 7 (aggressive approach).
-    We'll return dict with keys 'item1', 'item1A', 'item7' if found.
-    """
     all_sections = parse_headings_in_10k(ten_k_text)
     result = {"item1": "", "item1A": "", "item7": ""}
 
@@ -422,7 +417,6 @@ def parse_10k_by_headings(ten_k_text):
         if "ITEM 1A" in heading_upper or "RISK FACTORS" in heading_upper:
             result["item1A"] += f"\n{content}"
         elif "ITEM 1" in heading_upper and "1A" not in heading_upper:
-            # 'ITEM 1' but not '1A'
             result["item1"] += f"\n{content}"
         elif "ITEM 7" in heading_upper or "MANAGEMENT'S DISCUSSION" in heading_upper:
             result["item7"] += f"\n{content}"
@@ -430,10 +424,6 @@ def parse_10k_by_headings(ten_k_text):
     return result
 
 async def summarize_text_async(text):
-    """
-    Single-pass chunk-based summary if text is large (>3800 tokens).
-    Otherwise, do a direct call to `call_openai_summarization()`.
-    """
     logger.debug('Starting text summarization (aggressive approach).')
     max_tokens_per_chunk = 3800
     encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
@@ -607,7 +597,10 @@ def generate_pdf_report(
     pdf_output.seek(0)
     return pdf_output
 
-# 4) CSV Processing
+###############################################################################
+# CSV PROCESSING
+###############################################################################
+
 def process_financial_csv(file_path, csv_name):
     logger.debug(f'Processing CSV file: {file_path}')
     try:
@@ -646,7 +639,10 @@ def standardize_columns(df, column_mappings, csv_name):
     logger.debug(f'After standardization, columns in {csv_name}: {df.columns.tolist()}')
     return df
 
-# 5) Main Route: The Aggressive 10-K Summarization Approach
+###############################################################################
+# MAIN ROUTE (ANALYZE)
+###############################################################################
+
 @system1_bp.route('/analyze', methods=['POST'])
 def analyze_financials():
     """
@@ -700,10 +696,10 @@ def analyze_financials():
         else:
             logger.info('Extracted text from the 10-K report successfully.')
 
-        # Aggressive approach: parse only ITEM 1, 1A, 7
+        # Parse only ITEM 1, 1A, 7
         items_dict = parse_10k_by_headings(ten_k_text)
 
-        # Summarize each item once
+        # Summaries
         summaries = {}
         for key in ["item1", "item1A", "item7"]:
             item_text = items_dict[key]
@@ -714,13 +710,11 @@ def analyze_financials():
                 summaries[key] = ""
                 logger.debug(f"No text found for {key} in the 10-K.")
 
-        # ========== Summaries for the final PDF ==========
         company_summary = summaries["item1"]
         risks_summary = summaries["item1A"]
         industry_summary = summaries["item7"]
 
-        # We also have three other PDFs: earnings_call, industry_report, economic_report
-        # Summarize + sentiment them if needed
+        # Summarize + sentiment for other PDFs
         def read_and_summarize(pdf_path):
             if not pdf_path:
                 return "", (0, "No file provided")
@@ -741,7 +735,6 @@ def analyze_financials():
         industry_report_score, industry_report_explanation = ireport_sentiment
         economic_report_score, economic_report_explanation = ereport_sentiment
 
-        # Now handle the financial inputs from the user
         company_name = request.form.get('company_name', 'N/A')
         wacc = float(request.form['wacc']) / 100
         tax_rate = float(request.form['tax_rate']) / 100
@@ -760,7 +753,7 @@ def analyze_financials():
             'pb_ratio': pb_benchmark
         }
 
-        # CSV files
+        # Process CSV
         income_df = process_financial_csv(file_paths['income_statement'], 'income_statement')
         balance_df = process_financial_csv(file_paths['balance_sheet'], 'balance_sheet')
         cashflow_df = process_financial_csv(file_paths['cash_flow'], 'cash_flow')
@@ -1086,6 +1079,77 @@ def analyze_financials():
             'factor6_score': factor6_score,
         }
 
+        # Build final_analysis dict to store
+        # We'll do a simple composite for "composite_score" if you'd like
+        composite_score = 0
+        score_count = 0
+        for s in [earnings_call_score, industry_report_score, economic_report_score]:
+            if s is not None:
+                composite_score += s
+                score_count += 1
+        if score_count > 0:
+            composite_score /= score_count
+
+        final_analysis = {
+            "company_report": {
+                "stock_price": stock_price,
+                "executive_summary": company_summary,
+                "company_summary": company_summary,
+                "industry_summary": industry_summary,
+                "risk_considerations": risks_summary
+            },
+            "financial_analysis": {
+                "dcf_intrinsic_value": intrinsic_value_per_share or 0,
+                "ratios": ratios,
+                "time_series_analysis": {
+                    "revenue_cagr": revenue_cagr,
+                    "net_income_cagr": net_income_cagr,
+                    "assets_cagr": assets_cagr,
+                    "liabilities_cagr": liabilities_cagr,
+                    "cashflow_cagr": cashflow_cagr
+                }
+            },
+            "sentiment": {
+                "composite_score": composite_score,
+                "earnings_call_sentiment": {
+                    "score": earnings_call_score if earnings_call_score is not None else 0,
+                    "explanation": earnings_call_explanation
+                },
+                "industry_report_sentiment": {
+                    "score": industry_report_score if industry_report_score is not None else 0,
+                    "explanation": industry_report_explanation
+                },
+                "economic_report_sentiment": {
+                    "score": economic_report_score if economic_report_score is not None else 0,
+                    "explanation": economic_report_explanation
+                }
+            },
+            "data_visualizations": {
+                "latest_revenue": f"Q2: ${revenue:.1f}",
+                "revenue_over_time": [
+                    # Example placeholders if needed; or incorporate real data from your df
+                    {"date": str(dates[-2]) if len(dates) > 1 else "N/A", "value": float(income_df['Revenue'].iloc[-2]) if len(income_df) > 1 else 0},
+                    {"date": str(dates[-1]) if len(dates) > 0 else "N/A", "value": float(revenue)},
+                ]
+            },
+            "final_recommendation": {
+                "total_score": weighted_total_score,
+                "recommendation": recommendation,
+                "rationale": "No detailed rationale provided in code",
+                "key_factors": ["Factor A", "Factor B"]
+            },
+            "company_info": {
+                "sector": "Unknown",  # Hard-coded unless you have it from user or dataset
+                "c_suite": "CEO: N/A",
+                "analysis": "No extra analysis here."
+            }
+        }
+
+        # Store the results for "demo_user"
+        user_id = "demo_user"
+        store_results_for_user(user_id, final_analysis)
+
+        # Generate PDF (for internal use if needed)
         pdf_output = generate_pdf_report(
             financials=financials,
             ratios=ratios,
@@ -1111,9 +1175,77 @@ def analyze_financials():
         )
         logger.info('Completed analyze_financials function successfully.')
 
-        # REMOVE send_file(...) AND REPLACE WITH REDIRECT
         return redirect(url_for('dashboard'))
 
     except Exception as e:
         logger.exception('An unexpected error occurred during analysis.')
         return jsonify({'error': 'An unexpected error occurred.'}), 500
+
+###############################################################################
+# NEW GET ENDPOINTS FOR APPROACH A
+###############################################################################
+
+@system1_bp.route('/company_report_data', methods=['GET'])
+def get_company_report_data():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+    return jsonify(results.get("company_report", {}))
+
+@system1_bp.route('/financial_analysis_data', methods=['GET'])
+def get_financial_analysis_data():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+    return jsonify(results.get("financial_analysis", {}))
+
+@system1_bp.route('/sentiment_data', methods=['GET'])
+def get_sentiment_data():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+    return jsonify(results.get("sentiment", {}))
+
+@system1_bp.route('/data_visualizations_data', methods=['GET'])
+def get_data_visualizations_data():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+    return jsonify(results.get("data_visualizations", {}))
+
+@system1_bp.route('/final_recommendation', methods=['GET'])
+def get_final_recommendation():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+    return jsonify(results.get("final_recommendation", {}))
+
+@system1_bp.route('/company_info_data', methods=['GET'])
+def get_company_info_data():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+
+    info = results.get("company_info", {})
+    return jsonify({
+        "sector": info.get("sector", "Unknown")
+    })
+
+@system1_bp.route('/company_info_details', methods=['GET'])
+def get_company_info_details():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+
+    info = results.get("company_info", {})
+    return jsonify({
+        "c_suite": info.get("c_suite", ""),
+        "analysis": info.get("analysis", "")
+    })

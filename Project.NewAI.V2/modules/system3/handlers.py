@@ -345,7 +345,6 @@ def get_field_mappings(required_fields, existing_labels):
                 field_mapping[field] = existing_labels_normalized[field_normalized]
                 mapped = True
             else:
-                # Try approximate matching with difflib
                 matches = difflib.get_close_matches(field_normalized, existing_labels_normalized.keys(), n=1, cutoff=0.0)
                 if matches:
                     field_mapping[field] = existing_labels_normalized[matches[0]]
@@ -849,3 +848,59 @@ Check if assumptions are reasonable...
     else:
         return adjusted_assumptions
 
+
+################################################################
+# SCENARIO ANALYSIS ROUTE (IF NEEDED FOR TILE #7)
+################################################################
+
+@system3_bp.route('/calculate', methods=['POST'])
+def calculate_scenario():
+    """
+    This route handles scenario-based inputs (WACC, scenario, sector, etc.)
+    and returns updated assumptions or a computed DCF result for tile #7.
+    """
+    try:
+        data = request.get_json()
+        scenario = data.get('scenario', 'Neutral')
+        sector = data.get('sector', 'Unknown')
+        industry = data.get('industry', 'Unknown')
+        sub_industry = data.get('sub_industry', 'Unknown')
+        stock_ticker = data.get('stock_ticker', 'AAPL')
+
+        # 1) Use your agentic logic
+        scenario_adjustments = adjust_for_scenario(scenario)
+        sector_adjustments = adjust_for_sector(sector)
+        industry_adjustments = adjust_for_industry(industry)
+        sub_industry_adjustments = adjust_for_sub_industry(sub_industry)
+        company_adjustments = adjust_for_company(stock_ticker)
+
+        # 2) Merge them
+        merged_assumptions = {}
+        for d in [
+            scenario_adjustments,
+            sector_adjustments,
+            industry_adjustments,
+            sub_industry_adjustments,
+            company_adjustments
+        ]:
+            for k, v in d.items():
+                merged_assumptions[k] = v
+
+        # 3) Validate
+        final_assumptions = validate_assumptions(merged_assumptions)
+
+        # 4) Run a DCFModel example (adjust as needed)
+        #    For demonstration, we'll provide minimal initial_values
+        initial_values = {"Revenue": 1_000_000}
+        dcf_model = DCFModel(initial_values, final_assumptions)
+        dcf_model.run_model()
+        results = dcf_model.get_results()
+
+        return jsonify({
+            "intrinsic_value_per_share": results["intrinsic_value_per_share"],
+            "assumptions_used": final_assumptions
+        }), 200
+
+    except Exception as e:
+        logger.exception("Error in calculate_scenario")
+        return jsonify({"error": str(e)}), 500
