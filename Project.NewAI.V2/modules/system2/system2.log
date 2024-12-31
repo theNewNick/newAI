@@ -110,3 +110,214 @@ Traceback (most recent call last):
 botocore.exceptions.ClientError: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:iam::307946669785:user/integratedaiplatofrmforbusiness4 is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::integratedaiplatofrmforbusiness4" with an explicit deny in an identity-based policy
 [2024-12-31 05:04:49,978] DEBUG in handlers: NLTK 'punkt' tokenizer found
 [2024-12-31 05:05:27,404] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 05:45:55,452] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 05:46:07,753] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 05:50:03,761] DEBUG in handlers: Accessed chat route
+[2024-12-31 05:50:03,761] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 05:50:03,761] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 05:50:03,761] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 05:50:19,246] ERROR in handlers: General exception in generate_query_embedding: [Embedding LB] All retries exhausted in call_openai_embedding_smart.
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 310, in generate_query_embedding
+    response = call_openai_embedding_smart(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/smart_load_balancer.py", line 292, in call_openai_embedding_smart
+    raise Exception("[Embedding LB] All retries exhausted in call_openai_embedding_smart.")
+Exception: [Embedding LB] All retries exhausted in call_openai_embedding_smart.
+[2024-12-31 05:50:19,247] ERROR in handlers: Error in chat endpoint: [Embedding LB] All retries exhausted in call_openai_embedding_smart.
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 280, in chat
+    query_embedding = generate_query_embedding(user_message)
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 310, in generate_query_embedding
+    response = call_openai_embedding_smart(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/smart_load_balancer.py", line 292, in call_openai_embedding_smart
+    raise Exception("[Embedding LB] All retries exhausted in call_openai_embedding_smart.")
+Exception: [Embedding LB] All retries exhausted in call_openai_embedding_smart.
+[2024-12-31 06:08:15,213] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 06:13:30,193] DEBUG in handlers: Accessed chat route
+[2024-12-31 06:13:30,193] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 06:13:30,193] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 06:13:30,193] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 06:13:45,614] ERROR in handlers: General exception in generate_query_embedding: [Embedding LB] All retries exhausted in call_openai_embedding_smart.
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 310, in generate_query_embedding
+    response = call_openai_embedding_smart(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/smart_load_balancer.py", line 292, in call_openai_embedding_smart
+    raise Exception("[Embedding LB] All retries exhausted in call_openai_embedding_smart.")
+Exception: [Embedding LB] All retries exhausted in call_openai_embedding_smart.
+[2024-12-31 06:13:45,614] ERROR in handlers: Error in chat endpoint: [Embedding LB] All retries exhausted in call_openai_embedding_smart.
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 280, in chat
+    query_embedding = generate_query_embedding(user_message)
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 310, in generate_query_embedding
+    response = call_openai_embedding_smart(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/smart_load_balancer.py", line 292, in call_openai_embedding_smart
+    raise Exception("[Embedding LB] All retries exhausted in call_openai_embedding_smart.")
+Exception: [Embedding LB] All retries exhausted in call_openai_embedding_smart.
+[2024-12-31 06:16:29,808] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 06:18:38,978] DEBUG in handlers: Accessed chat route
+[2024-12-31 06:18:38,978] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 06:18:38,978] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 06:18:38,978] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 06:18:38,978] ERROR in handlers: General exception in generate_query_embedding: 'max_rpm'
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 310, in generate_query_embedding
+    response = call_openai_embedding_smart(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/smart_load_balancer.py", line 247, in call_openai_embedding_smart
+    account_index = pick_account_smart()
+  File "/home/ec2-user/newAI/Project.NewAI.V2/smart_load_balancer.py", line 128, in pick_account_smart
+    if used_rpm >= acct["max_rpm"] or used_tpm >= acct["max_tpm"]:
+KeyError: 'max_rpm'
+[2024-12-31 06:18:38,979] ERROR in handlers: Error in chat endpoint: 'max_rpm'
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 280, in chat
+    query_embedding = generate_query_embedding(user_message)
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 310, in generate_query_embedding
+    response = call_openai_embedding_smart(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/smart_load_balancer.py", line 247, in call_openai_embedding_smart
+    account_index = pick_account_smart()
+  File "/home/ec2-user/newAI/Project.NewAI.V2/smart_load_balancer.py", line 128, in pick_account_smart
+    if used_rpm >= acct["max_rpm"] or used_tpm >= acct["max_tpm"]:
+KeyError: 'max_rpm'
+[2024-12-31 06:48:30,941] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 06:48:33,784] DEBUG in handlers: Accessed chat route
+[2024-12-31 06:48:33,785] DEBUG in handlers: User message: what does this document say?
+[2024-12-31 06:48:33,785] DEBUG in handlers: Document ID: analysis_report_09ce6a25-f241-4ac3-8522-26f2e4edd218.pdf
+[2024-12-31 06:48:33,785] DEBUG in handlers: Entering generate_query_embedding
+[2024-12-31 06:48:34,178] DEBUG in handlers: Generated query embedding via smart LB
+[2024-12-31 06:48:34,178] DEBUG in handlers: Entering query_pinecone
+[2024-12-31 06:48:34,193] ERROR in handlers: Error querying Pinecone: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east1-aws.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f29865b55b0>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 174, in _new_conn
+    conn = connection.create_connection(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/connection.py", line 72, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+  File "/usr/lib64/python3.9/socket.py", line 966, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 363, in connect
+    self.sock = conn = self._new_conn()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 186, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPSConnection object at 0x7f29865b55b0>: Failed to establish a new connection: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 594, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east1-aws.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f29865b55b0>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+[2024-12-31 06:48:34,207] ERROR in handlers: Error in chat endpoint: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east1-aws.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f29865b55b0>: Failed to establish a new connection: [Errno -2] Name or service not known'))
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 174, in _new_conn
+    conn = connection.create_connection(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/connection.py", line 72, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+  File "/usr/lib64/python3.9/socket.py", line 966, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 716, in urlopen
+    httplib_response = self._make_request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 404, in _make_request
+    self._validate_conn(conn)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 1061, in _validate_conn
+    conn.connect()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 363, in connect
+    self.sock = conn = self._new_conn()
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connection.py", line 186, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPSConnection object at 0x7f29865b55b0>: Failed to establish a new connection: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 283, in chat
+    results = query_pinecone(
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 333, in query_pinecone
+    response = pinecone_index.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/utils/error_handling.py", line 17, in inner_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/index.py", line 455, in query
+    response = self._vector_api.query(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 776, in __call__
+    return self.callable(self, *args, **kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api/vector_operations_api.py", line 716, in __query
+    return self.call_with_http_info(**kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 838, in call_with_http_info
+    return self.api_client.call_api(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 413, in call_api
+    return self.__call_api(resource_path, method,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 200, in __call_api
+    response_data = self.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/api_client.py", line 459, in request
+    return self.rest_client.POST(url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 271, in POST
+    return self.request("POST", url,
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/pinecone/core/client/rest.py", line 157, in request
+    r = self.pool_manager.request(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 81, in request
+    return self.request_encode_body(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/request.py", line 173, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/poolmanager.py", line 376, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 830, in urlopen
+    return self.urlopen(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/connectionpool.py", line 802, in urlopen
+    retries = retries.increment(
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/urllib3/util/retry.py", line 594, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='projectgenai1-unknown.svc.us-east1-aws.pinecone.io', port=443): Max retries exceeded with url: /query (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f29865b55b0>: Failed to establish a new connection: [Errno -2] Name or service not known'))

@@ -37,9 +37,9 @@ if not logger.handlers:
 OPENAI_ACCOUNTS = [
     {
         "api_key": OPENAI_API_KEY_1,
-        "tier": 1,
-        "max_rpm": 500,
-        "max_tpm": 10000,
+        "tier": 2,
+        "max_rpm": 3500,
+        "max_tpm": 40000,
         "monthly_quota": 500000,
         "monthly_used": 0
     },
