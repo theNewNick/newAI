@@ -198,6 +198,15 @@
             <!-- Enlarged State -->
             <div class="state-enlarged">
               <p>Interact with PDFs, ask for buy/hold/sell, scenario Q&A, etc.</p>
+
+              <!-- New: Document Dropdown inside Chatbot tile -->
+              <div class="mb-2">
+                <label for="chat-document-select" class="form-label">Select Document:</label>
+                <select id="chat-document-select" class="form-select">
+                  <option value="">(Choose a PDF from S3)</option>
+                </select>
+              </div>
+
               <div class="mb-2">
                 <label for="chat-input" class="form-label">Message:</label>
                 <input 
@@ -207,12 +216,14 @@
                   placeholder="Ask the chatbot..."
                 >
               </div>
+
               <button 
                 class="btn btn-sm btn-primary mb-2"
                 id="chat-send"
               >
                 Send
               </button>
+
               <div
                 id="chat-response"
                 class="border p-2"

@@ -96,3 +96,17 @@
 [2024-12-28 13:28:43,893] DEBUG in handlers: NLTK 'punkt' tokenizer found
 [2024-12-30 12:46:51,289] DEBUG in handlers: NLTK 'punkt' tokenizer found
 [2024-12-30 12:47:02,081] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 03:13:30,887] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 03:47:19,361] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 04:46:33,060] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 04:49:53,731] ERROR in handlers: Error listing documents: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:iam::307946669785:user/integratedaiplatofrmforbusiness4 is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::integratedaiplatofrmforbusiness4" with an explicit deny in an identity-based policy
+Traceback (most recent call last):
+  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 439, in list_documents
+    response = s3.list_objects_v2(Bucket=S3_BUCKET_NAME)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/botocore/client.py", line 535, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/botocore/client.py", line 983, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.exceptions.ClientError: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:iam::307946669785:user/integratedaiplatofrmforbusiness4 is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::integratedaiplatofrmforbusiness4" with an explicit deny in an identity-based policy
+[2024-12-31 05:04:49,978] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2024-12-31 05:05:27,404] DEBUG in handlers: NLTK 'punkt' tokenizer found

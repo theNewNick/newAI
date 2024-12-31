@@ -42,7 +42,7 @@ from model_selector import choose_model_for_task
 from smart_load_balancer import call_openai_smart_async
 
 # IMPORT ANALYSIS STORAGE FUNCTIONS
-from .analysis_storage import store_results_for_user, get_results_for_user
+from analysis_storage import store_results_for_user, get_results_for_user
 
 # Blueprint
 system1_bp = Blueprint('system1_bp', __name__, template_folder='templates')

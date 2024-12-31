@@ -1,6 +1,7 @@
 import time
 import logging
 import openai
+import asyncio  # Added for the async call
 
 # We import the 5 API keys from your existing config.py
 # so we do NOT store them directly in code.
@@ -289,3 +290,75 @@ def call_openai_embedding_smart(
             continue
 
     raise Exception("[Embedding LB] All retries exhausted in call_openai_embedding_smart.")
+
+###############################################################################
+# ASYNCHRONOUS: CALL OPENAI (CHAT) WITH SMART LOAD BALANCER
+###############################################################################
+async def call_openai_smart_async(
+    messages,
+    model: str = "gpt-4",
+    temperature: float = 0.7,
+    max_tokens: int = 500,
+    max_retries: int = 5
+):
+    """
+    Asynchronous version of call_openai_smart, using Python's `asyncio` and
+    openai's async endpoints, for concurrency. 
+    Make sure you have a recent version of `openai` that supports .acreate().
+
+    Tracks usage, handles rate-limit backoff with await, and tries up to max_retries.
+    """
+    for attempt in range(max_retries):
+        account_index = pick_account_smart()
+        if account_index is None:
+            logger.debug("[SmartLB Async] No account available; sleeping 5s.")
+            await asyncio.sleep(5)
+            continue
+
+        acct = OPENAI_ACCOUNTS[account_index]
+        openai.api_key = acct["api_key"]
+
+        try:
+            # The "acreate()" method is the async version of openai.ChatCompletion.create
+            response = await openai.ChatCompletion.acreate(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+
+            usage_info = response.get("usage", {})
+            used_tokens = usage_info.get("total_tokens", 0)
+
+            # Update per-minute counters
+            usage_data[account_index]["requests_this_minute"] += 1
+            usage_data[account_index]["tokens_this_minute"] += used_tokens
+
+            # Update monthly usage
+            acct["monthly_used"] += used_tokens
+
+            logger.debug(
+                f"[SmartLB Async] Success with acct_idx={account_index}, tier={acct['tier']}, "
+                f"used_tokens={used_tokens}, model={model}"
+            )
+            return response
+
+        except openai.error.RateLimitError as e:
+            # Exponential backoff on rate-limit, but using async sleeps
+            backoff = min(60, 2 ** attempt)
+            logger.warning(
+                f"[SmartLB Async] RateLimitError on acct_idx={account_index}, attempt={attempt}: {e}. "
+                f"Sleeping {backoff}s."
+            )
+            await asyncio.sleep(backoff)
+            continue
+
+        except openai.error.OpenAIError as e:
+            logger.error(
+                f"[SmartLB Async] OpenAIError on acct_idx={account_index}, attempt={attempt}: {e}. "
+                "Retrying in 3s."
+            )
+            await asyncio.sleep(3)
+            continue
+
+    raise Exception("[SmartLB Async] All retries exhausted in call_openai_smart_async().")

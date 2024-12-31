@@ -47,11 +47,11 @@ function initDashboard() {
       // 2) Insert full analysis => enlarged
       const fullDiv = document.getElementById('company-report-full');
       if (fullDiv) {
-        fullDiv.innerHTML = 
+        fullDiv.innerHTML =
           `<p><strong>Executive Summary:</strong> ${data.executive_summary}</p>
-          <p><strong>Company Summary:</strong> ${data.company_summary}</p>
-          <p><strong>Industry Summary:</strong> ${data.industry_summary}</p>
-          <p><strong>Risk Considerations:</strong> ${data.risk_considerations}</p>`;
+           <p><strong>Company Summary:</strong> ${data.company_summary}</p>
+           <p><strong>Industry Summary:</strong> ${data.industry_summary}</p>
+           <p><strong>Risk Considerations:</strong> ${data.risk_considerations}</p>`;
       }
     })
     .catch(err => {
@@ -67,17 +67,20 @@ function initDashboard() {
       // short snippet
       const dcfValueDefault = document.querySelector('#financial-analysis-container .state-default .key-metric');
       const dcfValueCollapsed = document.querySelector('#financial-analysis-container .state-collapsed .tiny-data');
-      const dcfStr = data.dcf_intrinsic_value ? `$${data.dcf_intrinsic_value.toFixed(2)}` : '$127.50';
+      const dcfStr = data.dcf_intrinsic_value
+        ? `$${data.dcf_intrinsic_value.toFixed(2)}`
+        : '$127.50';
+
       if (dcfValueDefault) dcfValueDefault.textContent = dcfStr;
       if (dcfValueCollapsed) dcfValueCollapsed.textContent = dcfStr;
 
       // full analysis
       const fullDiv = document.getElementById('financial-analysis-full');
       if (fullDiv) {
-        fullDiv.innerHTML = 
+        fullDiv.innerHTML =
           `<p>DCF Intrinsic Value: ${dcfStr}</p>
-          <p>Key Ratios: ${JSON.stringify(data.ratios)}</p>
-          <p>Time Series Analysis: ${JSON.stringify(data.time_series_analysis)}</p>`;
+           <p>Key Ratios: ${JSON.stringify(data.ratios)}</p>
+           <p>Time Series Analysis: ${JSON.stringify(data.time_series_analysis)}</p>`;
       }
     })
     .catch(err => {
@@ -93,6 +96,7 @@ function initDashboard() {
       const defaultKey = document.querySelector('#sentiment-analysis-container .state-default .key-metric');
       const collapsedKey = document.querySelector('#sentiment-analysis-container .state-collapsed .tiny-data');
       const compositeScore = (data.composite_score !== undefined) ? data.composite_score : '+0.25';
+
       if (defaultKey) defaultKey.textContent = compositeScore;
       if (collapsedKey) collapsedKey.textContent = compositeScore;
 
@@ -101,10 +105,10 @@ function initDashboard() {
         const earnings = data.earnings_call_sentiment;
         const industry = data.industry_report_sentiment;
         const economic = data.economic_report_sentiment;
-        fullDiv.innerHTML = 
+        fullDiv.innerHTML =
           `<p>Earnings Call Sentiment: Score ${earnings.score}, ${earnings.explanation}</p>
-          <p>Industry Report Sentiment: Score ${industry.score}, ${industry.explanation}</p>
-          <p>Economic Report Sentiment: Score ${economic.score}, ${economic.explanation}</p>`;
+           <p>Industry Report Sentiment: Score ${industry.score}, ${industry.explanation}</p>
+           <p>Economic Report Sentiment: Score ${economic.score}, ${economic.explanation}</p>`;
       }
     })
     .catch(err => {
@@ -119,6 +123,7 @@ function initDashboard() {
     .then(data => {
       const defaultKey = document.querySelector('#data-visualizations-container .state-default .key-metric');
       const collapsedKey = document.querySelector('#data-visualizations-container .state-collapsed .tiny-data');
+
       if (defaultKey) defaultKey.textContent = data.latest_revenue || 'Q2: $50.5B';
       if (collapsedKey) collapsedKey.textContent = data.latest_revenue || '$50.5B';
 
@@ -151,9 +156,7 @@ function initDashboard() {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: {
-                beginAtZero: true
-              }
+              y: { beginAtZero: true }
             }
           }
         });
@@ -171,18 +174,19 @@ function initDashboard() {
     .then(data => {
       const recDefault = document.querySelector('#final-recommendation-container .state-default .key-metric');
       const recCollapsed = document.querySelector('#final-recommendation-container .state-collapsed .tiny-data');
+
       if (recDefault) recDefault.textContent = data.recommendation || 'BUY';
       if (recCollapsed) recCollapsed.textContent = data.recommendation || 'BUY';
 
       const fullDiv = document.getElementById('final-recommendation-full');
       if (fullDiv) {
-        fullDiv.innerHTML = 
+        fullDiv.innerHTML =
           `<p>The weighted total score: ${data.total_score}</p>
-          <p>Final Recommendation: ${data.recommendation}</p>
-          <p><strong>Rationale:</strong> ${data.rationale || 'No rationale provided.'}</p>
-          <ul>
-            ${(data.key_factors || []).map(f => `<li>${f}</li>`).join('')}
-          </ul>`;
+           <p>Final Recommendation: ${data.recommendation}</p>
+           <p><strong>Rationale:</strong> ${data.rationale || 'No rationale provided.'}</p>
+           <ul>
+             ${(data.key_factors || []).map(f => `<li>${f}</li>`).join('')}
+           </ul>`;
       }
     })
     .catch(err => {
@@ -190,15 +194,12 @@ function initDashboard() {
     });
 
   // -------------------------------------------------------------------------
-  // (F) Chatbot
+  // (F) Chatbot – Usually no default data fetch needed, but you can do so if desired.
   // -------------------------------------------------------------------------
-  // Typically, no big data fetch needed. If you want a snippet from the server,
-  // you could do so here.
 
   // -------------------------------------------------------------------------
-  // (G) Scenario Analysis
+  // (G) Scenario Analysis – The user triggers scenario calculations manually.
   // -------------------------------------------------------------------------
-  // The user triggers scenario calculations manually.
 
   // -------------------------------------------------------------------------
   // (H) General Company Info
@@ -211,6 +212,7 @@ function initDashboard() {
     .then(basicData => {
       const defaultKey = document.querySelector('#company-info-container .state-default .key-metric');
       const collapsedKey = document.querySelector('#company-info-container .state-collapsed .tiny-data');
+
       if (defaultKey) defaultKey.textContent = `Sector: ${basicData.sector || 'Tech'}`;
       if (collapsedKey) collapsedKey.textContent = basicData.sector || 'Tech';
 
@@ -224,13 +226,45 @@ function initDashboard() {
     .then(gptData => {
       const fullDiv = document.getElementById('company-info-full');
       if (fullDiv) {
-        fullDiv.innerHTML = 
+        fullDiv.innerHTML =
           `<p><strong>C-suite Executives:</strong> ${gptData.c_suite || 'N/A'}</p>
-          <p><strong>GPT-based Analysis:</strong> ${gptData.analysis || 'No analysis available.'}</p>`;
+           <p><strong>GPT-based Analysis:</strong> ${gptData.analysis || 'No analysis available.'}</p>`;
       }
     })
     .catch(err => {
       console.error("Error fetching company info:", err);
+    });
+
+  // -------------------------------------------------------------------------
+  // (I) Populate the S3 Document Dropdown for the Chatbot
+  //     (If your <select> is located in the chatbot tile, we can do it here.)
+  // -------------------------------------------------------------------------
+  fetch('/system2/list_documents')
+    .then(res => res.json())
+    .then(docKeys => {
+      const docDropdown = document.getElementById('document-dropdown');
+      if (!docDropdown) return; // If no dropdown is found, do nothing
+
+      // Clear existing options (if any)
+      while (docDropdown.firstChild) {
+        docDropdown.removeChild(docDropdown.firstChild);
+      }
+      // Add a default placeholder
+      const placeholderOpt = document.createElement('option');
+      placeholderOpt.value = '';
+      placeholderOpt.textContent = '(Choose a PDF from S3)';
+      docDropdown.appendChild(placeholderOpt);
+
+      // Populate with actual S3 doc keys
+      docKeys.forEach(key => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = key;
+        docDropdown.appendChild(option);
+      });
+    })
+    .catch(err => {
+      console.error("Error fetching S3 document list:", err);
     });
 }
 
@@ -244,17 +278,24 @@ function initChatbot() {
   chatSendBtn.addEventListener('click', function() {
     const messageInput = document.getElementById('chat-input');
     const chatResponse = document.getElementById('chat-response');
-    if (!messageInput || !chatResponse) return;
+    // The dropdown for picking documents in the Chatbot tile
+    const docDropdown = document.getElementById('document-dropdown');
+
+    if (!messageInput || !chatResponse || !docDropdown) return;
 
     const message = messageInput.value.trim();
     if (!message) return;
 
+    // Get the chosen doc from the dropdown
+    const documentId = docDropdown.value || '';
+
+    // Make the POST to /system2/chat with message + chosen doc
     fetch('/system2/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: message,
-        document_id: DOCUMENT_ID
+        document_id: documentId
       })
     })
       .then(res => res.json())
@@ -387,7 +428,7 @@ function initThreeRowTileLayout() {
 
     // 1) Filter out the clicked tile + "Customize" from the normal 8.
     //    That leaves 7 tiles to split top/bottom.
-    const normalTiles = tileOrder.filter(id => 
+    const normalTiles = tileOrder.filter(id =>
       id !== 'tile-customize-dashboard' && id !== tileId
     );
 
