@@ -34,7 +34,7 @@ from dotenv import load_dotenv
 from nltk.tokenize import sent_tokenize
 import tiktoken
 import openai
-import pinecone
+from pinecone import Pinecone, ServerlessSpec
 from logging.handlers import RotatingFileHandler
 
 # NEW IMPORTS FOR SMART LB & MODEL SELECTOR
@@ -76,9 +76,16 @@ PINECONE_API_KEY = config.PINECONE_API_KEY
 PINECONE_ENVIRONMENT = config.PINECONE_ENVIRONMENT
 PINECONE_INDEX_NAME = config.PINECONE_INDEX_NAME
 
-# Configure Pinecone if desired
-pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENVIRONMENT)
-pinecone_index = pinecone.Index(PINECONE_INDEX_NAME)
+# Replaced the old pinecone.init(...) with the Pinecone 5.x class approach
+pc = Pinecone(api_key=PINECONE_API_KEY)
+if PINECONE_INDEX_NAME not in pc.list_indexes().names():
+    pc.create_index(
+        name=PINECONE_INDEX_NAME,
+        dimension=1536,  # or whatever dimension your embeddings are
+        metric='cosine',
+        spec=ServerlessSpec(cloud='aws', region='us-east-1')
+    )
+pinecone_index = pc.Index(PINECONE_INDEX_NAME)
 
 # NLTK config
 NLTK_DATA_PATH = os.path.join(os.path.expanduser('~'), 'nltk_data')

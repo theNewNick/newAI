@@ -4,22 +4,20 @@ import logging
 import pdfplumber
 import nltk
 import boto3
-from celery import shared_task
-import tiktoken  # For token-based chunking
-from smart_load_balancer import call_openai_embedding_smart
+import tiktoken
 
-# NEW: import Pinecone from the new 5.x client
+# Import the *same* Celery app we forcibly set to Redis
+from celery_app import celery
+
 from pinecone import Pinecone, ServerlessSpec
+from smart_load_balancer import call_openai_embedding_smart
 
 logger = logging.getLogger(__name__)
 
-# We'll standardize on a single embedding model per the new plan
 CHOSEN_EMBEDDING_MODEL = "text-embedding-ada-002"
-
-# How many tokens per chunk (approx.) for embedding
 CHUNK_SIZE = 2000
 
-@shared_task
+@celery.task
 def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
     """
     This Celery task performs the following steps:
@@ -28,21 +26,12 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
       3) Chunk the text based on token count (using tiktoken).
       4) Generate embeddings for each chunk using a single embedding model.
       5) Upsert the resulting vectors into Pinecone.
-
-    The result is that each PDF is stored in a vector database in chunked form,
-    enabling retrieval of only the relevant text at query-time.
     """
     try:
-        # --------------------------------------------------
-        # 1) Download PDF from S3
-        # --------------------------------------------------
         s3 = boto3.client('s3')
         local_pdf_path = f"/tmp/{object_key}"
         s3.download_file(bucket_name, object_key, local_pdf_path)
 
-        # --------------------------------------------------
-        # 2) Extract text with pdfplumber
-        # --------------------------------------------------
         text = ""
         with pdfplumber.open(local_pdf_path) as pdf:
             for page_num, page in enumerate(pdf.pages, start=1):
@@ -56,15 +45,14 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
         text = re.sub(r'[^\x00-\x7F]+', ' ', text)
         text = re.sub(r'\s+', ' ', text).strip()
 
-        # --------------------------------------------------
-        # 3) Chunk text by tokens using tiktoken
-        # --------------------------------------------------
+        # Add NLTK data path
         nltk.data.path.append(os.path.join(os.path.expanduser('~'), 'nltk_data'))
         try:
             nltk.data.find('tokenizers/punkt')
         except LookupError:
             nltk.download('punkt', download_dir=os.path.join(os.path.expanduser('~'), 'nltk_data'))
 
+        # Tokenize with tiktoken
         encoder = tiktoken.encoding_for_model("gpt-3.5-turbo")
         all_tokens = encoder.encode(text)
 
@@ -77,25 +65,20 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
             chunks.append(chunk_text.strip())
             start_index += CHUNK_SIZE
 
-        # --------------------------------------------------
-        # 4) Use the *new* Pinecone client, possibly create index if needed, then upsert
-        # --------------------------------------------------
+        # Pinecone initialization
         pc = Pinecone(api_key=os.getenv('PINECONE_API_KEY', ''))
-
-        # Optional check: does the index exist?
         existing_indexes = pc.list_indexes().names()
         if pinecone_index_name not in existing_indexes:
             logger.info(f"Index '{pinecone_index_name}' not found. Creating...")
             pc.create_index(
                 name=pinecone_index_name,
-                dimension=1536,      # dimension for 'text-embedding-ada-002'
+                dimension=1536,
                 metric='cosine',
                 spec=ServerlessSpec(cloud='aws', region='us-east-1')
             )
         else:
             logger.info(f"Index '{pinecone_index_name}' already exists.")
 
-        # Finally, get a handle to the index
         index = pc.Index(pinecone_index_name)
 
         vectors = []
@@ -117,7 +100,6 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
                 "metadata": metadata
             })
 
-        # Batch upserts to Pinecone
         batch_size = 50
         for start in range(0, len(vectors), batch_size):
             subset = vectors[start:start+batch_size]

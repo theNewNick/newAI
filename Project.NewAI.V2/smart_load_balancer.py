@@ -1,11 +1,10 @@
+# smart_load_balancer.py
+
 import time
 import logging
 import openai
-import asyncio  # Added for the async call
+import asyncio
 
-# We import the 5 API keys from your existing config.py
-# so we do NOT store them directly in code.
-# This relies on config.py already loading them from .env.
 from config import (
     OPENAI_API_KEY_1,
     OPENAI_API_KEY_2,
@@ -17,7 +16,6 @@ from config import (
 ###############################################################################
 # LOGGER SETUP
 ###############################################################################
-# You can adjust logging as needed. Currently set to DEBUG for demonstration.
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 if not logger.handlers:
@@ -28,104 +26,194 @@ if not logger.handlers:
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
+
 ###############################################################################
-# ACCOUNTS & USAGE TRACKING
+# ACCOUNTS WITH PER-MODEL LIMITS
+# EXAMPLE: You can expand monthly_quota usage to be per-model if you prefer.
 ###############################################################################
-# Here we define all 5 accounts. 4 are Tier 1, 1 is Tier 2 (example).
-# Adjust "max_rpm" (requests/min), "max_tpm" (tokens/min), "monthly_quota" (tokens/month),
-# and "tier" to match your actual plan.
+# TIER 1 rate limits:
+#   - gpt-4:  RPM=500,   TPM=10,000
+#   - gpt-3.5-turbo: RPM=3,500, TPM=200,000
+#   - text-embedding-ada-002: RPM=3,000, TPM=1,000,000
+#
+# TIER 2 rate limits:
+#   - gpt-4:  RPM=5,000, TPM=40,000
+#   - gpt-3.5-turbo: RPM=3,500, TPM=2,000,000
+#   - text-embedding-ada-002: RPM=5,000, TPM=1,000,000
+#
+# We’ll store them in a nested "limits" dict.
+
 OPENAI_ACCOUNTS = [
     {
         "api_key": OPENAI_API_KEY_1,
-        "tier": 2,
-        "max_rpm": 3500,
-        "max_tpm": 40000,
-        "monthly_quota": 500000,
+        "tier": 1,
+        "limits": {
+            "gpt-4": {
+                "max_rpm": 500,
+                "max_tpm": 10_000
+            },
+            "gpt-3.5-turbo": {
+                "max_rpm": 3500,
+                "max_tpm": 200_000
+            },
+            "text-embedding-ada-002": {
+                "max_rpm": 3000,
+                "max_tpm": 1_000_000
+            }
+        },
+        "monthly_quota": 1_000_000,  # total tokens/month (example)
         "monthly_used": 0
     },
     {
         "api_key": OPENAI_API_KEY_2,
         "tier": 1,
-        "max_rpm": 500,
-        "max_tpm": 10000,
-        "monthly_quota": 500000,
+        "limits": {
+            "gpt-4": {
+                "max_rpm": 500,
+                "max_tpm": 10_000
+            },
+            "gpt-3.5-turbo": {
+                "max_rpm": 3500,
+                "max_tpm": 200_000
+            },
+            "text-embedding-ada-002": {
+                "max_rpm": 3000,
+                "max_tpm": 1_000_000
+            }
+        },
+        "monthly_quota": 1_000_000,
         "monthly_used": 0
     },
     {
         "api_key": OPENAI_API_KEY_3,
         "tier": 1,
-        "max_rpm": 500,
-        "max_tpm": 10000,
-        "monthly_quota": 500000,
+        "limits": {
+            "gpt-4": {
+                "max_rpm": 500,
+                "max_tpm": 10_000
+            },
+            "gpt-3.5-turbo": {
+                "max_rpm": 3500,
+                "max_tpm": 200_000
+            },
+            "text-embedding-ada-002": {
+                "max_rpm": 3000,
+                "max_tpm": 1_000_000
+            }
+        },
+        "monthly_quota": 1_000_000,
         "monthly_used": 0
     },
     {
         "api_key": OPENAI_API_KEY_4,
         "tier": 1,
-        "max_rpm": 500,
-        "max_tpm": 10000,
-        "monthly_quota": 500000,
+        "limits": {
+            "gpt-4": {
+                "max_rpm": 500,
+                "max_tpm": 10_000
+            },
+            "gpt-3.5-turbo": {
+                "max_rpm": 3500,
+                "max_tpm": 200_000
+            },
+            "text-embedding-ada-002": {
+                "max_rpm": 3000,
+                "max_tpm": 1_000_000
+            }
+        },
+        "monthly_quota": 1_000_000,
         "monthly_used": 0
     },
     {
         "api_key": OPENAI_API_KEY_5,
-        "tier": 2,  # example: the upgraded Tier 2 account
-        "max_rpm": 5000,
-        "max_tpm": 40000,
-        "monthly_quota": 2000000,
+        "tier": 2,
+        "limits": {
+            "gpt-4": {
+                "max_rpm": 5000,
+                "max_tpm": 40_000
+            },
+            "gpt-3.5-turbo": {
+                "max_rpm": 3500,
+                "max_tpm": 2_000_000
+            },
+            "text-embedding-ada-002": {
+                "max_rpm": 5000,
+                "max_tpm": 1_000_000
+            }
+        },
+        "monthly_quota": 2_000_000,
         "monthly_used": 0
     }
 ]
 
-# We'll track usage for each account in-memory for the current minute.
-# If you run multiple processes, consider a shared store (e.g., Redis).
-usage_data = [
-    {
-        "requests_this_minute": 0,
-        "tokens_this_minute": 0,
-        "last_reset_timestamp": time.time()
-    }
-    for _ in OPENAI_ACCOUNTS
-]
 
 ###############################################################################
-# UTILITY: RESET USAGE IF 60s HAVE ELAPSED
+# USAGE DATA PER ACCOUNT * PER MODEL
 ###############################################################################
-def reset_usage_if_necessary(account_index: int) -> None:
+# We track requests_this_minute, tokens_this_minute, last_reset_timestamp
+# for each model in each account.
+# Example usage_data structure:
+#   usage_data[account_index]["gpt-4"] = {
+#       "requests_this_minute": 0,
+#       "tokens_this_minute": 0,
+#       "last_reset_timestamp": ...
+#   }
+
+usage_data = []
+
+def init_usage_data():
+    """Initialize usage data so each account has usage counters for each model."""
+    global usage_data
+    usage_data = []
+    for acct in OPENAI_ACCOUNTS:
+        model_dict = {}
+        for model_name in acct["limits"].keys():
+            model_dict[model_name] = {
+                "requests_this_minute": 0,
+                "tokens_this_minute": 0,
+                "last_reset_timestamp": time.time()
+            }
+        usage_data.append(model_dict)
+
+# Call once on import
+init_usage_data()
+
+
+def reset_usage_if_necessary(account_index: int, model: str) -> None:
     """
-    Resets this account's per-minute usage counters if more than 60 seconds
-    have passed since the last reset.
+    Resets this account's per-minute usage counters if more than 60s
+    have passed since the last reset for the given model.
     """
     now = time.time()
-    elapsed = now - usage_data[account_index]["last_reset_timestamp"]
+    elapsed = now - usage_data[account_index][model]["last_reset_timestamp"]
     if elapsed >= 60:
-        usage_data[account_index]["requests_this_minute"] = 0
-        usage_data[account_index]["tokens_this_minute"] = 0
-        usage_data[account_index]["last_reset_timestamp"] = now
+        usage_data[account_index][model]["requests_this_minute"] = 0
+        usage_data[account_index][model]["tokens_this_minute"] = 0
+        usage_data[account_index][model]["last_reset_timestamp"] = now
 
-###############################################################################
-# PICK ACCOUNT BASED ON REMAINING USAGE & MONTHLY QUOTA
-###############################################################################
-def pick_account_smart() -> int:
+
+def pick_account_smart(model: str) -> int:
     """
-    Picks which account to use based on:
-      - per-minute capacity (requests + tokens)
+    Pick which account to use for the specified model, based on:
+      - per-minute capacity (requests + tokens for that model)
       - monthly quota
-      - tier (if you want special logic, you can add weighting here).
+      - Possibly a tier bonus factor
     Returns the index of the chosen account, or None if none have capacity.
     """
     best_index = None
     best_score = -1
 
     for i, acct in enumerate(OPENAI_ACCOUNTS):
-        # Possibly reset usage for this minute if 60s have passed
-        reset_usage_if_necessary(i)
+        # Possibly reset usage for the given model if 60s have passed
+        reset_usage_if_necessary(i, model)
 
-        used_rpm = usage_data[i]["requests_this_minute"]
-        used_tpm = usage_data[i]["tokens_this_minute"]
+        used_rpm = usage_data[i][model]["requests_this_minute"]
+        used_tpm = usage_data[i][model]["tokens_this_minute"]
+        max_rpm = acct["limits"][model]["max_rpm"]
+        max_tpm = acct["limits"][model]["max_tpm"]
 
         # If we've already hit or exceeded either limit, skip
-        if used_rpm >= acct["max_rpm"] or used_tpm >= acct["max_tpm"]:
+        if used_rpm >= max_rpm or used_tpm >= max_tpm:
             continue
 
         monthly_used = acct["monthly_used"]
@@ -134,16 +222,15 @@ def pick_account_smart() -> int:
             # Out of monthly tokens
             continue
 
-        # monthly_left_ratio: how much of monthly quota is left (0..1)
         monthly_left_ratio = monthly_left / float(acct["monthly_quota"])
 
         # remaining per-minute ratio for requests & tokens
-        remaining_rpm = acct["max_rpm"] - used_rpm
-        remaining_tpm = acct["max_tpm"] - used_tpm
-        rpm_ratio = remaining_rpm / float(acct["max_rpm"])
-        tpm_ratio = remaining_tpm / float(acct["max_tpm"])
+        remaining_rpm = max_rpm - used_rpm
+        remaining_tpm = max_tpm - used_tpm
+        rpm_ratio = remaining_rpm / float(max_rpm)
+        tpm_ratio = remaining_tpm / float(max_tpm)
 
-        # Example tier bonus: Tier 2 gets +0.3
+        # Example: Tier 2 gets a +0.3 bonus
         tier_bonus = 0.3 if acct["tier"] == 2 else 0.0
 
         # Simple scoring approach
@@ -154,12 +241,16 @@ def pick_account_smart() -> int:
             best_index = i
 
     if best_index is None:
-        logger.warning("No suitable account found (all at capacity or out of monthly quota).")
+        logger.warning(
+            f"[SmartLB] No suitable account found for model='{model}' "
+            f"(all at capacity or out of monthly quota)."
+        )
 
     return best_index
 
+
 ###############################################################################
-# MAIN FUNCTION: CALL OPENAI (CHAT) WITH SMART LOAD BALANCER
+# MAIN FUNCTION: CALL OPENAI (CHAT COMPLETIONS) WITH SMART LOAD BALANCER
 ###############################################################################
 def call_openai_smart(
     messages,
@@ -168,15 +259,10 @@ def call_openai_smart(
     max_tokens: int = 500,
     max_retries: int = 5
 ):
-    """
-    Attempts to call the OpenAI ChatCompletion endpoint using whichever account
-    pick_account_smart() chooses. Tracks actual tokens used from the response,
-    does exponential backoff on rate-limit errors, and tries up to max_retries.
-    """
     for attempt in range(max_retries):
-        account_index = pick_account_smart()
+        account_index = pick_account_smart(model)
         if account_index is None:
-            # If no account has capacity at all, wait a bit and retry
+            # If no account has capacity, wait and retry
             logger.debug("[SmartLB] No account available; sleeping 5s.")
             time.sleep(5)
             continue
@@ -195,23 +281,24 @@ def call_openai_smart(
             usage_info = response.get("usage", {})
             used_tokens = usage_info.get("total_tokens", 0)
 
-            # Update per-minute counters
-            usage_data[account_index]["requests_this_minute"] += 1
-            usage_data[account_index]["tokens_this_minute"] += used_tokens
+            # Update usage for this model
+            usage_data[account_index][model]["requests_this_minute"] += 1
+            usage_data[account_index][model]["tokens_this_minute"] += used_tokens
 
-            # Update monthly usage
+            # Update monthly usage (shared bucket in this example)
             acct["monthly_used"] += used_tokens
 
             logger.debug(
-                f"[SmartLB] Success with acct_idx={account_index}, tier={acct['tier']}, "
-                f"used_tokens={used_tokens}, req/min={usage_data[account_index]['requests_this_minute']}, "
-                f"tok/min={usage_data[account_index]['tokens_this_minute']}, "
-                f"month_used={acct['monthly_used']}, model={model}"
+                f"[SmartLB] success: acct_idx={account_index}, tier={acct['tier']}, "
+                f"model={model}, used_tokens={used_tokens}, "
+                f"req/min={usage_data[account_index][model]['requests_this_minute']}, "
+                f"tok/min={usage_data[account_index][model]['tokens_this_minute']}, "
+                f"month_used={acct['monthly_used']}"
             )
             return response
 
         except openai.error.RateLimitError as e:
-            # Exponential backoff on rate-limit
+            # Exponential backoff
             backoff = min(60, 2 ** attempt)
             logger.warning(
                 f"[SmartLB] RateLimitError on acct_idx={account_index}, attempt={attempt}: {e}. "
@@ -230,6 +317,7 @@ def call_openai_smart(
 
     raise Exception("[SmartLB] All retries exhausted in call_openai_smart().")
 
+
 ###############################################################################
 # NEW FUNCTION: CALL OPENAI (EMBEDDING) WITH SMART LOAD BALANCER
 ###############################################################################
@@ -238,15 +326,10 @@ def call_openai_embedding_smart(
     model: str = "text-embedding-ada-002",
     max_retries: int = 5
 ):
-    """
-    Similar to call_openai_smart, but uses openai.Embedding.create
-    instead of openai.ChatCompletion.create.
-    Tracks usage and does exponential backoff on rate-limit errors.
-    """
     for attempt in range(max_retries):
-        account_index = pick_account_smart()
+        account_index = pick_account_smart(model)
         if account_index is None:
-            logger.warning("[Embedding LB] No suitable account found; sleeping 5s.")
+            logger.warning(f"[Embedding LB] No suitable account found for model={model}; sleeping 5s.")
             time.sleep(5)
             continue
 
@@ -259,16 +342,17 @@ def call_openai_embedding_smart(
                 model=model
             )
 
-            # Embedding responses often do not include usage info.
-            # You may set used_tokens=0 or attempt to parse from response if available.
+            # Embedding usage often doesn’t include usage info. 
             used_tokens = 0
+            if "usage" in response:
+                used_tokens = response["usage"].get("total_tokens", 0)
 
-            usage_data[account_index]["requests_this_minute"] += 1
-            usage_data[account_index]["tokens_this_minute"] += used_tokens
+            usage_data[account_index][model]["requests_this_minute"] += 1
+            usage_data[account_index][model]["tokens_this_minute"] += used_tokens
             acct["monthly_used"] += used_tokens
 
             logger.debug(
-                f"[Embedding LB] Success with acct_idx={account_index}, model={model}"
+                f"[Embedding LB] success: acct_idx={account_index}, model={model}, used_tokens={used_tokens}"
             )
             return response
 
@@ -291,6 +375,7 @@ def call_openai_embedding_smart(
 
     raise Exception("[Embedding LB] All retries exhausted in call_openai_embedding_smart.")
 
+
 ###############################################################################
 # ASYNCHRONOUS: CALL OPENAI (CHAT) WITH SMART LOAD BALANCER
 ###############################################################################
@@ -301,15 +386,8 @@ async def call_openai_smart_async(
     max_tokens: int = 500,
     max_retries: int = 5
 ):
-    """
-    Asynchronous version of call_openai_smart, using Python's `asyncio` and
-    openai's async endpoints, for concurrency. 
-    Make sure you have a recent version of `openai` that supports .acreate().
-
-    Tracks usage, handles rate-limit backoff with await, and tries up to max_retries.
-    """
     for attempt in range(max_retries):
-        account_index = pick_account_smart()
+        account_index = pick_account_smart(model)
         if account_index is None:
             logger.debug("[SmartLB Async] No account available; sleeping 5s.")
             await asyncio.sleep(5)
@@ -319,7 +397,6 @@ async def call_openai_smart_async(
         openai.api_key = acct["api_key"]
 
         try:
-            # The "acreate()" method is the async version of openai.ChatCompletion.create
             response = await openai.ChatCompletion.acreate(
                 model=model,
                 messages=messages,
@@ -330,21 +407,17 @@ async def call_openai_smart_async(
             usage_info = response.get("usage", {})
             used_tokens = usage_info.get("total_tokens", 0)
 
-            # Update per-minute counters
-            usage_data[account_index]["requests_this_minute"] += 1
-            usage_data[account_index]["tokens_this_minute"] += used_tokens
-
-            # Update monthly usage
+            usage_data[account_index][model]["requests_this_minute"] += 1
+            usage_data[account_index][model]["tokens_this_minute"] += used_tokens
             acct["monthly_used"] += used_tokens
 
             logger.debug(
-                f"[SmartLB Async] Success with acct_idx={account_index}, tier={acct['tier']}, "
-                f"used_tokens={used_tokens}, model={model}"
+                f"[SmartLB Async] success: acct_idx={account_index}, tier={acct['tier']}, "
+                f"model={model}, used_tokens={used_tokens}"
             )
             return response
 
         except openai.error.RateLimitError as e:
-            # Exponential backoff on rate-limit, but using async sleeps
             backoff = min(60, 2 ** attempt)
             logger.warning(
                 f"[SmartLB Async] RateLimitError on acct_idx={account_index}, attempt={attempt}: {e}. "

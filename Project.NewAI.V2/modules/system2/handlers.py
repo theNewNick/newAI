@@ -246,7 +246,7 @@ def upload_files():
                     }
                 )
                 logger.info("File '%s' successfully uploaded to S3 bucket '%s'",
-+                            unique_filename, S3_BUCKET_NAME)
+                            unique_filename, S3_BUCKET_NAME)
                 logger.debug(f"Uploaded {unique_filename} to S3")
             except Exception as e:
                 logger.error(f"Error uploading {filename} to S3: {e}", exc_info=True)

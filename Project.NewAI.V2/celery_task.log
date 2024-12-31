@@ -1,0 +1,8 @@
+[2024-12-31 10:59:08,012: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2024-12-31 10:59:08,014: INFO/MainProcess] mingle: searching for neighbors
+[2024-12-31 10:59:09,020: INFO/MainProcess] mingle: all alone
+[2024-12-31 10:59:09,026: INFO/MainProcess] celery@ip-172-31-7-50.us-east-2.compute.internal ready.
+[2024-12-31 13:56:57,598: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2024-12-31 13:56:57,600: INFO/MainProcess] mingle: searching for neighbors
+[2024-12-31 13:56:58,606: INFO/MainProcess] mingle: all alone
+[2024-12-31 13:56:58,612: INFO/MainProcess] celery@ip-172-31-7-50.us-east-2.compute.internal ready.
