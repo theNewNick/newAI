@@ -21,17 +21,44 @@ CHUNK_SIZE = 2000
 def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
     """
     This Celery task performs the following steps:
-      1) Download a PDF from S3.
-      2) Extract + preprocess text.
-      3) Chunk the text based on token count (using tiktoken).
-      4) Generate embeddings for each chunk using a single embedding model.
-      5) Upsert the resulting vectors into Pinecone.
+      1) Check in Pinecone if any vector with metadata.document_id == object_key exists.
+         - If found, skip re-embedding (return early).
+      2) Download a PDF from S3.
+      3) Extract + preprocess text.
+      4) Chunk the text based on token count (using tiktoken).
+      5) Generate embeddings for each chunk using a single embedding model.
+      6) Upsert the resulting vectors into Pinecone.
     """
     try:
+        # ------------------------------------------------------
+        # 1) CHECK IF ALREADY EMBEDDED
+        # ------------------------------------------------------
+        logger.info(f"Checking if PDF '{object_key}' is already embedded...")
+        pc = Pinecone(api_key=os.getenv('PINECONE_API_KEY', ''))
+        index = pc.Index(pinecone_index_name)
+        query_filter = {"document_id": {"$eq": object_key}}
+
+        response = index.query(
+            vector=[0]*1536,      # dummy vector, we only care about the filter
+            top_k=1,
+            include_values=False,
+            include_metadata=True,
+            filter=query_filter
+        )
+        if response.get("matches"):
+            logger.info(f"Skipping embedding for {object_key}, found existing vectors in Pinecone.")
+            return {"status": "skipped", "reason": "Already embedded"}
+
+        # ------------------------------------------------------
+        # 2) DOWNLOAD PDF FROM S3
+        # ------------------------------------------------------
         s3 = boto3.client('s3')
         local_pdf_path = f"/tmp/{object_key}"
         s3.download_file(bucket_name, object_key, local_pdf_path)
 
+        # ------------------------------------------------------
+        # 3) EXTRACT + PREPROCESS TEXT
+        # ------------------------------------------------------
         text = ""
         with pdfplumber.open(local_pdf_path) as pdf:
             for page_num, page in enumerate(pdf.pages, start=1):
@@ -41,18 +68,21 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
                 else:
                     logger.warning(f"No text found on page {page_num}")
 
-        # Basic cleanup
         text = re.sub(r'[^\x00-\x7F]+', ' ', text)
         text = re.sub(r'\s+', ' ', text).strip()
 
+        # ------------------------------------------------------
         # Add NLTK data path
+        # ------------------------------------------------------
         nltk.data.path.append(os.path.join(os.path.expanduser('~'), 'nltk_data'))
         try:
             nltk.data.find('tokenizers/punkt')
         except LookupError:
             nltk.download('punkt', download_dir=os.path.join(os.path.expanduser('~'), 'nltk_data'))
 
-        # Tokenize with tiktoken
+        # ------------------------------------------------------
+        # 4) TOKEN-CHUNK USING TIKTOKEN
+        # ------------------------------------------------------
         encoder = tiktoken.encoding_for_model("gpt-3.5-turbo")
         all_tokens = encoder.encode(text)
 
@@ -65,8 +95,9 @@ def process_pdf_chunks_task(bucket_name, object_key, pinecone_index_name):
             chunks.append(chunk_text.strip())
             start_index += CHUNK_SIZE
 
-        # Pinecone initialization
-        pc = Pinecone(api_key=os.getenv('PINECONE_API_KEY', ''))
+        # ------------------------------------------------------
+        # 5) EMBEDDING + UPSERT
+        # ------------------------------------------------------
         existing_indexes = pc.list_indexes().names()
         if pinecone_index_name not in existing_indexes:
             logger.info(f"Index '{pinecone_index_name}' not found. Creating...")

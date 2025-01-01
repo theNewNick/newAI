@@ -406,3 +406,29 @@
 - Forward-looking statements address risks and uncertainties.
 - Notable mentions: Disney+, ESPN, streaming content, NBA deal, and future revenue drivers.
 - Executives Bob Iger and Hugh Johnston provide insights on various business aspects.
+[2025-01-01 05:22:48,451] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 05:22:48,499] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 05:23:31,520] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 05:23:31,584] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 05:25:39,270] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 05:25:39,337] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 05:26:28,233] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 05:26:28,315] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 05:27:04,792] DEBUG in handlers: Accessed chat route in /chat
+[2025-01-01 05:27:04,792] DEBUG in handlers: Accessed chat route
+[2025-01-01 05:27:04,792] DEBUG in handlers: User message: what does this document say?
+[2025-01-01 05:27:04,792] DEBUG in handlers: Document ID: analysis_report_9b2eb9f2-85f4-4780-932f-8e9a5c1a7ec5.pdf
+[2025-01-01 05:27:04,792] DEBUG in handlers: Entering generate_query_embedding
+[2025-01-01 05:27:05,143] DEBUG in handlers: Generated query embedding via smart LB
+[2025-01-01 05:27:05,143] DEBUG in handlers: Entering query_pinecone
+[2025-01-01 05:27:05,235] DEBUG in handlers: Received 1 matches from Pinecone
+[2025-01-01 05:27:05,235] DEBUG in handlers: Entering get_response_from_openai
+[2025-01-01 05:27:07,189] DEBUG in handlers: Received response from GPT via smart LB
+[2025-01-01 05:27:07,189] DEBUG in handlers: Assistant response: - The report provides a financial analysis of Disney, recommending a "Buy."
+- Analysis includes DCF valuation, ratio analysis, time series analysis, and sentiment analysis.
+- Disney's intrinsic value per share is $175.72, with a current stock price of $112.0.
+- Ratios like Debt-to-Equity: 0.45, P/E: 41.80, and P/B: 2.06 are highlighted.
+- Time series data shows positive growth in revenue, net income, and assets.
+- Sentiment analysis indicates positive outlook based on earnings, industry sentiment, and economic factors.
+- Data visualizations compare Disney to industry benchmarks.
+- The overall score is 6, supporting the "Buy" recommendation.
