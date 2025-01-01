@@ -655,7 +655,7 @@ def standardize_columns(df, column_mappings, csv_name):
 def analyze_financials():
     """
     Main entry point for the aggressive approach:
-    - Extract only ITEM 1, ITEM 1A, 7 from the 10-K
+    - Extract only ITEM 1, 1A, 7 from the 10-K
     - Summarize each item once
     - Perform sentiment on those summaries
     - Do CSV-based DCF analysis, ratio analysis, time-series
@@ -743,6 +743,8 @@ def analyze_financials():
         industry_report_score, industry_report_explanation = ireport_sentiment
         economic_report_score, economic_report_explanation = ereport_sentiment
 
+        # Get the industry from user form
+        industry_name = request.form.get('industry_name', 'Software')
         company_name = request.form.get('company_name', 'N/A')
         wacc = float(request.form['wacc']) / 100
         tax_rate = float(request.form['tax_rate']) / 100
@@ -760,6 +762,34 @@ def analyze_financials():
             'pe_ratio': pe_benchmark,
             'pb_ratio': pb_benchmark
         }
+
+        ########################################################################
+        # STEP B: Retrieve Industry Standard Margin via GPT (or static fallback)
+        ########################################################################
+        def parse_float_from_gpt(gpt_text):
+            """Extract a floating percentage from GPT text (very naive approach)."""
+            import re
+            # e.g. GPT might respond: 'Typical margin is around 18%.'
+            match = re.search(r'([\d.]+)\s?%', gpt_text)
+            if match:
+                return float(match.group(1)) / 100.0
+            return 0.15  # fallback if not found
+
+        gpt_prompt = f"What is the typical profit margin in the {industry_name} industry, as a percentage?"
+        try:
+            from smart_load_balancer import call_openai_smart
+            gpt_response = call_openai_smart(
+                messages=[{"role": "user", "content": gpt_prompt}],
+                model="gpt-3.5-turbo",
+                temperature=0.0,
+                max_tokens=100
+            )
+            gpt_text = gpt_response['choices'][0]['message']['content']
+            industry_profit_margin = parse_float_from_gpt(gpt_text)
+        except Exception as e:
+            logger.warning(f"Could not retrieve industry margin from GPT, using fallback: {e}")
+            industry_profit_margin = 0.15
+        logger.debug(f"Industry margin estimated at: {industry_profit_margin}")
 
         # Process CSV
         income_df = process_financial_csv(file_paths['income_statement'], 'income_statement')
@@ -830,6 +860,27 @@ def analyze_financials():
         balance_df.fillna(0, inplace=True)
         cashflow_df.fillna(0, inplace=True)
         logger.info('Processed CSV files successfully.')
+
+        ########################################################################
+        # STEP A: Compute Annual Profit Margins for the Last 4 Years
+        ########################################################################
+        all_years = sorted(income_df['Date'].dt.year.unique())
+        if len(all_years) > 4:
+            last_4_years = all_years[-4:]
+        else:
+            last_4_years = all_years
+
+        annual_profit_margins = {}
+        for yr in last_4_years:
+            rows_for_year = income_df[income_df['Date'].dt.year == yr]
+            total_revenue_yr = rows_for_year['Revenue'].sum()
+            total_net_income_yr = rows_for_year['Net Income'].sum()
+            if total_revenue_yr > 0:
+                pm = total_net_income_yr / total_revenue_yr
+            else:
+                pm = 0
+            annual_profit_margins[str(yr)] = pm
+        logger.debug(f"Computed annual profit margins: {annual_profit_margins}")
 
         latest_date = balance_df['Date'].max()
         if 'Long-Term Debt' in balance_df.columns:
@@ -920,10 +971,116 @@ def analyze_financials():
         }
         logger.info('Extracted financial data successfully.')
 
+        # Calculate your existing ratios
         ratios = calculate_ratios(financials, benchmarks)
         factor2_score = ratios['Normalized Factor 2 Score']
 
-        # Time Series Analysis
+        ########################################################################
+        # STEP 3: Fetch Industry Benchmarks from GPT (Optional), Compute More Ratios, Time-Series
+        ########################################################################
+        def parse_industry_benchmarks_from_gpt(gpt_text):
+            """
+            Attempts to parse JSON from GPT text with keys like:
+              "profit_margin", "current_ratio", "debt_equity", "roa"
+            Returns a dict or a fallback if parsing fails.
+            """
+            import json
+            import re
+            pattern = r"\{.*\}"
+            match = re.search(pattern, gpt_text.strip())
+            if not match:
+                # fallback
+                return {
+                    "profit_margin": 0.15,
+                    "current_ratio": 1.2,
+                    "debt_equity": 0.8,
+                    "roa": 0.07
+                }
+            json_str = match.group(0)
+            try:
+                data = json.loads(json_str)
+                return {
+                    "profit_margin": float(data.get("profit_margin", 0.15)),
+                    "current_ratio": float(data.get("current_ratio", 1.2)),
+                    "debt_equity": float(data.get("debt_equity", 0.8)),
+                    "roa": float(data.get("roa", 0.07))
+                }
+            except Exception:
+                return {
+                    "profit_margin": 0.15,
+                    "current_ratio": 1.2,
+                    "debt_equity": 0.8,
+                    "roa": 0.07
+                }
+
+        benchmark_prompt = f"""
+Given the '{industry_name}' industry, what are typical benchmarks for:
+ - profit_margin (as a fraction, e.g. 0.15 for 15%)
+ - current_ratio
+ - debt_equity
+ - roa
+
+Please provide them in valid JSON only, like:
+{{"profit_margin": 0.15, "current_ratio": 1.2, "debt_equity": 0.8, "roa": 0.07}}
+"""
+        try:
+            from smart_load_balancer import call_openai_smart
+            bench_gpt_response = call_openai_smart(
+                messages=[{"role": "user", "content": benchmark_prompt}],
+                model="gpt-3.5-turbo",
+                temperature=0.0,
+                max_tokens=200
+            )
+            bench_gpt_text = bench_gpt_response['choices'][0]['message']['content']
+            industry_benchmarks_dict = parse_industry_benchmarks_from_gpt(bench_gpt_text)
+        except Exception as e:
+            logger.warning(f"Could not retrieve industry benchmarks from GPT, using fallback: {e}")
+            industry_benchmarks_dict = {
+                "profit_margin": 0.15,
+                "current_ratio": 1.2,
+                "debt_equity": 0.8,
+                "roa": 0.07
+            }
+        logger.debug(f"Industry Benchmarks (detailed): {industry_benchmarks_dict}")
+
+        # Additional ratio calculations
+        profit_margin_calc = safe_divide(net_income, revenue)  # fraction
+        current_ratio_calc = safe_divide(current_assets, current_liabilities)
+        debt_equity_calc = safe_divide(total_debt, shareholders_equity)
+        total_assets_latest = balance_df.loc[balance_df['Date'] == latest_date, 'Total Assets'].values[0] if 'Total Assets' in balance_df.columns else 0
+        roa_calc = safe_divide(net_income, total_assets_latest)
+
+        # Store them inside "ratios" or a new dict
+        ratios["profit_margin"] = profit_margin_calc
+        ratios["current_ratio_calc"] = current_ratio_calc
+        ratios["debt_equity_calc"] = debt_equity_calc
+        ratios["roa_calc"] = roa_calc
+
+        # Optional: store the new industry benchmarks
+        final_industry_bench = {
+            "profit_margin": industry_benchmarks_dict["profit_margin"],
+            "current_ratio": industry_benchmarks_dict["current_ratio"],
+            "debt_equity": industry_benchmarks_dict["debt_equity"],
+            "roa": industry_benchmarks_dict["roa"]
+        }
+
+        # For optional expanded time-series: last 4 quarters
+        latest_quarters_df = income_df.sort_values('Date', ascending=False).head(4).copy()
+        latest_quarters_df.sort_values('Date', ascending=True, inplace=True)
+        quarterly_data = []
+        for i, row in latest_quarters_df.iterrows():
+            quarter_label = row['Date'].strftime('%Y-Q') + str((row['Date'].month-1)//3 + 1)
+            rev = row['Revenue']
+            ni = row['Net Income']
+            pm_ = safe_divide(ni, rev)
+            quarterly_data.append({
+                "quarter": quarter_label,
+                "revenue": rev,
+                "net_income": ni,
+                "profit_margin": pm_
+            })
+
+        # Time to do the factor3_time_series or keep it in final
         n_periods = len(income_df) - 1
         if n_periods < 1:
             error_message = 'Not enough data for time series analysis.'
@@ -1088,7 +1245,6 @@ def analyze_financials():
         }
 
         # Build final_analysis dict to store
-        # We'll do a simple composite for "composite_score" if you'd like
         composite_score = 0
         score_count = 0
         for s in [earnings_call_score, industry_report_score, economic_report_score]:
@@ -1135,7 +1291,6 @@ def analyze_financials():
             "data_visualizations": {
                 "latest_revenue": f"Q2: ${revenue:.1f}",
                 "revenue_over_time": [
-                    # Example placeholders if needed; or incorporate real data from your df
                     {"date": str(dates[-2]) if len(dates) > 1 else "N/A", "value": float(income_df['Revenue'].iloc[-2]) if len(income_df) > 1 else 0},
                     {"date": str(dates[-1]) if len(dates) > 0 else "N/A", "value": float(revenue)},
                 ]
@@ -1147,11 +1302,23 @@ def analyze_financials():
                 "key_factors": ["Factor A", "Factor B"]
             },
             "company_info": {
-                "sector": "Unknown",  # Hard-coded unless you have it from user or dataset
+                "sector": "Unknown",
                 "c_suite": "CEO: N/A",
                 "analysis": "No extra analysis here."
             }
         }
+
+        # Add annual profit margins & industry margin to final analysis
+        final_analysis["financial_analysis"]["annual_profit_margins"] = annual_profit_margins
+        final_analysis["financial_analysis"]["industry_profit_margin"] = industry_profit_margin
+
+        # Add the industry benchmarks
+        final_analysis["financial_analysis"]["industry_benchmarks"] = final_industry_bench
+
+        # Insert the optional quarterly data
+        if "time_series_analysis" not in final_analysis["financial_analysis"]:
+            final_analysis["financial_analysis"]["time_series_analysis"] = {}
+        final_analysis["financial_analysis"]["time_series_analysis"]["quarterly"] = quarterly_data
 
         # Store the results for "demo_user"
         user_id = "demo_user"
@@ -1189,88 +1356,10 @@ def analyze_financials():
         logger.exception('An unexpected error occurred during analysis.')
         return jsonify({'error': 'An unexpected error occurred.'}), 500
 
-###############################################################################
-# NEW GET ENDPOINTS FOR APPROACH A
-###############################################################################
 
-@system1_bp.route('/company_report_data', methods=['GET'])
-def get_company_report_data():
-    user_id = "demo_user"
-    results = get_results_for_user(user_id)
-    if not results:
-        return jsonify({"error": "No analysis data found"}), 400
 
-    # 1) If you previously stored the ticker (e.g. "DIS") in results,
-    #    use that. If not, default to "DIS" or any symbol you prefer.
-    symbol = results.get("company_report", {}).get("ticker", "DIS")
 
-    # 2) Call Alpha Vantage using the user’s (or fallback) symbol
-    current_price, pct_change_12mo = get_annual_price_change(symbol)
 
-    # 3) If "company_report" doesn’t exist yet, create it.
-    if "company_report" not in results:
-        results["company_report"] = {}
 
-    # 4) Save the new price data into results.
-    results["company_report"]["stock_price"] = current_price
-    results["company_report"]["pct_change_12mo"] = pct_change_12mo
 
-    # 5) Return only the "company_report" portion.
-    return jsonify(results["company_report"])
 
-@system1_bp.route('/financial_analysis_data', methods=['GET'])
-def get_financial_analysis_data():
-    user_id = "demo_user"
-    results = get_results_for_user(user_id)
-    if not results:
-        return jsonify({"error": "No analysis data found"}), 400
-    return jsonify(results.get("financial_analysis", {}))
-
-@system1_bp.route('/sentiment_data', methods=['GET'])
-def get_sentiment_data():
-    user_id = "demo_user"
-    results = get_results_for_user(user_id)
-    if not results:
-        return jsonify({"error": "No analysis data found"}), 400
-    return jsonify(results.get("sentiment", {}))
-
-@system1_bp.route('/data_visualizations_data', methods=['GET'])
-def get_data_visualizations_data():
-    user_id = "demo_user"
-    results = get_results_for_user(user_id)
-    if not results:
-        return jsonify({"error": "No analysis data found"}), 400
-    return jsonify(results.get("data_visualizations", {}))
-
-@system1_bp.route('/final_recommendation', methods=['GET'])
-def get_final_recommendation():
-    user_id = "demo_user"
-    results = get_results_for_user(user_id)
-    if not results:
-        return jsonify({"error": "No analysis data found"}), 400
-    return jsonify(results.get("final_recommendation", {}))
-
-@system1_bp.route('/company_info_data', methods=['GET'])
-def get_company_info_data():
-    user_id = "demo_user"
-    results = get_results_for_user(user_id)
-    if not results:
-        return jsonify({"error": "No analysis data found"}), 400
-
-    info = results.get("company_info", {})
-    return jsonify({
-        "sector": info.get("sector", "Unknown")
-    })
-
-@system1_bp.route('/company_info_details', methods=['GET'])
-def get_company_info_details():
-    user_id = "demo_user"
-    results = get_results_for_user(user_id)
-    if not results:
-        return jsonify({"error": "No analysis data found"}), 400
-
-    info = results.get("company_info", {})
-    return jsonify({
-        "c_suite": info.get("c_suite", ""),
-        "analysis": info.get("analysis", "")
-    })
