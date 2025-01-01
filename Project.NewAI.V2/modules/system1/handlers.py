@@ -1199,17 +1199,24 @@ def get_company_report_data():
     results = get_results_for_user(user_id)
     if not results:
         return jsonify({"error": "No analysis data found"}), 400
-    # OPTIONAL: pick a symbol, or load from your stored "demo_user" data if available
-    symbol = "AAPL"
+
+    # 1) If you previously stored the ticker (e.g. "DIS") in results,
+    #    use that. If not, default to "DIS" or any symbol you prefer.
+    symbol = results.get("company_report", {}).get("ticker", "DIS")
+
+    # 2) Call Alpha Vantage using the user’s (or fallback) symbol
     current_price, pct_change_12mo = get_annual_price_change(symbol)
 
-    # If "company_report" is in your results, update it with the new data
+    # 3) If "company_report" doesn’t exist yet, create it.
     if "company_report" not in results:
         results["company_report"] = {}
-    # Overwrite or set these fields
+
+    # 4) Save the new price data into results.
     results["company_report"]["stock_price"] = current_price
     results["company_report"]["pct_change_12mo"] = pct_change_12mo
-    return jsonify(results.get("company_report", {}))
+
+    # 5) Return only the "company_report" portion.
+    return jsonify(results["company_report"])
 
 @system1_bp.route('/financial_analysis_data', methods=['GET'])
 def get_financial_analysis_data():

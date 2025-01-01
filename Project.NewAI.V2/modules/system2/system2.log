@@ -1,440 +1,288 @@
-[2025-01-01 03:30:52,741] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:30:54,331] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:30:54,421] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:30:55,998] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:30:56,047] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:30:57,600] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:30:57,648] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:30:59,185] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:30:59,241] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:00,780] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:00,831] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:02,379] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:02,440] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:03,995] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:04,057] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:05,636] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:05,686] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:07,252] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:07,314] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:08,883] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:08,964] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:10,601] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:10,663] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:12,203] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:12,269] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:13,817] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:13,869] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:14,960] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:15,018] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:15,500] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:15,579] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:17,256] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:17,301] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:18,947] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:19,013] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:20,652] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:20,743] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:22,272] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:22,330] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:23,880] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:23,948] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:25,554] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:25,642] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:27,202] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:27,271] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:28,824] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:28,877] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:30,461] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:30,518] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:32,086] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:32,153] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:33,734] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:33,784] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:35,335] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:35,409] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:36,971] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:37,026] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:38,612] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:38,664] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:40,233] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:40,305] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:41,874] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:41,932] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:43,527] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:43,577] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:45,204] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:45,274] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:46,843] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:46,895] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:48,472] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:48,525] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:50,091] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:50,164] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:51,729] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:51,781] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:53,335] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:53,396] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:54,981] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:55,179] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:56,740] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:56,796] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:58,367] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:31:58,433] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:31:59,978] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:32:00,025] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:32:01,599] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:32:01,669] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:32:09,875] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:32:09,925] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:32:11,799] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:32:11,866] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:33:11,815] DEBUG in handlers: Accessed upload_files route
-[2025-01-01 03:33:11,815] INFO in handlers: Entering upload_files() route in system2.handlers
-[2025-01-01 03:33:11,817] INFO in handlers: upload_files(): request.files keys => ['files']
-[2025-01-01 03:33:11,817] DEBUG in handlers: Received 1 files
-[2025-01-01 03:33:11,817] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2025-01-01 03:33:11,817] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2025-01-01 03:33:11,817] DEBUG in handlers: Unique filename generated: 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf
-[2025-01-01 03:33:11,818] INFO in handlers: About to upload file '22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2025-01-01 03:33:11,818] DEBUG in handlers: Uploading 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf to S3
-[2025-01-01 03:33:11,948] INFO in handlers: File '22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2025-01-01 03:33:11,949] DEBUG in handlers: Uploaded 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf to S3
-[2025-01-01 03:33:11,949] INFO in handlers: Queueing Celery task for PDF: 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf
-[2025-01-01 03:33:12,006] INFO in handlers: Celery task queued (Task ID=c94275a6-880a-413d-9211-9779e803d32d) for PDF: 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf
-[2025-01-01 03:33:12,007] DEBUG in handlers: All files enqueued for background processing
-[2025-01-01 03:39:11,385] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:39:11,444] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 03:39:51,645] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 03:39:51,708] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:02:44,733] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:02:44,815] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:04:50,503] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:04:50,566] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:06:32,490] DEBUG in handlers: Accessed chat route in /chat
-[2025-01-01 04:06:32,491] DEBUG in handlers: Accessed chat route
-[2025-01-01 04:06:32,491] DEBUG in handlers: User message: what does this document say?
-[2025-01-01 04:06:32,491] DEBUG in handlers: Document ID: 36d1245c-8609-4349-af4b-9f5b3d982fc1_earnings_call_disney_earnings_call.pdf
-[2025-01-01 04:06:32,491] DEBUG in handlers: Entering generate_query_embedding
-[2025-01-01 04:06:32,733] DEBUG in handlers: Generated query embedding via smart LB
-[2025-01-01 04:06:32,733] DEBUG in handlers: Entering query_pinecone
-[2025-01-01 04:06:32,864] DEBUG in handlers: Received 0 matches from Pinecone
-[2025-01-01 04:06:32,865] DEBUG in handlers: Entering get_response_from_openai
-[2025-01-01 04:06:33,425] DEBUG in handlers: Received response from GPT via smart LB
-[2025-01-01 04:06:33,425] DEBUG in handlers: Assistant response: - I'm unable to read the document as I can't see or interpret text. 
-- If you provide specific information or questions from the document, I can assist in summarizing or providing insights based on that information.
-[2025-01-01 04:18:36,607] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:36,673] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:38,226] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:38,273] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:39,818] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:39,980] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:41,551] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:41,611] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:43,175] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:43,241] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:44,805] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:44,858] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:46,410] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:46,460] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:48,051] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:48,107] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:49,690] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:49,768] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:51,330] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:51,383] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:52,946] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:52,991] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:54,550] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:54,598] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:56,168] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:56,228] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:57,795] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:57,847] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:18:59,412] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:18:59,456] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:01,005] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:01,063] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:02,633] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:02,687] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:04,257] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:04,322] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:05,873] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:05,934] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:07,505] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:07,559] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:09,091] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:09,139] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:10,667] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:10,724] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:12,255] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:12,319] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:13,859] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:13,913] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:15,426] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:15,476] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:17,001] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:17,050] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:18,570] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:18,644] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:20,167] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:20,245] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:21,773] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:21,821] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:23,337] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:23,395] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:24,926] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:24,999] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:26,528] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:26,602] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:28,145] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:28,196] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:29,755] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:29,812] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:31,335] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:31,395] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:32,932] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:32,996] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:34,557] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:34,604] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:36,174] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:36,232] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:37,807] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:37,856] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:39,429] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:39,490] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:41,059] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:41,110] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:42,682] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:42,735] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:44,292] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:44,393] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:45,977] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:46,037] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:47,627] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:47,704] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:49,263] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:49,317] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:50,876] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:50,921] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:52,491] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:52,544] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:54,137] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:54,190] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:55,758] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:55,814] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:57,381] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:57,431] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:19:58,999] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:19:59,054] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:00,582] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:00,643] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:02,226] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:02,284] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:03,833] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:03,902] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:05,466] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:05,532] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:07,065] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:07,115] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:08,648] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:08,723] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:10,247] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:10,354] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:11,906] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:11,960] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:13,548] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:13,630] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:15,230] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:15,327] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:16,886] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:16,936] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:18,518] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:18,585] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:20,155] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:20,212] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:21,781] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:21,861] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:23,431] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:23,488] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:25,104] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:25,163] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:26,754] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:26,810] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:28,368] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:28,433] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:29,998] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:30,043] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:31,601] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:31,672] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:33,225] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:33,272] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:34,822] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:34,881] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:36,438] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:36,489] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:38,051] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:38,099] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:39,655] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:39,708] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:41,271] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:41,322] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:42,895] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:42,963] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:44,521] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:44,686] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:46,246] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:46,300] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:47,853] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:47,916] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:49,470] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:49,531] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:51,092] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:51,150] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:52,704] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:52,765] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:54,322] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:54,430] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:55,980] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:56,050] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:57,659] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:57,713] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:20:59,277] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:20:59,323] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:00,883] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:00,940] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:02,489] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:02,561] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:04,118] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:04,178] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:05,757] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:05,809] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:07,392] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:07,442] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:09,045] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:09,099] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:10,661] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:10,744] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:12,308] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:12,359] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:13,919] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:13,970] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:15,532] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:15,595] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:17,165] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:17,237] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:18,830] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:18,893] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:20,451] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:20,495] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:22,059] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:22,103] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:23,675] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:23,721] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:25,297] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:25,367] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:26,921] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:26,973] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:28,508] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:28,584] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:30,130] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:30,190] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:31,715] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:31,761] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:33,300] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:33,377] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:34,915] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:34,966] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:36,521] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:36,571] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:38,128] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:38,186] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:39,781] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:39,839] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:41,421] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:41,479] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:43,063] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:43,117] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:44,702] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:44,749] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:46,331] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:46,383] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:47,986] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:48,053] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:49,625] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:49,688] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:51,276] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:51,334] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:52,929] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:52,994] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:21:54,612] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:21:54,715] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:22:23,554] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:22:23,630] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:23:10,494] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:23:10,552] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:26:11,540] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:26:11,601] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:26:55,197] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:26:55,245] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:30:38,446] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:30:38,614] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:31:04,465] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:31:04,535] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:34:59,759] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:34:59,809] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:51:17,959] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:51:18,029] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:51:49,519] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:51:49,599] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:52:05,721] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 04:52:05,808] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 04:53:37,667] DEBUG in handlers: Accessed chat route in /chat
-[2025-01-01 04:53:37,667] DEBUG in handlers: Accessed chat route
-[2025-01-01 04:53:37,667] DEBUG in handlers: User message: what does this document say?
-[2025-01-01 04:53:37,667] DEBUG in handlers: Document ID: 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf
-[2025-01-01 04:53:37,667] DEBUG in handlers: Entering generate_query_embedding
-[2025-01-01 04:53:37,835] DEBUG in handlers: Generated query embedding via smart LB
-[2025-01-01 04:53:37,835] DEBUG in handlers: Entering query_pinecone
-[2025-01-01 04:53:37,979] DEBUG in handlers: Received 4 matches from Pinecone
-[2025-01-01 04:53:37,979] DEBUG in handlers: Entering get_response_from_openai
-[2025-01-01 04:53:39,217] DEBUG in handlers: Received response from GPT via smart LB
-[2025-01-01 04:53:39,217] DEBUG in handlers: Assistant response: - The document is a transcript of The Walt Disney Company's Q3 2024 earnings call.
-- It discusses financial results, future plans, content success, and strategic initiatives.
-- Highlights include growth in consumption, pricing leverage, technology enhancements, and upcoming movie releases.
-- Topics covered: content spending balance, free cash flow expectations, DTC margins, advertising demand, and theme park performance.
-- Forward-looking statements address risks and uncertainties.
-- Notable mentions: Disney+, ESPN, streaming content, NBA deal, and future revenue drivers.
-- Executives Bob Iger and Hugh Johnston provide insights on various business aspects.
-[2025-01-01 05:22:48,451] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 05:22:48,499] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 05:23:31,520] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 05:23:31,584] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 05:25:39,270] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 05:25:39,337] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 05:26:28,233] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 05:26:28,315] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 05:27:04,792] DEBUG in handlers: Accessed chat route in /chat
-[2025-01-01 05:27:04,792] DEBUG in handlers: Accessed chat route
-[2025-01-01 05:27:04,792] DEBUG in handlers: User message: what does this document say?
-[2025-01-01 05:27:04,792] DEBUG in handlers: Document ID: analysis_report_9b2eb9f2-85f4-4780-932f-8e9a5c1a7ec5.pdf
-[2025-01-01 05:27:04,792] DEBUG in handlers: Entering generate_query_embedding
-[2025-01-01 05:27:05,143] DEBUG in handlers: Generated query embedding via smart LB
-[2025-01-01 05:27:05,143] DEBUG in handlers: Entering query_pinecone
-[2025-01-01 05:27:05,235] DEBUG in handlers: Received 1 matches from Pinecone
-[2025-01-01 05:27:05,235] DEBUG in handlers: Entering get_response_from_openai
-[2025-01-01 05:27:07,189] DEBUG in handlers: Received response from GPT via smart LB
-[2025-01-01 05:27:07,189] DEBUG in handlers: Assistant response: - The report provides a financial analysis of Disney, recommending a "Buy."
-- Analysis includes DCF valuation, ratio analysis, time series analysis, and sentiment analysis.
-- Disney's intrinsic value per share is $175.72, with a current stock price of $112.0.
-- Ratios like Debt-to-Equity: 0.45, P/E: 41.80, and P/B: 2.06 are highlighted.
-- Time series data shows positive growth in revenue, net income, and assets.
-- Sentiment analysis indicates positive outlook based on earnings, industry sentiment, and economic factors.
-- Data visualizations compare Disney to industry benchmarks.
-- The overall score is 6, supporting the "Buy" recommendation.
-[2025-01-01 09:04:54,607] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 09:04:54,718] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 09:05:22,741] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 09:05:22,810] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2025-01-01 09:08:46,059] INFO in handlers: Index 'business4' already exists.
-[2025-01-01 09:08:46,130] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:10,252] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:11,849] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:11,912] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:13,532] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:13,587] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:15,182] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:15,253] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:16,857] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:16,915] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:18,522] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:18,591] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:20,178] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:20,242] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:21,832] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:21,888] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:23,495] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:23,557] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:25,129] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:25,196] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:26,796] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:26,878] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:28,456] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:28,507] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:30,087] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:30,153] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:31,735] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:31,791] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:33,394] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:33,453] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:35,049] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:35,109] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:36,686] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:36,732] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:38,352] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:38,401] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:39,992] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:40,049] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:41,602] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:41,654] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:43,237] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:43,294] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:44,870] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:44,914] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:46,448] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:46,518] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:48,073] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:48,121] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:49,693] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:49,739] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:51,313] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:51,367] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:52,969] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:53,028] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:54,677] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:54,747] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:56,305] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:56,354] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:57,925] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:57,990] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:22:59,577] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:22:59,635] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:01,227] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:01,278] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:02,898] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:02,957] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:04,535] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:04,588] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:06,179] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:06,251] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:07,828] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:07,878] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:09,419] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:09,476] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:11,060] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:11,115] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:12,681] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:12,742] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:14,284] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:14,339] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:15,889] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:15,937] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:17,477] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:17,538] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:19,137] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:19,189] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:20,745] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:20,807] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:22,332] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:22,389] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:23,927] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:23,980] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:25,520] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:25,591] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:27,152] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:27,235] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:28,769] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:28,818] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:30,356] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:30,480] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:32,058] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:32,126] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:33,688] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:33,760] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:35,282] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:35,360] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:36,921] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:36,970] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:38,522] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:38,585] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:40,209] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:40,255] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:41,829] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:41,882] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:43,475] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:43,546] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:45,297] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:45,372] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:46,962] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:47,017] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:48,612] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:48,672] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:50,232] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:50,279] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:51,855] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:51,905] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:53,478] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:53,541] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:55,128] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:55,198] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:56,792] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:56,841] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:23:58,411] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:23:58,461] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:00,041] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:00,117] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:01,687] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:01,749] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:03,329] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:03,386] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:05,003] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:05,085] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:06,669] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:06,729] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:08,292] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:08,344] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:09,924] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:09,983] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:11,575] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:11,638] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:13,244] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:13,312] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:14,896] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:14,949] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:16,521] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:16,579] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:18,173] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:18,232] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:19,832] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:19,911] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:21,499] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:21,555] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:23,139] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:23,190] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:24,781] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:24,885] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:26,479] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:26,542] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:28,144] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:28,198] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:29,774] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:29,865] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:31,428] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:31,489] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:33,107] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:33,172] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:34,741] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:34,796] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:36,379] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:36,440] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:38,027] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:38,102] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:39,700] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:39,755] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:41,321] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:41,388] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:42,974] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:43,025] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:44,617] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:44,676] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:46,259] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:46,306] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:47,972] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:48,038] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:49,597] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:49,661] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:51,221] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:51,278] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:52,861] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:52,934] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:54,542] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:54,607] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:56,193] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:56,244] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:57,823] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:57,878] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:24:59,462] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:24:59,513] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:01,104] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:01,169] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:02,755] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:02,813] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:04,425] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:04,485] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:06,055] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:06,159] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:07,711] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:07,756] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:09,323] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:09,422] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:10,976] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:11,054] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:12,617] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:12,670] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:14,244] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:14,293] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:15,885] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:15,948] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:17,539] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:17,614] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:19,208] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:19,278] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:20,842] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:20,898] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:22,485] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:22,546] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:24,127] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:24,192] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:25,768] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:25,820] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:27,416] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:27,467] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:29,054] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:29,134] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:30,709] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:30,766] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:32,325] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:32,377] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:33,943] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:33,994] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:35,637] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:35,684] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:37,256] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:37,304] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:38,926] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:38,977] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:40,565] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:40,614] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:42,200] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:42,265] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:43,847] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:25:43,893] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:25:45,517] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:42:55,727] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:42:55,795] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 10:43:08,614] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 10:43:08,682] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 11:09:04,711] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 11:09:05,147] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 11:09:29,134] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 11:09:29,335] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 11:10:37,012] DEBUG in handlers: Accessed chat route in /chat
+[2025-01-01 11:10:37,012] DEBUG in handlers: Accessed chat route
+[2025-01-01 11:10:37,013] DEBUG in handlers: User message: what does this document say?
+[2025-01-01 11:10:37,013] DEBUG in handlers: Document ID: 36d1245c-8609-4349-af4b-9f5b3d982fc1_earnings_call_disney_earnings_call.pdf
+[2025-01-01 11:10:37,013] DEBUG in handlers: Entering generate_query_embedding
+[2025-01-01 11:10:37,508] DEBUG in handlers: Generated query embedding via smart LB
+[2025-01-01 11:10:37,508] DEBUG in handlers: Entering query_pinecone
+[2025-01-01 11:10:37,614] DEBUG in handlers: Received 4 matches from Pinecone
+[2025-01-01 11:10:37,615] DEBUG in handlers: Entering get_response_from_openai
+[2025-01-01 11:10:39,200] DEBUG in handlers: Received response from GPT via smart LB
+[2025-01-01 11:10:39,201] DEBUG in handlers: Assistant response: - Q3 2024 Earnings Call Transcript for The Walt Disney Company was discussed.
+- Forward-looking statements were made regarding financial estimates and future business performance.
+- Success in television and motion pictures was highlighted, with emphasis on strong IP driving value on streaming platforms.
+- Strategies for pricing leverage, content offerings, and technological advancements were mentioned.
+- Plans for new movie releases, technology features, and cost management initiatives were outlined.
+- Questions from analysts covered various topics, including theme parks, content licensing, advertising, and future growth prospects.
+- Responses addressed revenue trends, NBA rights deal, streaming platform expansion, and pricing strategies.
+- The event was recorded, and a question-and-answer session format was followed.
