@@ -305,3 +305,11 @@
 - Executives like Bob Iger and Hugh Johnston provide insights on theme parks, content strategy, streaming service growth, sports rights deals, and pricing strategies.
 - They address concerns about park demand, revenue projections, and the impact of new content on streaming services.
 - Plans to leverage strong IP, expand offerings, and drive profitability in the streaming business are highlighted.
+[2025-01-01 16:49:40,094] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 16:49:40,143] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 16:50:04,868] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 16:50:04,933] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 17:00:39,218] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 17:00:39,270] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 17:00:47,530] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 17:00:47,872] DEBUG in handlers: NLTK 'punkt' tokenizer found

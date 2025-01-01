@@ -1374,7 +1374,80 @@ def get_financial_analysis_data():
     # Return only the "financial_analysis" section
     return jsonify(results.get("financial_analysis", {}))
 
+###############################################################################
+# NEW GET ENDPOINTS FOR APPROACH A
+###############################################################################
 
+@system1_bp.route('/company_report_data', methods=['GET'])
+def get_company_report_data():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
 
+    # 1) If you previously stored the ticker (e.g. "DIS") in results,
+    #    use that. If not, default to "DIS" or any symbol you prefer.
+    symbol = results.get("company_report", {}).get("ticker", "DIS")
 
+    # 2) Call Alpha Vantage using the user’s (or fallback) symbol
+    current_price, pct_change_12mo = get_annual_price_change(symbol)
 
+    # 3) If "company_report" doesn’t exist yet, create it.
+    if "company_report" not in results:
+        results["company_report"] = {}
+
+    # 4) Save the new price data into results.
+    results["company_report"]["stock_price"] = current_price
+    results["company_report"]["pct_change_12mo"] = pct_change_12mo
+
+    # 5) Return only the "company_report" portion.
+    return jsonify(results["company_report"])
+
+@system1_bp.route('/sentiment_data', methods=['GET'])
+def get_sentiment_data():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+    return jsonify(results.get("sentiment", {}))
+
+@system1_bp.route('/data_visualizations_data', methods=['GET'])
+def get_data_visualizations_data():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+    return jsonify(results.get("data_visualizations", {}))
+
+@system1_bp.route('/final_recommendation', methods=['GET'])
+def get_final_recommendation():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+    return jsonify(results.get("final_recommendation", {}))
+
+@system1_bp.route('/company_info_data', methods=['GET'])
+def get_company_info_data():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+
+    info = results.get("company_info", {})
+    return jsonify({
+        "sector": info.get("sector", "Unknown")
+    })
+
+@system1_bp.route('/company_info_details', methods=['GET'])
+def get_company_info_details():
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
+
+    info = results.get("company_info", {})
+    return jsonify({
+        "c_suite": info.get("c_suite", ""),
+        "analysis": info.get("analysis", "")
+    })
