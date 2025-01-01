@@ -26,7 +26,7 @@ def get_annual_price_change(symbol):
     # Alpha Vantage endpoint
     base_url = "https://www.alphavantage.co/query"
     params = {
-        "function": "TIME_SERIES_DAILY_ADJUSTED",
+        "function": "TIME_SERIES_DAILY",
         "symbol": symbol,
         "outputsize": "full",  # ensure we get at least one year of data
         "apikey": ALPHAVANTAGE_API_KEY
@@ -91,4 +91,3 @@ def get_annual_price_change(symbol):
     except Exception as e:
         logging.error(f"Error fetching data from Alpha Vantage: {e}", exc_info=True)
         return (None, None)
-
