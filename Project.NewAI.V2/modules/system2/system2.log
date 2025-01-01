@@ -286,3 +286,22 @@
 - Questions from analysts covered various topics, including theme parks, content licensing, advertising, and future growth prospects.
 - Responses addressed revenue trends, NBA rights deal, streaming platform expansion, and pricing strategies.
 - The event was recorded, and a question-and-answer session format was followed.
+[2025-01-01 16:19:18,341] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 16:19:18,408] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 16:19:31,829] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 16:19:31,907] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 16:21:59,008] DEBUG in handlers: Accessed chat route in /chat
+[2025-01-01 16:21:59,008] DEBUG in handlers: Accessed chat route
+[2025-01-01 16:21:59,008] DEBUG in handlers: User message: what does this document say?
+[2025-01-01 16:21:59,009] DEBUG in handlers: Document ID: 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf
+[2025-01-01 16:21:59,009] DEBUG in handlers: Entering generate_query_embedding
+[2025-01-01 16:21:59,402] DEBUG in handlers: Generated query embedding via smart LB
+[2025-01-01 16:21:59,402] DEBUG in handlers: Entering query_pinecone
+[2025-01-01 16:21:59,506] DEBUG in handlers: Received 4 matches from Pinecone
+[2025-01-01 16:21:59,506] DEBUG in handlers: Entering get_response_from_openai
+[2025-01-01 16:22:00,855] DEBUG in handlers: Received response from GPT via smart LB
+[2025-01-01 16:22:00,855] DEBUG in handlers: Assistant response: - The document is a transcript of The Walt Disney Company's Q3 2024 earnings call.
+- It discusses various topics such as financial performance, strategic investments, content offerings, and future outlook.
+- Executives like Bob Iger and Hugh Johnston provide insights on theme parks, content strategy, streaming service growth, sports rights deals, and pricing strategies.
+- They address concerns about park demand, revenue projections, and the impact of new content on streaming services.
+- Plans to leverage strong IP, expand offerings, and drive profitability in the streaming business are highlighted.

@@ -38,41 +38,41 @@ function initDashboard() {
       const defaultKey = document.querySelector('#company-report-container .state-default .key-metric');
       const collapsedKey = document.querySelector('#company-report-container .state-collapsed .tiny-data');
 
-     // --- NEW LOGIC FOR pct_change_12mo ---
-     const stockPrice = (data.stock_price !== undefined && data.stock_price !== null)
-       ? data.stock_price 
-       : 145.32; // fallback if none
-     const pctChange = (data.pct_change_12mo !== undefined && data.pct_change_12mo !== null)
-       ? data.pct_change_12mo
-       : null;
+      // --- NEW LOGIC FOR pct_change_12mo ---
+      const stockPrice = (data.stock_price !== undefined && data.stock_price !== null)
+        ? data.stock_price 
+        : 145.32; // fallback if none
+      const pctChange = (data.pct_change_12mo !== undefined && data.pct_change_12mo !== null)
+        ? data.pct_change_12mo
+        : null;
 
-     let displayText = '';
-     if (stockPrice === null) {
-       // Fallback to a default string if we truly have no data
-       displayText = '$145.32';
-     } else {
-       // Format the price to 2 decimals (if it's a number)
-       const priceStr = (typeof stockPrice === 'number')
-         ? stockPrice.toFixed(2)
-         : stockPrice;
+      let displayText = '';
+      if (stockPrice === null) {
+        // Fallback to a default string if we truly have no data
+        displayText = '$145.32';
+      } else {
+        // Format the price to 2 decimals (if it's a number)
+        const priceStr = (typeof stockPrice === 'number')
+          ? stockPrice.toFixed(2)
+          : stockPrice;
 
-       if (pctChange !== null) {
-         const arrow = (pctChange >= 0) ? '▲' : '▼';
-         const sign = (pctChange >= 0) ? '+' : '';
-         // CHANGED: Decide which color class to use
-         let colorClass = (pctChange >= 0) ? 'positive-change' : 'negative-change';
+        if (pctChange !== null) {
+          const arrow = (pctChange >= 0) ? '▲' : '▼';
+          const sign = (pctChange >= 0) ? '+' : '';
+          // CHANGED: Decide which color class to use
+          let colorClass = (pctChange >= 0) ? 'positive-change' : 'negative-change';
 
-         // Build an HTML string with <span> for color
-         displayText = `<span class="${colorClass}">${priceStr} ${arrow}${sign}${pctChange.toFixed(1)}%</span>`;
-       } else {
-         // If we have a price but no percent change
-         displayText = priceStr;
-       }
-     }
+          // Build an HTML string with <span> for color
+          displayText = `<span class="${colorClass}">${priceStr} ${arrow}${sign}${pctChange.toFixed(1)}%</span>`;
+        } else {
+          // If we have a price but no percent change
+          displayText = priceStr;
+        }
+      }
 
-     // NEW: set innerHTML to display the <span>
-     if (defaultKey) defaultKey.innerHTML = displayText;
-     if (collapsedKey) collapsedKey.innerHTML = displayText;
+      // NEW: set innerHTML to display the <span>
+      if (defaultKey) defaultKey.innerHTML = displayText;
+      if (collapsedKey) collapsedKey.innerHTML = displayText;
 
       const fullDiv = document.getElementById('company-report-full');
       if (fullDiv) {
@@ -92,20 +92,233 @@ function initDashboard() {
   fetch('/system1/financial_analysis_data')
     .then(res => res.json())
     .then(data => {
+      // 1) Default & Collapsed State: DCF as the key metric
       const dcfValueDefault = document.querySelector('#financial-analysis-container .state-default .key-metric');
       const dcfValueCollapsed = document.querySelector('#financial-analysis-container .state-collapsed .tiny-data');
-      const dcfStr = data.dcf_intrinsic_value ? `$${data.dcf_intrinsic_value.toFixed(2)}` : '$127.50';
+      const dcfNumber = data.dcf_intrinsic_value ? parseFloat(data.dcf_intrinsic_value) : 127.50;
+      const dcfStr = `$${dcfNumber.toFixed(2)}`;
 
       if (dcfValueDefault) dcfValueDefault.textContent = dcfStr;
       if (dcfValueCollapsed) dcfValueCollapsed.textContent = dcfStr;
 
+      // 2) Default State: One-liner is set in HTML, but we also have a bullet chart
+      // We'll plot annual_profit_margins vs. industry_profit_margin
+      const profitMarginCanvas = document.getElementById('profitMarginBulletChart');
+      if (profitMarginCanvas && data.annual_profit_margins && data.industry_profit_margin) {
+        const ctx = profitMarginCanvas.getContext('2d');
+
+        const marginLabels = Object.keys(data.annual_profit_margins);
+        const marginData = marginLabels.map(yr => (data.annual_profit_margins[yr] * 100));
+        const industryTarget = data.industry_profit_margin * 100;
+
+        // Build a bar + line overlay
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: marginLabels,
+            datasets: [
+              {
+                label: 'Profit Margin (%)',
+                data: marginData,
+                backgroundColor: 'rgba(0,123,255,0.5)'
+              },
+              {
+                label: 'Industry Standard',
+                data: marginLabels.map(() => industryTarget),
+                type: 'line',
+                borderColor: 'red',
+                borderWidth: 2,
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: false,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 50 // adjust if you expect margins can go > 50%
+              }
+            },
+            plugins: {
+              legend: {
+                display: false // or true if you want to show "Profit Margin" + "Industry Standard"
+              }
+            }
+          }
+        });
+      }
+
+      // 3) Expanded State
+      // We'll create a more detailed HTML for #financial-analysis-full
       const fullDiv = document.getElementById('financial-analysis-full');
       if (fullDiv) {
-        fullDiv.innerHTML = `
-          <p>DCF Intrinsic Value: ${dcfStr}</p>
-          <p>Key Ratios: ${JSON.stringify(data.ratios)}</p>
-          <p>Time Series Analysis: ${JSON.stringify(data.time_series_analysis)}</p>
-        `;
+        // DCF
+        let expandedHTML = `<h3>DCF Intrinsic Value: <strong>${dcfStr}</strong></h3>`;
+
+        // Ratios vs. Benchmarks (like a table)
+        expandedHTML += `<h4>Ratios vs. Benchmarks</h4>`;
+        if (data.ratios && data.industry_benchmarks) {
+          expandedHTML += `<table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Ratio</th>
+                <th>Company</th>
+                <th>Industry</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+          // We'll assume data.ratios is an object with e.g. "profit_margin", "current_ratio_calc", ...
+          // We'll match them to data.industry_benchmarks by the same key if it exists
+          for (let ratioName in data.ratios) {
+            // If ratio is numeric
+            const companyVal = data.ratios[ratioName];
+            const industryVal = (data.industry_benchmarks[ratioName] !== undefined)
+              ? data.industry_benchmarks[ratioName]
+              : null;
+
+            // Decide if it's a fraction that needs *100 or not
+            // For demonstration, let's do that if ratioName includes 'margin'
+            let displayCompany = companyVal;
+            let displayIndustry = industryVal;
+            if (ratioName.toLowerCase().includes('margin')) {
+              displayCompany = (companyVal * 100).toFixed(2) + '%';
+              if (industryVal !== null) displayIndustry = (industryVal * 100).toFixed(2) + '%';
+            } else if (typeof companyVal === 'number') {
+              displayCompany = companyVal.toFixed(3);
+              if (industryVal !== null) displayIndustry = industryVal.toFixed(3);
+            }
+
+            expandedHTML += `
+              <tr>
+                <td>${ratioName}</td>
+                <td>${(displayCompany !== null && displayCompany !== undefined) ? displayCompany : 'N/A'}</td>
+                <td>${(displayIndustry !== null && displayIndustry !== undefined) ? displayIndustry : 'N/A'}</td>
+              </tr>
+            `;
+          }
+
+          expandedHTML += `</tbody></table>`;
+        } else {
+          expandedHTML += `<p>(No ratio data available)</p>`;
+        }
+
+        // For demonstration, let's also build bullet charts for each ratio individually
+        // We'll create a container for them
+        expandedHTML += `<div id="ratio-bullet-charts" style="display:flex; flex-wrap:wrap; gap:20px;"></div>`;
+
+        // Finally, the Time Series (quarterly) if available
+        expandedHTML += `<h4>Last 4 Quarters</h4>`;
+        if (data.time_series_analysis && data.time_series_analysis.quarterly) {
+          // We'll create a canvas
+          expandedHTML += `<canvas id="quarterlyMarginChart" width="400" height="200"></canvas>`;
+        }
+
+        fullDiv.innerHTML = expandedHTML;
+
+        // Now we do the bullet charts for each ratio
+        if (data.ratios && data.industry_benchmarks) {
+          const ratioContainer = document.getElementById('ratio-bullet-charts');
+          for (let ratioName in data.ratios) {
+            // Create a small <div> with a canvas
+            const div = document.createElement('div');
+            div.style.width = '200px';
+            div.style.height = '120px';
+            div.style.border = '1px solid #ccc';
+            div.style.padding = '5px';
+            div.style.boxSizing = 'border-box';
+
+            const c = document.createElement('canvas');
+            c.width = 200;
+            c.height = 80;
+            div.appendChild(c);
+            ratioContainer.appendChild(div);
+
+            // We'll build a small bar + line overlay chart
+            const companyVal = data.ratios[ratioName];
+            const industryVal = (data.industry_benchmarks[ratioName] !== undefined)
+              ? data.industry_benchmarks[ratioName]
+              : 0;
+
+            let labelVal = ratioName;
+            let companyDisplay = companyVal;
+            let industryDisplay = industryVal;
+
+            // If it's a margin, multiply by 100
+            if (ratioName.toLowerCase().includes('margin')) {
+              companyDisplay = companyVal * 100;
+              industryDisplay = industryVal * 100;
+            }
+
+            new Chart(c.getContext('2d'), {
+              type: 'bar',
+              data: {
+                labels: [labelVal],
+                datasets: [
+                  {
+                    label: labelVal,
+                    data: [companyDisplay],
+                    backgroundColor: 'rgba(0,123,255,0.5)'
+                  },
+                  {
+                    label: 'Benchmark',
+                    data: [industryDisplay],
+                    type: 'line',
+                    borderColor: 'red',
+                    borderWidth: 2,
+                    fill: false
+                  }
+                ]
+              },
+              options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true
+                  }
+                },
+                plugins: {
+                  legend: {
+                    display: false
+                  }
+                }
+              }
+            });
+          }
+        }
+
+        // Next, if we have last-4-quarters data, render a small line chart
+        if (data.time_series_analysis && data.time_series_analysis.quarterly) {
+          const quarterlyCanvas = document.getElementById('quarterlyMarginChart');
+          if (quarterlyCanvas) {
+            const quarters = data.time_series_analysis.quarterly.map(d => d.quarter);
+            // For demonstration, let's chart the profit_margin as a percentage
+            const pmValues = data.time_series_analysis.quarterly.map(d => (d.profit_margin * 100));
+
+            new Chart(quarterlyCanvas.getContext('2d'), {
+              type: 'line',
+              data: {
+                labels: quarters,
+                datasets: [{
+                  label: 'Profit Margin (%)',
+                  data: pmValues,
+                  borderColor: 'blue',
+                  fill: false
+                }]
+              },
+              options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                  y: { beginAtZero: true }
+                }
+              }
+            });
+          }
+        }
       }
     })
     .catch(err => {
