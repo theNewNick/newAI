@@ -483,3 +483,25 @@ def list_documents():
     except Exception as e:
         logger.error(f"Error listing documents: {e}", exc_info=True)
         return jsonify({'error': 'Failed to list documents.'}), 500
+
+
+# -----------------------------
+# 1) Minimal test route
+# -----------------------------
+from flask import Blueprint, jsonify
+from modules.system2.tasks import process_pdf_chunks_task
+
+test_bp = Blueprint('test_bp', __name__)
+
+@test_bp.route("/trigger_test_task", methods=["GET"])
+def trigger_test_task():
+    """
+    A minimal route that just queues the Celery task
+    without needing a PDF upload.
+    """
+    task_result = process_pdf_chunks_task.delay(
+        bucket_name="test-bucket",
+        object_key="test-object",
+        pinecone_index_name="test-index"
+    )
+    return jsonify({"message": "Task queued", "task_id": task_result.id})

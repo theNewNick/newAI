@@ -15,8 +15,9 @@ if CURRENT_DIR not in sys.path:
 # --------------------------------------------------------------------------
 # Hard-code the Redis broker & backend (ignore environment variables)
 # --------------------------------------------------------------------------
-REDIS_BROKER_URL = "redis://localhost:6379/0"
-REDIS_RESULT_BACKEND = "redis://localhost:6379/0"
+REDIS_BROKER_URL = "redis://127.0.0.1:6380/0"
+REDIS_RESULT_BACKEND = "redis://127.0.0.1:6380/0"
+
 
 # 3) Create the Celery application WITHOUT broker= or backend= arguments
 celery = Celery("my_celery_app")

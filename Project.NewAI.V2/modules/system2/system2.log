@@ -1,1178 +1,408 @@
-[2024-12-31 13:29:02,220] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 13:29:33,747] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 13:29:33,747] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 13:29:33,749] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 13:29:33,749] DEBUG in handlers: Received 1 files
-[2024-12-31 13:29:33,749] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 13:29:33,749] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:29:33,749] DEBUG in handlers: Unique filename generated: b4270a9c-2d2d-4fe8-a2db-b54593fc3e6a_earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:29:33,749] INFO in handlers: About to upload file 'b4270a9c-2d2d-4fe8-a2db-b54593fc3e6a_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 13:29:33,749] DEBUG in handlers: Uploading b4270a9c-2d2d-4fe8-a2db-b54593fc3e6a_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 13:29:33,950] INFO in handlers: File 'b4270a9c-2d2d-4fe8-a2db-b54593fc3e6a_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 13:29:33,950] DEBUG in handlers: Uploaded b4270a9c-2d2d-4fe8-a2db-b54593fc3e6a_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 13:29:33,950] INFO in handlers: Queueing Celery task for PDF: b4270a9c-2d2d-4fe8-a2db-b54593fc3e6a_earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:29:39,978] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 13:30:16,194] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 13:30:16,194] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 13:30:16,195] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 13:30:16,195] DEBUG in handlers: Received 1 files
-[2024-12-31 13:30:16,195] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 13:30:16,195] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:30:16,195] DEBUG in handlers: Unique filename generated: d7700b10-c2cf-43e9-98ef-81d447fd40eb_earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:30:16,196] INFO in handlers: About to upload file 'd7700b10-c2cf-43e9-98ef-81d447fd40eb_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 13:30:16,196] DEBUG in handlers: Uploading d7700b10-c2cf-43e9-98ef-81d447fd40eb_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 13:30:16,340] INFO in handlers: File 'd7700b10-c2cf-43e9-98ef-81d447fd40eb_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 13:30:16,340] DEBUG in handlers: Uploaded d7700b10-c2cf-43e9-98ef-81d447fd40eb_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 13:30:16,341] INFO in handlers: Queueing Celery task for PDF: d7700b10-c2cf-43e9-98ef-81d447fd40eb_earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:30:22,369] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 13:40:10,835] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 13:40:10,905] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 13:42:07,216] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 13:42:07,216] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 13:45:08,743] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 13:45:08,743] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 13:45:10,845] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 13:45:10,846] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 13:45:22,150] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 13:45:22,150] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 13:45:22,152] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 13:45:22,152] DEBUG in handlers: Received 1 files
-[2024-12-31 13:45:22,152] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 13:45:22,152] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:45:22,153] DEBUG in handlers: Unique filename generated: e9930f6c-8c43-4173-91c3-3718ea34f742_earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:45:22,153] INFO in handlers: About to upload file 'e9930f6c-8c43-4173-91c3-3718ea34f742_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 13:45:22,153] DEBUG in handlers: Uploading e9930f6c-8c43-4173-91c3-3718ea34f742_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 13:45:22,276] INFO in handlers: File 'e9930f6c-8c43-4173-91c3-3718ea34f742_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 13:45:22,276] DEBUG in handlers: Uploaded e9930f6c-8c43-4173-91c3-3718ea34f742_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 13:45:22,276] INFO in handlers: Queueing Celery task for PDF: e9930f6c-8c43-4173-91c3-3718ea34f742_earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:45:28,316] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 13:56:52,836] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 13:56:52,888] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 13:57:50,695] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 13:57:50,695] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 13:57:50,696] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 13:57:50,696] DEBUG in handlers: Received 1 files
-[2024-12-31 13:57:50,696] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 13:57:50,697] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:57:50,697] DEBUG in handlers: Unique filename generated: ab723b60-9523-439c-a4fb-6deef648c705_earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:57:50,697] INFO in handlers: About to upload file 'ab723b60-9523-439c-a4fb-6deef648c705_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 13:57:50,697] DEBUG in handlers: Uploading ab723b60-9523-439c-a4fb-6deef648c705_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 13:57:50,842] INFO in handlers: File 'ab723b60-9523-439c-a4fb-6deef648c705_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 13:57:50,842] DEBUG in handlers: Uploaded ab723b60-9523-439c-a4fb-6deef648c705_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 13:57:50,842] INFO in handlers: Queueing Celery task for PDF: ab723b60-9523-439c-a4fb-6deef648c705_earnings_call_disney_earnings_call.pdf
-[2024-12-31 13:57:56,871] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 14:02:47,774] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:02:48,640] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:08:16,498] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:08:16,499] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:08:19,702] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:08:19,702] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:08:58,761] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:09:00,126] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:11:09,727] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:11:10,849] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:11:30,923] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:11:30,924] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:11:35,274] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:11:35,274] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:11:51,201] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 14:11:51,201] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 14:11:51,203] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 14:11:51,203] DEBUG in handlers: Received 1 files
-[2024-12-31 14:11:51,203] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 14:11:51,203] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:11:51,203] DEBUG in handlers: Unique filename generated: 9ff45c8e-99d2-438f-9ade-bc9f68686f0e_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:11:51,204] INFO in handlers: About to upload file '9ff45c8e-99d2-438f-9ade-bc9f68686f0e_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:11:51,204] DEBUG in handlers: Uploading 9ff45c8e-99d2-438f-9ade-bc9f68686f0e_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:11:51,349] INFO in handlers: File '9ff45c8e-99d2-438f-9ade-bc9f68686f0e_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:11:51,349] DEBUG in handlers: Uploaded 9ff45c8e-99d2-438f-9ade-bc9f68686f0e_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:11:51,349] INFO in handlers: Queueing Celery task for PDF: 9ff45c8e-99d2-438f-9ade-bc9f68686f0e_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:11:57,389] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 14:12:24,720] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 14:12:24,720] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 14:12:24,721] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 14:12:24,722] DEBUG in handlers: Received 1 files
-[2024-12-31 14:12:24,722] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 14:12:24,722] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:12:24,722] DEBUG in handlers: Unique filename generated: 501ea616-6e0d-452a-a963-64d3294d9b8a_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:12:24,722] INFO in handlers: About to upload file '501ea616-6e0d-452a-a963-64d3294d9b8a_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:12:24,722] DEBUG in handlers: Uploading 501ea616-6e0d-452a-a963-64d3294d9b8a_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:12:24,834] INFO in handlers: File '501ea616-6e0d-452a-a963-64d3294d9b8a_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:12:24,834] DEBUG in handlers: Uploaded 501ea616-6e0d-452a-a963-64d3294d9b8a_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:12:24,835] INFO in handlers: Queueing Celery task for PDF: 501ea616-6e0d-452a-a963-64d3294d9b8a_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:12:30,864] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 14:13:27,792] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 14:13:27,792] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 14:13:27,794] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 14:13:27,794] DEBUG in handlers: Received 1 files
-[2024-12-31 14:13:27,794] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 14:13:27,794] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:13:27,794] DEBUG in handlers: Unique filename generated: 27c31ac0-4cf1-4142-bda8-75e884b11053_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:13:27,794] INFO in handlers: About to upload file '27c31ac0-4cf1-4142-bda8-75e884b11053_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:13:27,794] DEBUG in handlers: Uploading 27c31ac0-4cf1-4142-bda8-75e884b11053_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:13:27,915] INFO in handlers: File '27c31ac0-4cf1-4142-bda8-75e884b11053_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:13:27,915] DEBUG in handlers: Uploaded 27c31ac0-4cf1-4142-bda8-75e884b11053_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:13:27,915] INFO in handlers: Queueing Celery task for PDF: 27c31ac0-4cf1-4142-bda8-75e884b11053_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:13:33,944] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 14:19:31,588] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:19:32,853] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:21:59,150] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:21:59,228] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:41:42,803] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:41:42,851] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:42:05,095] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:42:05,096] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:44:16,311] DEBUG in handlers: Accessed chat route in /chat
-[2024-12-31 14:44:16,311] DEBUG in handlers: Accessed chat route
-[2024-12-31 14:44:16,312] DEBUG in handlers: User message: what does this document say?
-[2024-12-31 14:44:16,312] DEBUG in handlers: Document ID: analysis_report_214e5605-7b73-4695-9d38-7438921e0814.pdf
-[2024-12-31 14:44:16,312] DEBUG in handlers: Entering generate_query_embedding
-[2024-12-31 14:44:16,596] DEBUG in handlers: Generated query embedding via smart LB
-[2024-12-31 14:44:16,596] DEBUG in handlers: Entering query_pinecone
-[2024-12-31 14:44:16,719] DEBUG in handlers: Received 0 matches from Pinecone
-[2024-12-31 14:44:16,720] DEBUG in handlers: Entering get_response_from_openai
-[2024-12-31 14:44:17,561] DEBUG in handlers: Received response from GPT via smart LB
-[2024-12-31 14:44:17,561] DEBUG in handlers: Assistant response: - I can help summarize the key points
-- Please upload the document for a detailed overview
-[2024-12-31 14:45:31,727] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:45:31,727] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:45:35,045] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 14:45:35,045] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 14:45:54,482] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 14:45:54,482] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 14:45:54,484] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 14:45:54,484] DEBUG in handlers: Received 1 files
-[2024-12-31 14:45:54,484] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 14:45:54,484] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:45:54,484] DEBUG in handlers: Unique filename generated: 21075e74-079e-48d8-bcbf-cd5969173279_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:45:54,485] INFO in handlers: About to upload file '21075e74-079e-48d8-bcbf-cd5969173279_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:45:54,485] DEBUG in handlers: Uploading 21075e74-079e-48d8-bcbf-cd5969173279_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:45:54,600] INFO in handlers: File '21075e74-079e-48d8-bcbf-cd5969173279_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:45:54,601] DEBUG in handlers: Uploaded 21075e74-079e-48d8-bcbf-cd5969173279_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:45:54,601] INFO in handlers: Queueing Celery task for PDF: 21075e74-079e-48d8-bcbf-cd5969173279_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:46:00,644] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 14:47:36,732] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 14:47:36,733] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 14:47:36,734] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 14:47:36,734] DEBUG in handlers: Received 1 files
-[2024-12-31 14:47:36,734] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 14:47:36,734] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:47:36,734] DEBUG in handlers: Unique filename generated: 3a3777b8-ba74-478b-a30c-201dd3fc0f56_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:47:36,735] INFO in handlers: About to upload file '3a3777b8-ba74-478b-a30c-201dd3fc0f56_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:47:36,735] DEBUG in handlers: Uploading 3a3777b8-ba74-478b-a30c-201dd3fc0f56_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:47:36,858] INFO in handlers: File '3a3777b8-ba74-478b-a30c-201dd3fc0f56_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 14:47:36,858] DEBUG in handlers: Uploaded 3a3777b8-ba74-478b-a30c-201dd3fc0f56_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 14:47:36,858] INFO in handlers: Queueing Celery task for PDF: 3a3777b8-ba74-478b-a30c-201dd3fc0f56_earnings_call_disney_earnings_call.pdf
-[2024-12-31 14:47:42,887] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 15:06:13,303] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 15:06:13,304] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 15:06:29,139] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 15:06:29,139] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 15:06:29,141] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 15:06:29,141] DEBUG in handlers: Received 1 files
-[2024-12-31 15:06:29,141] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 15:06:29,141] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:06:29,141] DEBUG in handlers: Unique filename generated: 536596e4-5bf7-41ec-a980-ed9a85cee6f9_earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:06:29,141] INFO in handlers: About to upload file '536596e4-5bf7-41ec-a980-ed9a85cee6f9_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 15:06:29,141] DEBUG in handlers: Uploading 536596e4-5bf7-41ec-a980-ed9a85cee6f9_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 15:06:29,328] INFO in handlers: File '536596e4-5bf7-41ec-a980-ed9a85cee6f9_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 15:06:29,328] DEBUG in handlers: Uploaded 536596e4-5bf7-41ec-a980-ed9a85cee6f9_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 15:06:29,328] INFO in handlers: Queueing Celery task for PDF: 536596e4-5bf7-41ec-a980-ed9a85cee6f9_earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:06:35,368] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 15:06:43,760] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 15:06:43,761] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 15:06:43,762] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 15:06:43,762] DEBUG in handlers: Received 1 files
-[2024-12-31 15:06:43,762] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 15:06:43,762] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:06:43,763] DEBUG in handlers: Unique filename generated: b6996fe3-a325-497e-a63a-0513e144179a_earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:06:43,763] INFO in handlers: About to upload file 'b6996fe3-a325-497e-a63a-0513e144179a_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 15:06:43,763] DEBUG in handlers: Uploading b6996fe3-a325-497e-a63a-0513e144179a_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 15:06:43,874] INFO in handlers: File 'b6996fe3-a325-497e-a63a-0513e144179a_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 15:06:43,874] DEBUG in handlers: Uploaded b6996fe3-a325-497e-a63a-0513e144179a_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 15:06:43,874] INFO in handlers: Queueing Celery task for PDF: b6996fe3-a325-497e-a63a-0513e144179a_earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:06:49,904] ERROR in handlers: Unhandled exception in upload_files: [Errno 111] Connection refused
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 32, in __call__
-    return self.__value__
-AttributeError: 'ChannelPromise' object has no attribute '__value__'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 472, in _reraise_as_library_errors
-    yield
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 318, in retry_over_time
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 934, in _connection_factory
-    self._connection = self._establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 860, in _establish_connection
-    conn = self.transport.establish_connection()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/transport/pyamqp.py", line 203, in establish_connection
-    conn.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/connection.py", line 324, in connect
-    self.transport.connect()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 132, in connect
-    self._connect(self.host, self.port, self.connect_timeout)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/amqp/transport.py", line 187, in _connect
-    self.sock.connect(sa)
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ec2-user/newAI/Project.NewAI.V2/modules/system2/handlers.py", line 258, in upload_files
-    task_result = process_pdf_chunks_task.delay(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 425, in delay
-    return self.apply_async(args, kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/task.py", line 575, in apply_async
-    return app.send_task(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/base.py", line 788, in send_task
-    amqp.send_task_message(P, name, message, **options)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/celery/app/amqp.py", line 510, in send_task_message
-    ret = producer.publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 186, in publish
-    return _publish(
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 556, in _ensured
-    return fun(*args, **kwargs)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 195, in _publish
-    channel = self.channel
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 218, in _get_channel
-    channel = self._channel = channel()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/utils/functional.py", line 34, in __call__
-    value = self.__value__ = self.__contract__()
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/messaging.py", line 234, in <lambda>
-    channel = ChannelPromise(lambda: connection.default_channel)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 953, in default_channel
-    self._ensure_connection(**conn_opts)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 459, in _ensure_connection
-    return retry_over_time(
-  File "/usr/lib64/python3.9/contextlib.py", line 137, in __exit__
-    self.gen.throw(typ, value, traceback)
-  File "/home/ec2-user/newAI/venv/lib64/python3.9/site-packages/kombu/connection.py", line 476, in _reraise_as_library_errors
-    raise ConnectionError(str(exc)) from exc
-kombu.exceptions.OperationalError: [Errno 111] Connection refused
-[2024-12-31 15:37:30,356] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 15:37:30,438] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 15:38:22,242] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 15:38:22,242] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 15:38:24,334] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 15:38:24,335] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 15:39:06,330] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 15:39:06,330] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 15:39:06,331] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 15:39:06,332] DEBUG in handlers: Received 1 files
-[2024-12-31 15:39:06,332] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 15:39:06,332] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:39:06,332] DEBUG in handlers: Unique filename generated: ab2b9acb-9425-4c50-8bfc-f9f12a3a1d3d_earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:39:06,332] INFO in handlers: About to upload file 'ab2b9acb-9425-4c50-8bfc-f9f12a3a1d3d_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 15:39:06,332] DEBUG in handlers: Uploading ab2b9acb-9425-4c50-8bfc-f9f12a3a1d3d_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 15:39:06,455] INFO in handlers: File 'ab2b9acb-9425-4c50-8bfc-f9f12a3a1d3d_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 15:39:06,455] DEBUG in handlers: Uploaded ab2b9acb-9425-4c50-8bfc-f9f12a3a1d3d_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 15:39:06,455] INFO in handlers: Queueing Celery task for PDF: ab2b9acb-9425-4c50-8bfc-f9f12a3a1d3d_earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:39:06,500] INFO in handlers: Celery task queued (Task ID=1212cf38-fda8-4106-b943-0bc5a5d366fd) for PDF: ab2b9acb-9425-4c50-8bfc-f9f12a3a1d3d_earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:39:06,500] DEBUG in handlers: All files enqueued for background processing
-[2024-12-31 15:41:04,051] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 15:41:04,051] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 15:44:01,419] DEBUG in handlers: Accessed chat route in /chat
-[2024-12-31 15:44:01,419] DEBUG in handlers: Accessed chat route
-[2024-12-31 15:44:01,420] DEBUG in handlers: User message: what does this document say?
-[2024-12-31 15:44:01,420] DEBUG in handlers: Document ID: 536596e4-5bf7-41ec-a980-ed9a85cee6f9_earnings_call_disney_earnings_call.pdf
-[2024-12-31 15:44:01,420] DEBUG in handlers: Entering generate_query_embedding
-[2024-12-31 15:44:01,585] DEBUG in handlers: Generated query embedding via smart LB
-[2024-12-31 15:44:01,585] DEBUG in handlers: Entering query_pinecone
-[2024-12-31 15:44:01,704] DEBUG in handlers: Received 0 matches from Pinecone
-[2024-12-31 15:44:01,704] DEBUG in handlers: Entering get_response_from_openai
-[2024-12-31 15:44:02,199] DEBUG in handlers: Received response from GPT via smart LB
-[2024-12-31 15:44:02,199] DEBUG in handlers: Assistant response: - Without the document provided, I am unable to summarize its contents.
-- Please upload or share the document for analysis.
-[2024-12-31 16:06:24,508] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:06:24,509] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:06:28,540] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:06:28,540] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:06:39,271] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 16:06:39,272] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 16:06:39,273] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 16:06:39,274] DEBUG in handlers: Received 1 files
-[2024-12-31 16:06:39,274] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 16:06:39,274] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:06:39,274] DEBUG in handlers: Unique filename generated: 449aa182-bb8c-4eb5-8232-e521414eea35_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:06:39,274] INFO in handlers: About to upload file '449aa182-bb8c-4eb5-8232-e521414eea35_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 16:06:39,274] DEBUG in handlers: Uploading 449aa182-bb8c-4eb5-8232-e521414eea35_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 16:06:39,406] INFO in handlers: File '449aa182-bb8c-4eb5-8232-e521414eea35_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 16:06:39,406] DEBUG in handlers: Uploaded 449aa182-bb8c-4eb5-8232-e521414eea35_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 16:06:39,406] INFO in handlers: Queueing Celery task for PDF: 449aa182-bb8c-4eb5-8232-e521414eea35_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:06:39,452] INFO in handlers: Celery task queued (Task ID=9b740c3e-2681-450c-918c-eb766fbf676d) for PDF: 449aa182-bb8c-4eb5-8232-e521414eea35_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:06:39,452] DEBUG in handlers: All files enqueued for background processing
-[2024-12-31 16:11:37,439] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 16:11:37,439] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 16:11:37,441] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 16:11:37,441] DEBUG in handlers: Received 1 files
-[2024-12-31 16:11:37,441] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 16:11:37,441] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:11:37,441] DEBUG in handlers: Unique filename generated: 5648dd6d-7bc4-49ec-bdc9-4f012939bffd_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:11:37,441] INFO in handlers: About to upload file '5648dd6d-7bc4-49ec-bdc9-4f012939bffd_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 16:11:37,441] DEBUG in handlers: Uploading 5648dd6d-7bc4-49ec-bdc9-4f012939bffd_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 16:11:37,564] INFO in handlers: File '5648dd6d-7bc4-49ec-bdc9-4f012939bffd_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 16:11:37,565] DEBUG in handlers: Uploaded 5648dd6d-7bc4-49ec-bdc9-4f012939bffd_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 16:11:37,565] INFO in handlers: Queueing Celery task for PDF: 5648dd6d-7bc4-49ec-bdc9-4f012939bffd_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:11:37,587] INFO in handlers: Celery task queued (Task ID=79e86cc7-9763-4c9a-8112-4c714daac106) for PDF: 5648dd6d-7bc4-49ec-bdc9-4f012939bffd_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:11:37,587] DEBUG in handlers: All files enqueued for background processing
-[2024-12-31 16:12:25,013] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:12:25,091] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:12:58,265] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:12:58,265] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:13:01,734] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:13:01,734] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:13:05,381] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 16:13:05,381] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 16:13:05,382] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 16:13:05,383] DEBUG in handlers: Received 1 files
-[2024-12-31 16:13:05,383] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 16:13:05,383] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:13:05,383] DEBUG in handlers: Unique filename generated: 82100360-b15c-4514-946d-3304edc15bb6_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:13:05,383] INFO in handlers: About to upload file '82100360-b15c-4514-946d-3304edc15bb6_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 16:13:05,383] DEBUG in handlers: Uploading 82100360-b15c-4514-946d-3304edc15bb6_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 16:13:05,541] INFO in handlers: File '82100360-b15c-4514-946d-3304edc15bb6_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 16:13:05,541] DEBUG in handlers: Uploaded 82100360-b15c-4514-946d-3304edc15bb6_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 16:13:05,541] INFO in handlers: Queueing Celery task for PDF: 82100360-b15c-4514-946d-3304edc15bb6_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:13:05,585] INFO in handlers: Celery task queued (Task ID=e93b58c3-ad47-4635-9272-a1127d042384) for PDF: 82100360-b15c-4514-946d-3304edc15bb6_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:13:05,585] DEBUG in handlers: All files enqueued for background processing
-[2024-12-31 16:17:13,088] DEBUG in handlers: Accessed chat route in /chat
-[2024-12-31 16:17:13,088] DEBUG in handlers: Accessed chat route
-[2024-12-31 16:17:13,088] DEBUG in handlers: User message: What are the key points in this earnings call?
-[2024-12-31 16:17:13,088] DEBUG in handlers: Document ID: 82100360-b15c-4514-946d-3304edc15bb6_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:17:13,088] DEBUG in handlers: Entering generate_query_embedding
-[2024-12-31 16:17:13,276] DEBUG in handlers: Generated query embedding via smart LB
-[2024-12-31 16:17:13,276] DEBUG in handlers: Entering query_pinecone
-[2024-12-31 16:17:13,421] DEBUG in handlers: Received 4 matches from Pinecone
-[2024-12-31 16:17:13,421] DEBUG in handlers: Entering get_response_from_openai
-[2024-12-31 16:17:14,944] DEBUG in handlers: Received response from GPT via smart LB
-[2024-12-31 16:17:14,945] DEBUG in handlers: Assistant response: - The call discussed forward-looking statements and risk factors under securities laws
-- Q3 2024 earnings summary: EPS beat by $0.20, revenue beat by $65.79M
-- Theme park demand, NBA deal profitability, and Disney+ ARPU were key topics
-- Discussion on future content investments, streaming platform growth, and pricing leverage
-- Updates on cruise ship pre-opening costs, DTC profitability targets, and cost management efforts
-[2024-12-31 16:19:24,962] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:19:24,962] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:24:10,187] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:24:10,492] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:24:34,563] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:24:34,563] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:27:07,929] DEBUG in handlers: Accessed chat route in /chat
-[2024-12-31 16:27:07,929] DEBUG in handlers: Accessed chat route
-[2024-12-31 16:27:07,930] DEBUG in handlers: User message: what does this document say?
-[2024-12-31 16:27:07,930] DEBUG in handlers: Document ID: ab723b60-9523-439c-a4fb-6deef648c705_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:27:07,930] DEBUG in handlers: Entering generate_query_embedding
-[2024-12-31 16:27:09,286] DEBUG in handlers: Generated query embedding via smart LB
-[2024-12-31 16:27:09,286] DEBUG in handlers: Entering query_pinecone
-[2024-12-31 16:27:09,423] DEBUG in handlers: Received 0 matches from Pinecone
-[2024-12-31 16:27:09,423] DEBUG in handlers: Entering get_response_from_openai
-[2024-12-31 16:27:09,861] DEBUG in handlers: Received response from GPT via smart LB
-[2024-12-31 16:27:09,861] DEBUG in handlers: Assistant response: - To assist you with understanding the document, please upload or share the document for a detailed analysis.
-[2024-12-31 16:29:36,409] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:29:36,492] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:33:38,486] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:33:38,487] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:33:42,151] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:33:42,152] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:34:00,331] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:34:00,332] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:38:07,842] DEBUG in handlers: Accessed chat route in /chat
-[2024-12-31 16:38:07,843] DEBUG in handlers: Accessed chat route
-[2024-12-31 16:38:07,843] DEBUG in handlers: User message: what does this document say?
-[2024-12-31 16:38:07,843] DEBUG in handlers: Document ID: 501ea616-6e0d-452a-a963-64d3294d9b8a_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:38:07,843] DEBUG in handlers: Entering generate_query_embedding
-[2024-12-31 16:38:08,145] DEBUG in handlers: Generated query embedding via smart LB
-[2024-12-31 16:38:08,145] DEBUG in handlers: Entering query_pinecone
-[2024-12-31 16:38:08,272] DEBUG in handlers: Received 0 matches from Pinecone
-[2024-12-31 16:38:08,272] DEBUG in handlers: Entering get_response_from_openai
-[2024-12-31 16:38:08,885] DEBUG in handlers: Received response from GPT via smart LB
-[2024-12-31 16:38:08,885] DEBUG in handlers: Assistant response: - I can help summarize the document if you provide it
-- Please upload the document for analysis
-- I can assist with extracting key points from the document
-[2024-12-31 16:38:12,985] DEBUG in handlers: Accessed chat route in /chat
-[2024-12-31 16:38:12,985] DEBUG in handlers: Accessed chat route
-[2024-12-31 16:38:12,985] DEBUG in handlers: User message: what does this document say?
-[2024-12-31 16:38:12,985] DEBUG in handlers: Document ID: analysis_report_a5fa8858-a50d-4895-b239-603a8e91d74c.pdf
-[2024-12-31 16:38:12,985] DEBUG in handlers: Entering generate_query_embedding
-[2024-12-31 16:38:13,129] DEBUG in handlers: Generated query embedding via smart LB
-[2024-12-31 16:38:13,129] DEBUG in handlers: Entering query_pinecone
-[2024-12-31 16:38:13,160] DEBUG in handlers: Received 0 matches from Pinecone
-[2024-12-31 16:38:13,161] DEBUG in handlers: Entering get_response_from_openai
-[2024-12-31 16:38:14,434] DEBUG in handlers: Received response from GPT via smart LB
-[2024-12-31 16:38:14,434] DEBUG in handlers: Assistant response: - Please provide the document for a detailed analysis
-- Summarize the main points or key takeaways from the document
-- Use text recognition software to extract content if it's a digital document
-[2024-12-31 16:39:03,521] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:39:04,496] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:39:19,040] DEBUG in handlers: Accessed chat route in /chat
-[2024-12-31 16:39:19,040] DEBUG in handlers: Accessed chat route
-[2024-12-31 16:39:19,040] DEBUG in handlers: User message: what does this document say?
-[2024-12-31 16:39:19,040] DEBUG in handlers: Document ID: 27c31ac0-4cf1-4142-bda8-75e884b11053_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:39:19,040] DEBUG in handlers: Entering generate_query_embedding
-[2024-12-31 16:39:19,168] DEBUG in handlers: Generated query embedding via smart LB
-[2024-12-31 16:39:19,168] DEBUG in handlers: Entering query_pinecone
-[2024-12-31 16:39:19,259] DEBUG in handlers: Received 0 matches from Pinecone
-[2024-12-31 16:39:19,260] DEBUG in handlers: Entering get_response_from_openai
-[2024-12-31 16:39:19,915] DEBUG in handlers: Received response from GPT via smart LB
-[2024-12-31 16:39:19,915] DEBUG in handlers: Assistant response: - I cannot directly access, interpret, or summarize the content of documents
-- If you provide specific information or questions from the document, I can assist in analyzing or answering those aspects
-[2024-12-31 16:42:58,268] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:42:58,537] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:43:17,139] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:43:17,139] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:44:39,906] DEBUG in handlers: Accessed chat route in /chat
-[2024-12-31 16:44:39,907] DEBUG in handlers: Accessed chat route
-[2024-12-31 16:44:39,907] DEBUG in handlers: User message: what does this document say?
-[2024-12-31 16:44:39,907] DEBUG in handlers: Document ID: 27c31ac0-4cf1-4142-bda8-75e884b11053_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:44:39,907] DEBUG in handlers: Entering generate_query_embedding
-[2024-12-31 16:44:40,189] DEBUG in handlers: Generated query embedding via smart LB
-[2024-12-31 16:44:40,189] DEBUG in handlers: Entering query_pinecone
-[2024-12-31 16:44:40,341] DEBUG in handlers: Received 0 matches from Pinecone
-[2024-12-31 16:44:40,342] DEBUG in handlers: Entering get_response_from_openai
-[2024-12-31 16:44:40,974] DEBUG in handlers: Received response from GPT via smart LB
-[2024-12-31 16:44:40,974] DEBUG in handlers: Assistant response: - Please provide the document for analysis
-- I can summarize the document's content
-- I can extract key points or themes from the document
-- I can help with specific questions about the document
-[2024-12-31 16:47:51,564] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:47:51,564] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:47:54,138] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:47:54,138] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:47:56,227] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 16:47:56,228] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 16:47:56,229] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 16:47:56,230] DEBUG in handlers: Received 1 files
-[2024-12-31 16:47:56,230] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 16:47:56,230] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:47:56,230] DEBUG in handlers: Unique filename generated: a69e1a00-9739-4a77-ae01-fd84ce2f7483_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:47:56,230] INFO in handlers: About to upload file 'a69e1a00-9739-4a77-ae01-fd84ce2f7483_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 16:47:56,230] DEBUG in handlers: Uploading a69e1a00-9739-4a77-ae01-fd84ce2f7483_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 16:47:56,356] INFO in handlers: File 'a69e1a00-9739-4a77-ae01-fd84ce2f7483_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 16:47:56,356] DEBUG in handlers: Uploaded a69e1a00-9739-4a77-ae01-fd84ce2f7483_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 16:47:56,356] INFO in handlers: Queueing Celery task for PDF: a69e1a00-9739-4a77-ae01-fd84ce2f7483_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:47:56,402] INFO in handlers: Celery task queued (Task ID=bcf34a3b-1f13-4d2a-8618-546d119758ab) for PDF: a69e1a00-9739-4a77-ae01-fd84ce2f7483_earnings_call_disney_earnings_call.pdf
-[2024-12-31 16:47:56,402] DEBUG in handlers: All files enqueued for background processing
-[2024-12-31 16:59:36,706] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:59:37,448] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 16:59:47,439] INFO in handlers: Index 'business4' already exists.
-[2024-12-31 16:59:47,439] DEBUG in handlers: NLTK 'punkt' tokenizer found
-[2024-12-31 17:00:02,569] DEBUG in handlers: Accessed upload_files route
-[2024-12-31 17:00:02,570] INFO in handlers: Entering upload_files() route in system2.handlers
-[2024-12-31 17:00:02,571] INFO in handlers: upload_files(): request.files keys => ['files']
-[2024-12-31 17:00:02,572] DEBUG in handlers: Received 1 files
-[2024-12-31 17:00:02,572] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
-[2024-12-31 17:00:02,572] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
-[2024-12-31 17:00:02,572] DEBUG in handlers: Unique filename generated: 869a8feb-6ebb-4650-8856-ae81b6e8d389_earnings_call_disney_earnings_call.pdf
-[2024-12-31 17:00:02,572] INFO in handlers: About to upload file '869a8feb-6ebb-4650-8856-ae81b6e8d389_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 17:00:02,572] DEBUG in handlers: Uploading 869a8feb-6ebb-4650-8856-ae81b6e8d389_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 17:00:02,722] INFO in handlers: File '869a8feb-6ebb-4650-8856-ae81b6e8d389_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
-[2024-12-31 17:00:02,722] DEBUG in handlers: Uploaded 869a8feb-6ebb-4650-8856-ae81b6e8d389_earnings_call_disney_earnings_call.pdf to S3
-[2024-12-31 17:00:02,722] INFO in handlers: Queueing Celery task for PDF: 869a8feb-6ebb-4650-8856-ae81b6e8d389_earnings_call_disney_earnings_call.pdf
-[2024-12-31 17:00:02,768] INFO in handlers: Celery task queued (Task ID=f6155da3-c56c-4def-a450-af8a73cd0028) for PDF: 869a8feb-6ebb-4650-8856-ae81b6e8d389_earnings_call_disney_earnings_call.pdf
-[2024-12-31 17:00:02,768] DEBUG in handlers: All files enqueued for background processing
-[2024-12-31 17:03:18,409] DEBUG in handlers: Accessed chat route in /chat
-[2024-12-31 17:03:18,409] DEBUG in handlers: Accessed chat route
-[2024-12-31 17:03:18,409] DEBUG in handlers: User message: What are the key points in this earnings call?
-[2024-12-31 17:03:18,409] DEBUG in handlers: Document ID: 869a8feb-6ebb-4650-8856-ae81b6e8d389_earnings_call_disney_earnings_call.pdf
-[2024-12-31 17:03:18,409] DEBUG in handlers: Entering generate_query_embedding
-[2024-12-31 17:03:18,860] DEBUG in handlers: Generated query embedding via smart LB
-[2024-12-31 17:03:18,860] DEBUG in handlers: Entering query_pinecone
-[2024-12-31 17:03:19,002] DEBUG in handlers: Received 4 matches from Pinecone
-[2024-12-31 17:03:19,002] DEBUG in handlers: Entering get_response_from_openai
-[2024-12-31 17:03:20,725] DEBUG in handlers: Received response from GPT via smart LB
-[2024-12-31 17:03:20,725] DEBUG in handlers: Assistant response: - Disney Q3 2024 Earnings Call focused on financial results and future outlook
-- Revenue beat expectations: EPS $1.39, Revenue $23.16B
-- Discussion on theme parks, global demand, and future revenue expectations
-- NBA rights deal impact on future profitability
-- Disney+ growth strategy, content offerings, price increases, and ARPU
-- Advertising revenue growth and content licensing strategy
-- Future content investments balance: sports, scripted TV, and movies
-- DTC margins target: aiming for double-digit margins with pricing strategies and cost management
-- Cruise ship pre-opening costs implications and positive outlook
-- Ongoing focus on managing costs and driving productivity in various business segments
+[2025-01-01 03:30:52,741] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:30:54,331] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:30:54,421] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:30:55,998] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:30:56,047] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:30:57,600] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:30:57,648] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:30:59,185] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:30:59,241] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:00,780] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:00,831] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:02,379] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:02,440] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:03,995] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:04,057] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:05,636] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:05,686] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:07,252] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:07,314] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:08,883] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:08,964] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:10,601] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:10,663] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:12,203] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:12,269] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:13,817] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:13,869] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:14,960] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:15,018] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:15,500] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:15,579] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:17,256] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:17,301] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:18,947] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:19,013] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:20,652] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:20,743] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:22,272] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:22,330] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:23,880] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:23,948] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:25,554] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:25,642] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:27,202] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:27,271] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:28,824] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:28,877] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:30,461] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:30,518] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:32,086] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:32,153] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:33,734] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:33,784] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:35,335] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:35,409] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:36,971] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:37,026] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:38,612] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:38,664] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:40,233] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:40,305] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:41,874] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:41,932] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:43,527] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:43,577] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:45,204] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:45,274] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:46,843] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:46,895] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:48,472] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:48,525] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:50,091] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:50,164] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:51,729] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:51,781] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:53,335] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:53,396] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:54,981] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:55,179] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:56,740] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:56,796] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:58,367] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:31:58,433] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:31:59,978] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:32:00,025] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:32:01,599] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:32:01,669] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:32:09,875] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:32:09,925] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:32:11,799] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:32:11,866] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:33:11,815] DEBUG in handlers: Accessed upload_files route
+[2025-01-01 03:33:11,815] INFO in handlers: Entering upload_files() route in system2.handlers
+[2025-01-01 03:33:11,817] INFO in handlers: upload_files(): request.files keys => ['files']
+[2025-01-01 03:33:11,817] DEBUG in handlers: Received 1 files
+[2025-01-01 03:33:11,817] INFO in handlers: Preparing to upload 1 PDF(s) to S3 and enqueue tasks...
+[2025-01-01 03:33:11,817] DEBUG in handlers: Processing file: earnings_call_disney_earnings_call.pdf
+[2025-01-01 03:33:11,817] DEBUG in handlers: Unique filename generated: 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf
+[2025-01-01 03:33:11,818] INFO in handlers: About to upload file '22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf' to bucket 'integratedaiplatofrmforbusiness4'
+[2025-01-01 03:33:11,818] DEBUG in handlers: Uploading 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf to S3
+[2025-01-01 03:33:11,948] INFO in handlers: File '22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf' successfully uploaded to S3 bucket 'integratedaiplatofrmforbusiness4'
+[2025-01-01 03:33:11,949] DEBUG in handlers: Uploaded 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf to S3
+[2025-01-01 03:33:11,949] INFO in handlers: Queueing Celery task for PDF: 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf
+[2025-01-01 03:33:12,006] INFO in handlers: Celery task queued (Task ID=c94275a6-880a-413d-9211-9779e803d32d) for PDF: 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf
+[2025-01-01 03:33:12,007] DEBUG in handlers: All files enqueued for background processing
+[2025-01-01 03:39:11,385] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:39:11,444] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 03:39:51,645] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 03:39:51,708] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:02:44,733] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:02:44,815] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:04:50,503] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:04:50,566] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:06:32,490] DEBUG in handlers: Accessed chat route in /chat
+[2025-01-01 04:06:32,491] DEBUG in handlers: Accessed chat route
+[2025-01-01 04:06:32,491] DEBUG in handlers: User message: what does this document say?
+[2025-01-01 04:06:32,491] DEBUG in handlers: Document ID: 36d1245c-8609-4349-af4b-9f5b3d982fc1_earnings_call_disney_earnings_call.pdf
+[2025-01-01 04:06:32,491] DEBUG in handlers: Entering generate_query_embedding
+[2025-01-01 04:06:32,733] DEBUG in handlers: Generated query embedding via smart LB
+[2025-01-01 04:06:32,733] DEBUG in handlers: Entering query_pinecone
+[2025-01-01 04:06:32,864] DEBUG in handlers: Received 0 matches from Pinecone
+[2025-01-01 04:06:32,865] DEBUG in handlers: Entering get_response_from_openai
+[2025-01-01 04:06:33,425] DEBUG in handlers: Received response from GPT via smart LB
+[2025-01-01 04:06:33,425] DEBUG in handlers: Assistant response: - I'm unable to read the document as I can't see or interpret text. 
+- If you provide specific information or questions from the document, I can assist in summarizing or providing insights based on that information.
+[2025-01-01 04:18:36,607] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:36,673] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:38,226] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:38,273] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:39,818] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:39,980] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:41,551] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:41,611] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:43,175] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:43,241] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:44,805] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:44,858] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:46,410] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:46,460] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:48,051] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:48,107] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:49,690] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:49,768] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:51,330] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:51,383] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:52,946] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:52,991] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:54,550] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:54,598] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:56,168] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:56,228] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:57,795] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:57,847] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:18:59,412] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:18:59,456] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:01,005] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:01,063] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:02,633] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:02,687] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:04,257] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:04,322] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:05,873] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:05,934] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:07,505] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:07,559] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:09,091] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:09,139] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:10,667] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:10,724] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:12,255] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:12,319] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:13,859] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:13,913] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:15,426] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:15,476] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:17,001] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:17,050] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:18,570] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:18,644] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:20,167] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:20,245] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:21,773] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:21,821] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:23,337] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:23,395] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:24,926] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:24,999] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:26,528] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:26,602] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:28,145] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:28,196] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:29,755] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:29,812] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:31,335] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:31,395] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:32,932] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:32,996] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:34,557] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:34,604] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:36,174] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:36,232] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:37,807] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:37,856] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:39,429] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:39,490] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:41,059] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:41,110] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:42,682] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:42,735] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:44,292] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:44,393] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:45,977] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:46,037] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:47,627] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:47,704] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:49,263] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:49,317] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:50,876] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:50,921] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:52,491] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:52,544] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:54,137] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:54,190] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:55,758] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:55,814] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:57,381] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:57,431] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:19:58,999] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:19:59,054] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:00,582] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:00,643] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:02,226] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:02,284] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:03,833] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:03,902] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:05,466] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:05,532] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:07,065] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:07,115] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:08,648] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:08,723] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:10,247] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:10,354] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:11,906] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:11,960] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:13,548] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:13,630] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:15,230] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:15,327] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:16,886] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:16,936] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:18,518] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:18,585] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:20,155] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:20,212] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:21,781] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:21,861] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:23,431] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:23,488] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:25,104] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:25,163] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:26,754] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:26,810] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:28,368] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:28,433] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:29,998] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:30,043] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:31,601] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:31,672] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:33,225] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:33,272] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:34,822] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:34,881] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:36,438] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:36,489] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:38,051] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:38,099] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:39,655] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:39,708] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:41,271] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:41,322] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:42,895] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:42,963] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:44,521] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:44,686] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:46,246] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:46,300] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:47,853] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:47,916] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:49,470] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:49,531] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:51,092] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:51,150] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:52,704] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:52,765] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:54,322] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:54,430] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:55,980] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:56,050] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:57,659] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:57,713] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:20:59,277] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:20:59,323] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:00,883] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:00,940] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:02,489] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:02,561] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:04,118] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:04,178] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:05,757] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:05,809] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:07,392] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:07,442] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:09,045] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:09,099] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:10,661] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:10,744] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:12,308] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:12,359] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:13,919] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:13,970] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:15,532] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:15,595] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:17,165] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:17,237] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:18,830] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:18,893] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:20,451] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:20,495] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:22,059] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:22,103] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:23,675] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:23,721] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:25,297] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:25,367] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:26,921] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:26,973] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:28,508] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:28,584] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:30,130] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:30,190] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:31,715] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:31,761] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:33,300] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:33,377] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:34,915] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:34,966] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:36,521] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:36,571] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:38,128] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:38,186] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:39,781] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:39,839] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:41,421] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:41,479] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:43,063] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:43,117] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:44,702] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:44,749] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:46,331] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:46,383] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:47,986] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:48,053] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:49,625] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:49,688] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:51,276] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:51,334] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:52,929] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:52,994] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:21:54,612] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:21:54,715] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:22:23,554] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:22:23,630] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:23:10,494] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:23:10,552] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:26:11,540] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:26:11,601] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:26:55,197] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:26:55,245] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:30:38,446] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:30:38,614] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:31:04,465] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:31:04,535] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:34:59,759] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:34:59,809] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:51:17,959] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:51:18,029] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:51:49,519] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:51:49,599] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:52:05,721] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 04:52:05,808] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 04:53:37,667] DEBUG in handlers: Accessed chat route in /chat
+[2025-01-01 04:53:37,667] DEBUG in handlers: Accessed chat route
+[2025-01-01 04:53:37,667] DEBUG in handlers: User message: what does this document say?
+[2025-01-01 04:53:37,667] DEBUG in handlers: Document ID: 22e15cea-c202-4ead-a816-edcf3aa4bb19_earnings_call_disney_earnings_call.pdf
+[2025-01-01 04:53:37,667] DEBUG in handlers: Entering generate_query_embedding
+[2025-01-01 04:53:37,835] DEBUG in handlers: Generated query embedding via smart LB
+[2025-01-01 04:53:37,835] DEBUG in handlers: Entering query_pinecone
+[2025-01-01 04:53:37,979] DEBUG in handlers: Received 4 matches from Pinecone
+[2025-01-01 04:53:37,979] DEBUG in handlers: Entering get_response_from_openai
+[2025-01-01 04:53:39,217] DEBUG in handlers: Received response from GPT via smart LB
+[2025-01-01 04:53:39,217] DEBUG in handlers: Assistant response: - The document is a transcript of The Walt Disney Company's Q3 2024 earnings call.
+- It discusses financial results, future plans, content success, and strategic initiatives.
+- Highlights include growth in consumption, pricing leverage, technology enhancements, and upcoming movie releases.
+- Topics covered: content spending balance, free cash flow expectations, DTC margins, advertising demand, and theme park performance.
+- Forward-looking statements address risks and uncertainties.
+- Notable mentions: Disney+, ESPN, streaming content, NBA deal, and future revenue drivers.
+- Executives Bob Iger and Hugh Johnston provide insights on various business aspects.
