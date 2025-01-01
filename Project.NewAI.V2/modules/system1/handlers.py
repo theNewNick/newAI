@@ -1357,7 +1357,22 @@ Please provide them in valid JSON only, like:
         return jsonify({'error': 'An unexpected error occurred.'}), 500
 
 
+###############################################################################
+# NEW ROUTE: Return the "financial_analysis" portion of the stored results
+###############################################################################
+@system1_bp.route('/financial_analysis_data', methods=['GET'])
+def get_financial_analysis_data():
+    """
+    Returns the 'financial_analysis' dictionary that was
+    created and stored by analyze_financials().
+    """
+    user_id = "demo_user"
+    results = get_results_for_user(user_id)
+    if not results:
+        return jsonify({"error": "No analysis data found"}), 400
 
+    # Return only the "financial_analysis" section
+    return jsonify(results.get("financial_analysis", {}))
 
 
 
