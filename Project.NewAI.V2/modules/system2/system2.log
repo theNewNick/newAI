@@ -432,3 +432,9 @@
 - Sentiment analysis indicates positive outlook based on earnings, industry sentiment, and economic factors.
 - Data visualizations compare Disney to industry benchmarks.
 - The overall score is 6, supporting the "Buy" recommendation.
+[2025-01-01 09:04:54,607] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 09:04:54,718] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 09:05:22,741] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 09:05:22,810] DEBUG in handlers: NLTK 'punkt' tokenizer found
+[2025-01-01 09:08:46,059] INFO in handlers: Index 'business4' already exists.
+[2025-01-01 09:08:46,130] DEBUG in handlers: NLTK 'punkt' tokenizer found

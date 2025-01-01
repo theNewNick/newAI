@@ -40,6 +40,7 @@ PINECONE_API_KEY = os.getenv('PINECONE_API_KEY', 'your-pinecone-api-key')
 PINECONE_ENVIRONMENT = os.getenv('PINECONE_ENVIRONMENT', 'us-east1-gcp')
 PINECONE_INDEX_NAME = os.getenv('PINECONE_INDEX_NAME', 'your-index-name')
 NEWSAPI_KEY = os.getenv('NEWSAPI_KEY', 'your-newsapi-key')
+ALPHAVANTAGE_API_KEY = os.getenv('ALPHAVANTAGE_API_KEY', '')
 
 ###############################################
 # SQLALCHEMY CONFIGURATION

@@ -36,6 +36,7 @@ import tiktoken
 import openai
 from pinecone import Pinecone, ServerlessSpec
 from logging.handlers import RotatingFileHandler
+from modules.system1.alpha_vantage_service import get_annual_price_change
 
 # NEW IMPORTS FOR SMART LB & MODEL SELECTOR
 from model_selector import choose_model_for_task
@@ -1198,6 +1199,16 @@ def get_company_report_data():
     results = get_results_for_user(user_id)
     if not results:
         return jsonify({"error": "No analysis data found"}), 400
+    # OPTIONAL: pick a symbol, or load from your stored "demo_user" data if available
+    symbol = "AAPL"
+    current_price, pct_change_12mo = get_annual_price_change(symbol)
+
+    # If "company_report" is in your results, update it with the new data
+    if "company_report" not in results:
+        results["company_report"] = {}
+    # Overwrite or set these fields
+    results["company_report"]["stock_price"] = current_price
+    results["company_report"]["pct_change_12mo"] = pct_change_12mo
     return jsonify(results.get("company_report", {}))
 
 @system1_bp.route('/financial_analysis_data', methods=['GET'])

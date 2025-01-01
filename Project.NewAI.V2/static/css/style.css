@@ -231,3 +231,14 @@ html, body {
 .dashboard-tile.enlarged .state-enlarged {
     display: block;
 }
+
+
+ /* -----------------------------------------------------
+    5. STOCK PRICE COLOR CLASSES (Positive/Negative Change)
+    ----------------------------------------------------- */
+ .positive-change {
+     color: green;
+ }
+ .negative-change {
+     color: red;
+ }
