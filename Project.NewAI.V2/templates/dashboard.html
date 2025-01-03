@@ -145,20 +145,27 @@
         <div class="card d-flex flex-column">
           <div class="card-header">Data Visualizations</div>
           <div class="card-body">
-            <!-- Default State -->
-            <div class="state-default">
-              <p class="key-metric"><strong>Q2: $50.5B</strong></p>
-              <p class="one-liner">Charts on revenue, net income, etc.</p>
-            </div>
-
             <!-- Collapsed State -->
             <div class="state-collapsed">
-              <p class="tiny-data"><strong>$50.5B</strong></p>
+              <p class="tiny-data">Loading…</p>
+            </div>
+
+            <!-- Default State -->
+            <div class="state-default">
+              <p class="key-metric">Loading TTM Revenue…</p>
+              <p class="one-liner">Quick annual revenue overview below.</p>
+              <canvas id="annualRevenueScatter" width="300" height="150" style="margin-top: 10px;"></canvas>
             </div>
 
             <!-- Enlarged State -->
             <div class="state-enlarged">
-              <div id="data-visualizations-full">Loading charts...</div>
+              <div id="data-visualizations-full">
+                <canvas id="assetsLiabilitiesBar" width="400" height="200" style="margin-bottom:20px;"></canvas>
+                <canvas id="operatingCashFlowLine" width="400" height="200" style="margin-bottom:20px;"></canvas>
+                <canvas id="revenueNetIncomeBar" width="400" height="200" style="margin-bottom:20px;"></canvas>
+                <canvas id="expensesStackedBar" width="400" height="200" style="margin-bottom:20px;"></canvas>
+                <canvas id="incomeStackedBar" width="400" height="200" style="margin-bottom:20px;"></canvas>
+              </div>
             </div>
           </div>
           <div class="card-footer bg-white border-0"></div>

@@ -461,50 +461,217 @@ function initDashboard() {
     });
 
   // (D) Data Visualizations
+function initDataVisualizations() {
   fetch('/system1/data_visualizations_data')
     .then(res => res.json())
     .then(data => {
-      const defaultKey = document.querySelector('#data-visualizations-container .state-default .key-metric');
-      const collapsedKey = document.querySelector('#data-visualizations-container .state-collapsed .tiny-data');
+      console.log("Data Viz data:", data);
 
-      if (defaultKey) defaultKey.textContent = data.latest_revenue || 'Q2: $50.5B';
-      if (collapsedKey) collapsedKey.textContent = data.latest_revenue || '$50.5B';
+      // 1) Collapsed snippet => TTM Revenue snippet
+      updateDataVizCollapsed(data);
 
-      const fullDiv = document.getElementById('data-visualizations-full');
-      if (fullDiv) {
-        fullDiv.innerHTML = '';
+      // 2) Default snippet => TTM snippet + scatter
+      updateDataVizDefault(data);
 
-        const chartCanvas = document.createElement('canvas');
-        chartCanvas.id = 'revenueChart';
-        chartCanvas.width = 400;
-        chartCanvas.height = 250;
-        fullDiv.appendChild(chartCanvas);
-
-        const ctx = chartCanvas.getContext('2d');
-        const sampleLabels = (data.revenue_over_time || []).map(item => item.date || 'Unknown');
-        const sampleValues = (data.revenue_over_time || []).map(item => item.value || 0);
-
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: sampleLabels.length ? sampleLabels : ['Q1','Q2','Q3','Q4'],
-            datasets: [{
-              label: 'Revenue',
-              data: sampleValues.length ? sampleValues : [50, 60, 55, 70],
-              backgroundColor: 'rgba(75, 192, 192, 0.4)'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true } }
-          }
-        });
-      }
+      // 3) Expanded charts => multiple bar/line/stacked
+      buildDataVizExpandedCharts(data);
     })
     .catch(err => {
-      console.error("Error fetching data visualizations:", err);
+      console.error("Error fetching Data Viz data:", err);
     });
+}
+
+function updateDataVizCollapsed(data) {
+  // Suppose data includes: ttm_current, ttm_previous
+  const ttmCurrent = data.ttm_current;
+  const ttmPrevious = data.ttm_previous;
+  if (!ttmCurrent || !ttmPrevious) return;
+
+  const pctChange = ((ttmCurrent - ttmPrevious) / ttmPrevious) * 100;
+  const arrow = pctChange >= 0 ? '▲' : '▼';
+  const sign = pctChange >= 0 ? '+' : '';
+
+  // e.g. round or floor the number
+  const formattedTTM = formatNumber(Math.floor(ttmCurrent));
+  const snippet = `TTM Revenue: $${formattedTTM} ${arrow}${sign}${pctChange.toFixed(1)}%`;
+
+  const collapsedElem = document.querySelector('#data-visualizations-container .state-collapsed .tiny-data');
+  if (collapsedElem) collapsedElem.textContent = snippet;
+}
+
+function updateDataVizDefault(data) {
+  const ttmCurrent = data.ttm_current;
+  const ttmPrevious = data.ttm_previous;
+  if (!ttmCurrent || !ttmPrevious) return;
+
+  const pctChange = ((ttmCurrent - ttmPrevious) / ttmPrevious) * 100;
+  const arrow = pctChange >= 0 ? '▲' : '▼';
+  const sign = pctChange >= 0 ? '+' : '';
+
+  const formattedTTM = formatNumber(Math.floor(ttmCurrent));
+  const snippet = `TTM Revenue: $${formattedTTM} ${arrow}${sign}${pctChange.toFixed(1)}%`;
+  // Insert snippet into .key-metric
+  const keyMetricElem = document.querySelector('#data-visualizations-container .state-default .key-metric');
+  if (keyMetricElem) keyMetricElem.textContent = snippet;
+
+  // Build a scatter plot for annual_revenue in <canvas id="annualRevenueScatter">
+  const scatterCtx = document.getElementById('annualRevenueScatter')?.getContext('2d');
+  if (!scatterCtx || !data.annual_revenue) return;
+
+  const scatterData = data.annual_revenue.map(item => ({
+    x: item.year,
+    y: Math.round(item.value / 1e6) // e.g. in millions
+  }));
+
+  new Chart(scatterCtx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Annual Revenue (millions)',
+        data: scatterData,
+        backgroundColor: 'blue'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Year' }, ticks: { stepSize: 1 } },
+        y: { title: { display: true, text: 'Millions' } }
+      }
+    }
+  });
+}
+
+function buildDataVizExpandedCharts(data) {
+  const yearlyData = data.yearly_data;
+  if (!yearlyData) return;
+  const years = yearlyData.map(d => d.year);
+
+  // 1) Assets vs. Liabilities (bar)
+  const assetsLiabilitiesCtx = document.getElementById('assetsLiabilitiesBar')?.getContext('2d');
+  if (assetsLiabilitiesCtx) {
+    const assets = yearlyData.map(d => d.assets);
+    const liab = yearlyData.map(d => d.liabilities);
+    new Chart(assetsLiabilitiesCtx, {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [
+          { label: 'Assets', data: assets, backgroundColor: 'blue' },
+          { label: 'Liabilities', data: liab, backgroundColor: 'red' }
+        ]
+      },
+      options: { responsive: true }
+    });
+  }
+
+  // 2) Operating Cash Flow (line)
+  const ocfCtx = document.getElementById('operatingCashFlowLine')?.getContext('2d');
+  if (ocfCtx) {
+    const ocf = yearlyData.map(d => d.operating_cash_flow);
+    new Chart(ocfCtx, {
+      type: 'line',
+      data: {
+        labels: years,
+        datasets: [{
+          label: 'Operating CF',
+          data: ocf,
+          borderColor: 'green',
+          fill: false
+        }]
+      },
+      options: { responsive: true }
+    });
+  }
+
+  // 3) Revenue & Net Income (bar)
+  const revNiCtx = document.getElementById('revenueNetIncomeBar')?.getContext('2d');
+  if (revNiCtx) {
+    const rev = yearlyData.map(d => d.revenue);
+    const ni = yearlyData.map(d => d.net_income);
+    new Chart(revNiCtx, {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [
+          { label: 'Revenue', data: rev, backgroundColor: 'blue' },
+          { label: 'Net Income', data: ni, backgroundColor: 'orange' }
+        ]
+      },
+      options: { responsive: true }
+    });
+  }
+
+  // 4) Expenses Breakdown (stacked bar)
+  const expCtx = document.getElementById('expensesStackedBar')?.getContext('2d');
+  if (expCtx) {
+    const cogs = yearlyData.map(d => d.cogs);
+    const sga = yearlyData.map(d => d.sga);
+    const dep = yearlyData.map(d => d.depreciation);
+    const intExp = yearlyData.map(d => d.interest_expense);
+    const tax = yearlyData.map(d => d.income_tax);
+
+    new Chart(expCtx, {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [
+          { label: 'COGS', data: cogs, backgroundColor: '#a1cfff' },
+          { label: 'SG&A', data: sga, backgroundColor: '#ffa1c4' },
+          { label: 'Depreciation', data: dep, backgroundColor: '#c3ffa1' },
+          { label: 'Interest', data: intExp, backgroundColor: '#ffc1a1' },
+          { label: 'Income Tax', data: tax, backgroundColor: '#d1a1ff' }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true }
+        }
+      }
+    });
+  }
+
+  // 5) Income Breakdown (stacked bar)
+  const incCtx = document.getElementById('incomeStackedBar')?.getContext('2d');
+  if (incCtx) {
+    const rev = yearlyData.map(d => d.revenue);
+    const ni = yearlyData.map(d => d.net_income);
+    const gp = yearlyData.map(d => (d.revenue - d.cogs));
+    const ebitda = yearlyData.map(d => d.ebitda);
+    const ebit = yearlyData.map(d => d.ebit);
+    const ebt = yearlyData.map(d => d.ebt);
+
+    new Chart(incCtx, {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [
+          { label: 'Revenue', data: rev, backgroundColor: '#cce5ff' },
+          { label: 'Gross Profit', data: gp, backgroundColor: '#d1ffd6' },
+          { label: 'EBITDA', data: ebitda, backgroundColor: '#ffffb1' },
+          { label: 'EBIT', data: ebit, backgroundColor: '#ffd9b1' },
+          { label: 'EBT', data: ebt, backgroundColor: '#ffcce7' },
+          { label: 'Net Income', data: ni, backgroundColor: '#e0ccff' }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true }
+        }
+      }
+    });
+  }
+}
+
+function formatNumber(num) {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 
   // (E) Final Recommendation
   fetch('/system1/final_recommendation')
@@ -596,6 +763,9 @@ function initDashboard() {
     .catch(err => {
       console.error("Error fetching S3 document list:", err);
     });
+
+ // Finally, load Data Visualizations
+ initDataVisualizations();
 }
 
 // ---------------------------------------------------------------------------

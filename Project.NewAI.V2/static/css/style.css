@@ -244,6 +244,30 @@ html, body {
  }
 
 
+/* ------------------------------------------------------------
+   DATA VISUALIZATIONS: SCATTER & MULTI-CHARTS
+-------------------------------------------------------------*/
+/* A small style to ensure the new chart canvases 
+   in the expanded area are nicely sized. Adjust as needed. */
+
+#annualRevenueScatter,
+#assetsLiabilitiesBar,
+#operatingCashFlowLine,
+#revenueNetIncomeBar,
+#expensesStackedBar,
+#incomeStackedBar {
+  display: block;
+  width: 100%;
+  max-width: 600px; /* optional limit */
+  height: 300px;    /* or 250px, 400px, etc. */
+  margin: 20px 0;   /* some spacing around each chart */
+}
+
+/* Optionally, if you want a wrapper with flex or grid for these expanded charts,
+   you can add styles here. */
+
+
+
 /* 
    -----------------------------------------------------
    6. SENTIMENT COLOR & BAR STYLES
