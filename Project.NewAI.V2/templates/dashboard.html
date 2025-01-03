@@ -119,13 +119,16 @@
           <div class="card-body">
             <!-- Default State -->
             <div class="state-default">
-              <p class="key-metric"><strong>+0.25</strong></p>
+              <p class="key-metric" id="sentiment-key-metric"></p> 
               <p class="one-liner">Brief mood check from calls/reports.</p>
+              <div class="sentiment-bar">
+                <div class="sentiment-marker" id="compositeMarker"></div>
+              </div>
             </div>
 
             <!-- Collapsed State -->
             <div class="state-collapsed">
-              <p class="tiny-data"><strong>+0.25</strong></p>
+              <p class="tiny-data" id="sentiment-collapsed"></p> 
             </div>
 
             <!-- Enlarged State -->

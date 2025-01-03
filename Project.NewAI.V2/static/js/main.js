@@ -329,26 +329,133 @@ function initDashboard() {
   fetch('/system1/sentiment_data')
     .then(res => res.json())
     .then(data => {
-      const defaultKey = document.querySelector('#sentiment-analysis-container .state-default .key-metric');
-      const collapsedKey = document.querySelector('#sentiment-analysis-container .state-collapsed .tiny-data');
-      const compositeScore = (data.composite_score !== undefined) ? data.composite_score : '+0.25';
+      // --- New Collapsed State logic ---
+      const collapsedElem = document.querySelector(
+        '#sentiment-analysis-container .state-collapsed .tiny-data'
+      );
+      if (collapsedElem) {
+        const score = (data.composite_score !== undefined)
+          ? data.composite_score
+          : 0;
+        const sign = (score > 0) ? '+' : (score < 0) ? '-' : '';
+        const absVal = Math.abs(score).toFixed(2);
+        const colorClass = (score > 0)
+          ? 'positive-score'
+          : (score < 0)
+            ? 'negative-score'
+            : 'neutral-score';
 
-      if (defaultKey) defaultKey.textContent = compositeScore;
-      if (collapsedKey) collapsedKey.textContent = compositeScore;
-
-      const fullDiv = document.getElementById('sentiment-analysis-full');
-      if (fullDiv) {
-        const earnings = data.earnings_call_sentiment;
-        const industry = data.industry_report_sentiment;
-        const economic = data.economic_report_sentiment;
-
-        fullDiv.innerHTML = `
-          <p>Earnings Call Sentiment: Score ${earnings.score}, ${earnings.explanation}</p>
-          <p>Industry Report Sentiment: Score ${industry.score}, ${industry.explanation}</p>
-          <p>Economic Report Sentiment: Score ${economic.score}, ${economic.explanation}</p>
+        collapsedElem.innerHTML = `
+          <span class="${colorClass}">
+            Composite: ${sign}${absVal}
+          </span>
         `;
       }
-    })
+
+      // --- New Default State logic (with gradient bar) ---
+      const defaultKeyElem = document.querySelector(
+        '#sentiment-analysis-container .state-default .key-metric'
+      );
+      if (defaultKeyElem) {
+        const score = (data.composite_score !== undefined)
+          ? data.composite_score
+          : 0;
+        const sign = (score > 0) ? '+' : (score < 0) ? '-' : '';
+        const absVal = Math.abs(score).toFixed(2);
+        const colorClass = (score > 0)
+          ? 'positive-score'
+          : (score < 0)
+            ? 'negative-score'
+            : 'neutral-score';
+
+        defaultKeyElem.innerHTML = `
+          <span class="${colorClass}">
+            Composite: ${sign}${absVal}
+          </span>
+        `;
+      }
+
+      // Position marker in the default state's gradient bar (#compositeMarker)
+      const markerElem = document.getElementById('compositeMarker');
+      if (markerElem) {
+        const score = (data.composite_score !== undefined)
+          ? data.composite_score
+          : 0;
+        // Map score (-1 to +1) to 0%..100%
+        const leftPercent = ((score + 1) / 2) * 100;
+        markerElem.style.left = leftPercent + '%';
+      }
+
+      // --- New Expanded State logic: sub-sentiments + gradient bars ---
+      const fullDiv = document.getElementById('sentiment-analysis-full');
+      if (fullDiv) {
+        let htmlContent = '';
+
+        // Helper to render each sub-sentiment block
+        function renderSubSentiment(title, obj) {
+          const s = (obj && obj.score !== undefined) ? obj.score : 0;
+          const sign = (s > 0) ? '+' : (s < 0) ? '-' : '';
+          const absVal = Math.abs(s).toFixed(2);
+          const cclass = (s > 0)
+            ? 'positive-score'
+            : (s < 0)
+              ? 'negative-score'
+              : 'neutral-score';
+          const explanation = (obj && obj.explanation) ? obj.explanation : '';
+          // Create unique bar/marker IDs for each block
+          const barId = `bar-${title.replace(/\s+/g, '-')}`;
+          const markerId = `marker-${title.replace(/\s+/g, '-')}`;
+
+          return `
+            <h4>${title}</h4>
+            <p>
+              <span class="${cclass}">
+                Score: ${sign}${absVal}
+              </span>
+              – ${explanation}
+            </p>
+            <div class="sentiment-bar" id="${barId}">
+              <div class="sentiment-marker" id="${markerId}"></div>
+            </div>
+          `;
+        }
+
+        // Build sub-sections for earnings, industry, economic
+        htmlContent += renderSubSentiment(
+          "Earnings Call Sentiment",
+          data.earnings_call_sentiment
+        );
+        htmlContent += renderSubSentiment(
+          "Industry Report Sentiment",
+          data.industry_report_sentiment
+        );
+        htmlContent += renderSubSentiment(
+          "Economic Report Sentiment",
+          data.economic_report_sentiment
+        );
+
+        // Inject into the expanded area
+        fullDiv.innerHTML = htmlContent;
+
+        // Now, position each sub-sentiment marker
+        function setMarker(score, markerId) {
+          const leftPct = ((score + 1) / 2) * 100;
+          const el = document.getElementById(markerId);
+          if (el) el.style.left = leftPct + '%';
+        }
+
+        // E.g. earnings, industry, economic
+        if (data.earnings_call_sentiment && data.earnings_call_sentiment.score !== undefined) {
+          setMarker(data.earnings_call_sentiment.score, 'marker-Earnings-Call-Sentiment');
+        }
+        if (data.industry_report_sentiment && data.industry_report_sentiment.score !== undefined) {
+          setMarker(data.industry_report_sentiment.score, 'marker-Industry-Report-Sentiment');
+        }
+        if (data.economic_report_sentiment && data.economic_report_sentiment.score !== undefined) {
+          setMarker(data.economic_report_sentiment.score, 'marker-Economic-Report-Sentiment');
+        }
+      }
+     })
     .catch(err => {
       console.error("Error fetching sentiment data:", err);
     });

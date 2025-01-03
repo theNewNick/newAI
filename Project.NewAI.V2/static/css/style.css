@@ -242,3 +242,40 @@ html, body {
  .negative-change {
      color: red;
  }
+
+
+/* 
+   -----------------------------------------------------
+   6. SENTIMENT COLOR & BAR STYLES
+   -----------------------------------------------------
+*/
+.positive-score {
+  color: green;
+}
+
+.negative-score {
+  color: red;
+}
+
+.neutral-score {
+  color: gray;
+}
+
+.sentiment-bar {
+  width: 200px; /* or adjust as needed */
+  height: 15px;
+  background: linear-gradient(to right, red 0%, yellow 50%, green 100%);
+  position: relative;
+  border-radius: 8px;
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+.sentiment-marker {
+  width: 2px;
+  height: 100%;
+  background-color: #000; /* The marker color */
+  position: absolute;
+  left: 50%; /* default center for score=0 */
+  top: 0;
+}
