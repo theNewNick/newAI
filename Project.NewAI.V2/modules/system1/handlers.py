@@ -40,6 +40,7 @@ from modules.system1.alpha_vantage_service import get_annual_price_change
 
 # Step A: Import your new visuals module
 from modules.system1.visuals import generate_visual_data
+from modules.system1.columns_ai_helper import guess_column_meaning
 
 # NEW IMPORTS FOR SMART LB & MODEL SELECTOR
 from model_selector import choose_model_for_task
@@ -646,9 +647,23 @@ def standardize_columns(df, column_mappings, csv_name):
             if name in df_columns:
                 new_columns[name] = standard_name
                 break
+
+    # 2) Rename columns that we identified
     df.rename(columns=new_columns, inplace=True)
+
+    # 3) Build a list of unmapped columns
+    unmapped_cols = []
+    for col in df_columns:
+        # We check if col wasn't mapped AND if it still exists in df
+        if col not in new_columns.keys() and col in df.columns:
+            unmapped_cols.append(col)
+
     logger.debug(f'After standardization, columns in {csv_name}: {df.columns.tolist()}')
-    return df
+    if unmapped_cols:
+        logger.debug(f"Unmapped columns in {csv_name}: {unmapped_cols}")
+
+    # 4) Return BOTH the updated df and the list of unmapped columns
+    return df, unmapped_cols
 
 ###############################################################################
 # MAIN ROUTE (ANALYZE)
@@ -829,9 +844,40 @@ def analyze_financials():
             'Capital Expenditures': ['CapitalExpenditures', 'Capital Expenditures', 'CapEx', 'CapitalExpenditure', 'Capital Expenditure'],
         }
 
-        income_df = standardize_columns(income_df, income_columns, 'income_statement')
-        balance_df = standardize_columns(balance_df, balance_columns, 'balance_sheet')
-        cashflow_df = standardize_columns(cashflow_df, cashflow_columns, 'cash_flow')
+        # Now standardize_columns returns (df, unmapped_cols) so we can handle leftover columns
+        income_df, income_unmapped = standardize_columns(income_df, income_columns, 'income_statement')
+        balance_df, balance_unmapped = standardize_columns(balance_df, balance_columns, 'balance_sheet')
+        cashflow_df, cashflow_unmapped = standardize_columns(cashflow_df, cashflow_columns, 'cash_flow')
+
+        # Example fallback: ask GPT for leftover columns in the Income Statement
+        # (If you have not yet created guess_column_meaning, adjust or remove this block.)
+        from modules.system1.columns_ai_helper import guess_column_meaning
+
+        for col in income_unmapped:
+            guess = guess_column_meaning(col)
+            if guess != 'None':
+                logger.info(f"ChatGPT guessed '{col}' => '{guess}' in income_statement")
+                income_df.rename(columns={col: guess}, inplace=True)
+            else:
+                logger.info(f"No GPT match for '{col}' (income_statement), leaving as-is.")
+
+        # Fallback for Balance Sheet leftover columns
+        for col in balance_unmapped:
+            guess = guess_column_meaning(col)
+            if guess != 'None':
+                logger.info(f"ChatGPT guessed '{col}' => '{guess}' in balance_sheet")
+                balance_df.rename(columns={col: guess}, inplace=True)
+            else:
+                logger.info(f"No GPT match for '{col}' (balance_sheet), leaving as-is.")
+
+        # Fallback for Cash Flow leftover columns
+        for col in cashflow_unmapped:
+            guess = guess_column_meaning(col)
+            if guess != 'None':
+                logger.info(f"ChatGPT guessed '{col}' => '{guess}' in cash_flow")
+                cashflow_df.rename(columns={col: guess}, inplace=True)
+            else:
+                logger.info(f"No GPT match for '{col}' (cash_flow), leaving as-is.")
 
         for df_obj, name in [
             (income_df, 'income_statement'),
