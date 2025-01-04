@@ -303,3 +303,12 @@ html, body {
   left: 50%; /* default center for score=0 */
   top: 0;
 }
+
+
+/* Minimal override: only shrink annualRevenueScatter in tile #4 when NOT enlarged or collapsed */
+#data-visualizations-container:not(.enlarged):not(.collapsed) #annualRevenueScatter {
+    width: 180px !important;
+    height: 80px !important;
+    max-width: none !important;
+    margin: 10px 0 !important;
+}
