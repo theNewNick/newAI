@@ -38,6 +38,8 @@ from pinecone import Pinecone, ServerlessSpec
 from logging.handlers import RotatingFileHandler
 from modules.system1.alpha_vantage_service import get_annual_price_change
 
+from .company_info_gpt import get_company_info
+
 # Step A: Import your new visuals module
 from modules.system1.visuals import generate_visual_data
 from modules.system1.columns_ai_helper import guess_column_meaning
@@ -764,6 +766,7 @@ def analyze_financials():
         # Get the industry from user form
         industry_name = request.form.get('industry_name', 'Software')
         company_name = request.form.get('company_name', 'N/A')
+        company_info_data = get_company_info(company_name)
         wacc = float(request.form['wacc']) / 100
         tax_rate = float(request.form['tax_rate']) / 100
         growth_rate = float(request.form['growth_rate']) / 100
@@ -1383,9 +1386,24 @@ Please provide them in valid JSON only, like:
             "company_info": {
                 "sector": "Unknown",
                 "c_suite": "CEO: N/A",
-                "analysis": "No extra analysis here."
+                "analysis": {
+                    "founding_date": "",
+                    "history": "",
+                    "leadership_management_team": "",
+                    "mission_vision_values": "",
+                    "product_service_offerings": "",
+                    "target_market_customer_base": "",
+                    "competitive_landscape_positioning": "",
+                    "growth_strategy_expansion_plans": "",
+                    "partnerships_strategic_alliances": "",
+                    "corporate_structure_governance": "",
+                    "organizational_culture_employee_engagement": ""
+                }
             }
         }
+
+        # NEW: Overwrite the placeholder with actual GPT data
+        final_analysis["company_info"] = company_info_data
 
         # Add annual profit margins & industry margin to final analysis
         final_analysis["financial_analysis"]["annual_profit_margins"] = annual_profit_margins

@@ -718,35 +718,56 @@ function formatNumber(num) {
   // (G) Scenario Analysis - triggered by user.
 
   // (H) General Company Info
+  let storedSector = null;
+
   fetch('/system1/company_info_data')
-    .then(res => {
+    .then((res) => {
       if (res.ok) return res.json();
       throw new Error('Failed to fetch company info');
     })
-    .then(basicData => {
-      const defaultKey = document.querySelector('#company-info-container .state-default .key-metric');
+    .then((basicData) => {
+      // Save the sector in a variable so we can use it after the second fetch
+      storedSector = basicData.sector || 'Tech';
+
+      // Collapsed state => show only the sector
       const collapsedKey = document.querySelector('#company-info-container .state-collapsed .tiny-data');
+      if (collapsedKey) {
+        collapsedKey.textContent = `Sector: ${storedSector}`;
+      }
 
-      if (defaultKey) defaultKey.textContent = `Sector: ${basicData.sector || 'Tech'}`;
-      if (collapsedKey) collapsedKey.textContent = basicData.sector || 'Tech';
-
+      // Now fetch the GPT-based details (c_suite + analysis) before handling default + expanded
       return fetch('/system1/company_info_details');
     })
-    .then(res => {
+    .then((res) => {
       if (res.ok) return res.json();
       throw new Error('Failed to fetch GPT-based company info');
     })
-    .then(gptData => {
+    .then((gptData) => {
+      // Default State => "Sector: X" + "Key Executives: Y"
+      const defaultKey = document.querySelector('#company-info-container .state-default .key-metric');
+      if (defaultKey) {
+        defaultKey.innerHTML = `
+          Sector: ${storedSector} <br />
+          Key Executives: ${gptData.c_suite || 'N/A'}
+        `;
+      }
+
+      // Expanded State => show everything (sector, c-suite, and analysis)
       const fullDiv = document.getElementById('company-info-full');
       if (fullDiv) {
+        // Let’s do a simple JSON stringify here:
+        const analysisJsonString = JSON.stringify(gptData.analysis, null, 2);
+
         fullDiv.innerHTML = `
+          <p><strong>Sector:</strong> ${storedSector}</p>
           <p><strong>C-suite Executives:</strong> ${gptData.c_suite || 'N/A'}</p>
-          <p><strong>GPT-based Analysis:</strong> ${gptData.analysis || 'No analysis available.'}</p>
+          <p><strong>GPT-based Analysis:</strong></p>
+          <pre>${analysisJsonString}</pre>
         `;
       }
     })
-    .catch(err => {
-      console.error("Error fetching company info:", err);
+    .catch((err) => {
+      console.error('Error fetching company info:', err);
     });
 
   // (I) Populate the S3 doc dropdown (Renamed to chat-document-select)
