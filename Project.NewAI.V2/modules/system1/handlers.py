@@ -806,6 +806,12 @@ def analyze_financials():
         income_columns = {
             'Revenue': ['TotalRevenue', 'Revenue', 'Total Revenue', 'Sales'],
             'Net Income': ['NetIncome', 'Net Income', 'Net Profit', 'Profit After Tax'],
+            # New lines for expense columns:
+            'Cost of Goods Sold (COGS)': ['COGS', 'CostOfGoodsSold', 'CostOfGoodsSold()'],
+            'Selling, General & Administrative (SG&A)': ['SGA', 'SG&A', 'Selling Gen Admin'],
+            'Depreciation & Amortization': ['DepreciationAndAmortization', 'DepAndAmort', 'Depreciation & Amortization'],
+            'Interest Expense': ['InterestExpense', 'Interest Exp'],
+            'Income Tax Expense': ['IncomeTaxExpense', 'TaxExpense', 'Income Tax']
         }
         balance_columns = {
             'Total Assets': ['TotalAssets', 'Total Assets'],
