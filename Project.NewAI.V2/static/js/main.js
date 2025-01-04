@@ -504,15 +504,29 @@ function updateDataVizDefault(data) {
   const ttmPrevious = data.ttm_previous;
   if (!ttmCurrent || !ttmPrevious) return;
 
+  // Calculate % change
   const pctChange = ((ttmCurrent - ttmPrevious) / ttmPrevious) * 100;
-  const arrow = pctChange >= 0 ? '▲' : '▼';
-  const sign = pctChange >= 0 ? '+' : '';
+  const arrow = (pctChange >= 0) ? '▲' : '▼';
+  const sign = (pctChange >= 0) ? '+' : '';
+  // Decide color class
+  const colorClass = (pctChange >= 0) ? 'positive-change' : 'negative-change';
 
+  // Format TTM (remove decimals, etc.)
   const formattedTTM = formatNumber(Math.floor(ttmCurrent));
-  const snippet = `TTM Revenue: $${formattedTTM} ${arrow}${sign}${pctChange.toFixed(1)}%`;
-  // Insert snippet into .key-metric
+
+  // Build snippet with colored percentage
+  const snippet = `
+    TTM: $${formattedTTM}
+    <span class="${colorClass}">
+      ${arrow}${sign}${pctChange.toFixed(1)}%
+    </span>
+  `;
+
+  // Insert snippet into the key-metric element using innerHTML
   const keyMetricElem = document.querySelector('#data-visualizations-container .state-default .key-metric');
-  if (keyMetricElem) keyMetricElem.textContent = snippet;
+  if (keyMetricElem) {
+    keyMetricElem.innerHTML = snippet;
+  }
 
   // Build a scatter plot for annual_revenue in <canvas id="annualRevenueScatter">
   const scatterCtx = document.getElementById('annualRevenueScatter')?.getContext('2d');
