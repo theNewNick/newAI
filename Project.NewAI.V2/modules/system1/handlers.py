@@ -849,36 +849,60 @@ def analyze_financials():
         balance_df, balance_unmapped = standardize_columns(balance_df, balance_columns, 'balance_sheet')
         cashflow_df, cashflow_unmapped = standardize_columns(cashflow_df, cashflow_columns, 'cash_flow')
 
-        # Example fallback: ask GPT for leftover columns in the Income Statement
-        # (If you have not yet created guess_column_meaning, adjust or remove this block.)
-        from modules.system1.columns_ai_helper import guess_column_meaning
+        # Updated fallback logic: we will use guess_best_match_from_list
+        from modules.system1.columns_ai_helper import guess_best_match_from_list
 
-        for col in income_unmapped:
-            guess = guess_column_meaning(col)
+        # 1) For the Income Statement
+        # Build a list of columns we still need but don't yet have in income_df
+        all_needed_income = list(income_columns.keys())
+        still_needed_income = [col for col in all_needed_income if col not in income_df.columns]
+
+        for needed_col in still_needed_income:
+            # If no leftover columns remain, break
+            if not income_unmapped:
+                break
+
+            guess = guess_best_match_from_list(needed_col, income_unmapped, "income_statement")
             if guess != 'None':
-                logger.info(f"ChatGPT guessed '{col}' => '{guess}' in income_statement")
-                income_df.rename(columns={col: guess}, inplace=True)
+                logger.info(f"GPT matched leftover '{guess}' => needed '{needed_col}' in income_statement")
+                income_df.rename(columns={guess: needed_col}, inplace=True)
+                income_unmapped.remove(guess)
             else:
-                logger.info(f"No GPT match for '{col}' (income_statement), leaving as-is.")
+                logger.info(f"No GPT match for needed '{needed_col}' among leftover: {income_unmapped}")
 
-        # Fallback for Balance Sheet leftover columns
-        for col in balance_unmapped:
-            guess = guess_column_meaning(col)
+        # 2) For the Balance Sheet
+        all_needed_balance = list(balance_columns.keys())
+        still_needed_balance = [col for col in all_needed_balance if col not in balance_df.columns]
+
+        for needed_col in still_needed_balance:
+            if not balance_unmapped:
+                break
+
+            guess = guess_best_match_from_list(needed_col, balance_unmapped, "balance_sheet")
             if guess != 'None':
-                logger.info(f"ChatGPT guessed '{col}' => '{guess}' in balance_sheet")
-                balance_df.rename(columns={col: guess}, inplace=True)
+                logger.info(f"GPT matched leftover '{guess}' => needed '{needed_col}' in balance_sheet")
+                balance_df.rename(columns={guess: needed_col}, inplace=True)
+                balance_unmapped.remove(guess)
             else:
-                logger.info(f"No GPT match for '{col}' (balance_sheet), leaving as-is.")
+                logger.info(f"No GPT match for needed '{needed_col}' among leftover: {balance_unmapped}")
 
-        # Fallback for Cash Flow leftover columns
-        for col in cashflow_unmapped:
-            guess = guess_column_meaning(col)
+        # 3) For the Cash Flow Statement
+        all_needed_cashflow = list(cashflow_columns.keys())
+        still_needed_cashflow = [col for col in all_needed_cashflow if col not in cashflow_df.columns]
+
+        for needed_col in still_needed_cashflow:
+            if not cashflow_unmapped:
+                break
+
+            guess = guess_best_match_from_list(needed_col, cashflow_unmapped, "cash_flow")
             if guess != 'None':
-                logger.info(f"ChatGPT guessed '{col}' => '{guess}' in cash_flow")
-                cashflow_df.rename(columns={col: guess}, inplace=True)
+                logger.info(f"GPT matched leftover '{guess}' => needed '{needed_col}' in cash_flow")
+                cashflow_df.rename(columns={guess: needed_col}, inplace=True)
+                cashflow_unmapped.remove(guess)
             else:
-                logger.info(f"No GPT match for '{col}' (cash_flow), leaving as-is.")
+                logger.info(f"No GPT match for needed '{needed_col}' among leftover: {cashflow_unmapped}")
 
+        # After GPT fallback, confirm 'Date' column exists in each DataFrame
         for df_obj, name in [
             (income_df, 'income_statement'),
             (balance_df, 'balance_sheet'),
