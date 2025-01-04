@@ -38,6 +38,9 @@ from pinecone import Pinecone, ServerlessSpec
 from logging.handlers import RotatingFileHandler
 from modules.system1.alpha_vantage_service import get_annual_price_change
 
+# Step A: Import your new visuals module
+from modules.system1.visuals import generate_visual_data
+
 # NEW IMPORTS FOR SMART LB & MODEL SELECTOR
 from model_selector import choose_model_for_task
 from smart_load_balancer import call_openai_smart_async
@@ -532,10 +535,10 @@ def generate_pdf_report(
     elements.append(Paragraph("Ratio Analysis", styles['Heading2']))
     ratio_data = [
         ["Ratio", "Value"],
-        ["Debt-to-Equity Ratio", f"{ratios['Debt-to-Equity Ratio']:.2f}" if ratios['Debt-to-Equity Ratio'] is not None else "N/A"],
-        ["Current Ratio", f"{ratios['Current Ratio']:.2f}" if ratios['Current Ratio'] is not None else "N/A"],
-        ["P/E Ratio", f"{ratios['P/E Ratio']:.2f}" if ratios['P/E Ratio'] is not None else "N/A"],
-        ["P/B Ratio", f"{ratios['P/B Ratio']:.2f}" if ratios['P/B Ratio'] is not None else "N/A"],
+        ["Debt-to-Equity Ratio", f"{ratios['Debt-to-Equity Ratio']:.2f}"],
+        ["Current Ratio", f"{ratios['Current Ratio']:.2f}"],
+        ["P/E Ratio", f"{ratios['P/E Ratio']:.2f}"],
+        ["P/B Ratio", f"{ratios['P/B Ratio']:.2f}"],
         ["Factor 2 Score (Ratio Analysis)", f"{factor_scores['factor2_score']}"],
     ]
     ratio_table = Table(ratio_data, hAlign='LEFT')
@@ -646,49 +649,6 @@ def standardize_columns(df, column_mappings, csv_name):
     df.rename(columns=new_columns, inplace=True)
     logger.debug(f'After standardization, columns in {csv_name}: {df.columns.tolist()}')
     return df
-
-###############################################################################
-# NEW HELPER FOR DERIVED INCOME STATEMENT ITEMS
-###############################################################################
-def calculate_derived_income_statement_items(income_df):
-    """
-    Computes derived items for the income statement such as:
-    - Gross Profit = Revenue - COGS
-    - EBIDA/EBITDA
-    - EBIT
-    - EBT
-    (If these columns already exist, they won't be overwritten unless they are missing.)
-    """
-    # 1. Gross Profit
-    if 'Gross Profit' not in income_df.columns:
-        if 'Revenue' in income_df.columns and 'Cost of Goods Sold (COGS)' in income_df.columns:
-            income_df['Gross Profit'] = income_df['Revenue'] - income_df['Cost of Goods Sold (COGS)']
-        else:
-            income_df['Gross Profit'] = 0
-
-    # 2. EBIDA or EBITDA (We'll do EBITDA for example)
-    # Common formula: EBITDA = Net Income + Interest Expense + Income Tax Expense + Depreciation & Amortization
-    if 'EBITDA' not in income_df.columns:
-        ni = income_df.get('Net Income', 0)
-        int_exp = income_df.get('Interest Expense', 0)
-        tax_exp = income_df.get('Income Tax Expense', 0)
-        da = income_df.get('Depreciation & Amortization', 0)
-        income_df['EBITDA'] = ni + int_exp + tax_exp + da
-
-    # 3. EBIT = Net Income + Interest + Tax
-    if 'EBIT' not in income_df.columns:
-        ni = income_df.get('Net Income', 0)
-        int_exp = income_df.get('Interest Expense', 0)
-        tax_exp = income_df.get('Income Tax Expense', 0)
-        income_df['EBIT'] = ni + int_exp + tax_exp
-
-    # 4. EBT = Net Income + Income Tax Expense
-    if 'EBT' not in income_df.columns:
-        ni = income_df.get('Net Income', 0)
-        tax_exp = income_df.get('Income Tax Expense', 0)
-        income_df['EBT'] = ni + tax_exp
-
-    return income_df
 
 ###############################################################################
 # MAIN ROUTE (ANALYZE)
@@ -812,10 +772,11 @@ def analyze_financials():
         def parse_float_from_gpt(gpt_text):
             """Extract a floating percentage from GPT text (very naive approach)."""
             import re
+            # e.g. GPT might respond: 'Typical margin is around 18%.'
             match = re.search(r'([\d.]+)\s?%', gpt_text)
             if match:
                 return float(match.group(1)) / 100.0
-            return 0.15
+            return 0.15  # fallback if not found
 
         gpt_prompt = f"What is the typical profit margin in the {industry_name} industry, as a percentage?"
         try:
@@ -842,18 +803,9 @@ def analyze_financials():
             logger.error(error_message)
             return jsonify({'error': error_message}), 400
 
-        # UPDATED: Expanded Income Statement mappings
         income_columns = {
             'Revenue': ['TotalRevenue', 'Revenue', 'Total Revenue', 'Sales'],
             'Net Income': ['NetIncome', 'Net Income', 'Net Profit', 'Profit After Tax'],
-            # New line items:
-            'Cost of Goods Sold (COGS)': ['CostOfGoodsSold', 'Cost of Goods Sold', 'COGS', 'CostOfSales', 'Cost of Sales'],
-            'Selling, General & Administrative (SG&A)': ['SGA', 'SG&A', 'Selling General & Admin', 'Selling General & Administrative'],
-            'Depreciation & Amortization': ['Depreciation & Amortization', 'DepreciationAmortization', 'D&A'],
-            'Interest Expense': ['Interest Expense', 'InterestExpense', 'Net Interest Expense'],
-            'Interest Income': ['Interest Income', 'InterestIncome'],
-            'Income Tax Expense': ['Income Tax Expense', 'IncomeTaxExpense', 'Tax Expense']
-            # Derived items like Gross Profit, EBITDA, EBIT, EBT will be computed separately
         }
         balance_columns = {
             'Total Assets': ['TotalAssets', 'Total Assets'],
@@ -874,9 +826,6 @@ def analyze_financials():
         income_df = standardize_columns(income_df, income_columns, 'income_statement')
         balance_df = standardize_columns(balance_df, balance_columns, 'balance_sheet')
         cashflow_df = standardize_columns(cashflow_df, cashflow_columns, 'cash_flow')
-
-        # Compute derived items on Income Statement
-        income_df = calculate_derived_income_statement_items(income_df)
 
         for df_obj, name in [
             (income_df, 'income_statement'),
@@ -900,17 +849,7 @@ def analyze_financials():
             'Revenue', 'Net Income', 'Total Assets', 'Total Liabilities',
             'Shareholders Equity', 'Current Assets', 'Current Liabilities',
             'CurrentDebt', 'Long-Term Debt', 'Total Shares Outstanding',
-            'Operating Cash Flow', 'Capital Expenditures', 'Inventory',
-            'Cost of Goods Sold (COGS)',
-            'Selling, General & Administrative (SG&A)',
-            'Depreciation & Amortization',
-            'Interest Expense',
-            'Interest Income',
-            'Income Tax Expense',
-            'Gross Profit',
-            'EBITDA',
-            'EBIT',
-            'EBT'
+            'Operating Cash Flow', 'Capital Expenditures', 'Inventory'
         ]
         for col in numeric_columns:
             if col in income_df.columns:
@@ -1053,6 +992,7 @@ def analyze_financials():
             pattern = r"\{.*\}"
             match = re.search(pattern, gpt_text.strip())
             if not match:
+                # fallback
                 return {
                     "profit_margin": 0.15,
                     "current_ratio": 1.2,
@@ -1107,17 +1047,19 @@ Please provide them in valid JSON only, like:
         logger.debug(f"Industry Benchmarks (detailed): {industry_benchmarks_dict}")
 
         # Additional ratio calculations
-        profit_margin_calc = safe_divide(net_income, revenue)
+        profit_margin_calc = safe_divide(net_income, revenue)  # fraction
         current_ratio_calc = safe_divide(current_assets, current_liabilities)
         debt_equity_calc = safe_divide(total_debt, shareholders_equity)
         total_assets_latest = balance_df.loc[balance_df['Date'] == latest_date, 'Total Assets'].values[0] if 'Total Assets' in balance_df.columns else 0
         roa_calc = safe_divide(net_income, total_assets_latest)
 
+        # Store them inside "ratios" or a new dict
         ratios["profit_margin"] = profit_margin_calc
         ratios["current_ratio_calc"] = current_ratio_calc
         ratios["debt_equity_calc"] = debt_equity_calc
         ratios["roa_calc"] = roa_calc
 
+        # Optional: store the new industry benchmarks
         final_industry_bench = {
             "profit_margin": industry_benchmarks_dict["profit_margin"],
             "current_ratio": industry_benchmarks_dict["current_ratio"],
@@ -1141,6 +1083,7 @@ Please provide them in valid JSON only, like:
                 "profit_margin": pm_
             })
 
+        # Time to do the factor3_time_series or keep it in final
         n_periods = len(income_df) - 1
         if n_periods < 1:
             error_message = 'Not enough data for time series analysis.'
@@ -1348,127 +1291,51 @@ Please provide them in valid JSON only, like:
                     "explanation": economic_report_explanation
                 }
             },
-        ########################################################################
-        # REPLACE old snippet with TTM + YOY + 4-year arrays for collapsed/default/expanded
-        ########################################################################
+#            "data_visualizations": {
+#                "latest_revenue": f"Q2: ${revenue:.1f}",
+#                "revenue_over_time": [
+#                    {"date": str(dates[-2]) if len(dates) > 1 else "N/A", "value": float(income_df['Revenue'].iloc[-2]) if len(income_df) > 1 else 0},
+#                    {"date": str(dates[-1]) if len(dates) > 0 else "N/A", "value": float(revenue)},
+#                ]
+#            },
+            "final_recommendation": {
+                "total_score": weighted_total_score,
+                "recommendation": recommendation,
+                "rationale": "No detailed rationale provided in code",
+                "key_factors": ["Factor A", "Factor B"]
+            },
+            "company_info": {
+                "sector": "Unknown",
+                "c_suite": "CEO: N/A",
+                "analysis": "No extra analysis here."
+            }
+        }
 
-	# 1) Calculate TTM Current (last 4 quarters)
-	sorted_income = income_df.sort_values('Date', ascending=True)
-	last_4_q = sorted_income.tail(4)
-	ttm_current_12mo = last_4_q['Revenue'].sum() if len(last_4_q) == 4 else 0
+        # Add annual profit margins & industry margin to final analysis
+        final_analysis["financial_analysis"]["annual_profit_margins"] = annual_profit_margins
+        final_analysis["financial_analysis"]["industry_profit_margin"] = industry_profit_margin
 
-	# 2) Calculate TTM Previous (the 4 quarters before that)
-	prev_8_q = sorted_income.tail(8)
-	prev_4_q = prev_8_q.head(4) if len(prev_8_q) == 8 else pd.DataFrame()
-	ttm_previous_12mo = prev_4_q['Revenue'].sum() if len(prev_4_q) == 4 else 0
+        # Add the industry benchmarks
+        final_analysis["financial_analysis"]["industry_benchmarks"] = final_industry_bench
 
-	# 3) YOY change in percent
-	if ttm_previous_12mo != 0:
-	    ttm_yoy_change = ((ttm_current_12mo - ttm_previous_12mo) / ttm_previous_12mo) * 100
-	else:
-	    ttm_yoy_change = 0.0
-
-	# 4) Build a 4-year annual_revenue array for the default scatter
-	all_years_sorted = sorted(income_df['Date'].dt.year.unique())
-	last_4_years = all_years_sorted[-4:] if len(all_years_sorted) > 4 else all_years_sorted
-	annual_revenue_list = []
-	for y in last_4_years:
-	    rev_sum_year = income_df[income_df['Date'].dt.year == y]['Revenue'].sum()
-	    annual_revenue_list.append({
-	        "year": int(y),
-	        "value": float(rev_sum_year)
-	    })
-
-	# 5) Build detailed yearly_data for the expanded multi-charts
-	yearly_data_list = []
-	for y in last_4_years:
-	    sub_inc = income_df[income_df['Date'].dt.year == y]
-	    sub_bal = balance_df[balance_df['Date'].dt.year == y]
-	    sub_cf  = cashflow_df[cashflow_df['Date'].dt.year == y]
-
-	    # Income statement sums
-	    rev_year  = sub_inc['Revenue'].sum() if not sub_inc.empty else 0
-	    ni_year   = sub_inc['Net Income'].sum() if not sub_inc.empty else 0
-	    cogs      = sub_inc['Cost of Goods Sold (COGS)'].sum() if 'Cost of Goods Sold (COGS)' in sub_inc.columns else 0
-	    sga       = sub_inc['Selling, General & Administrative (SG&A)'].sum() if 'Selling, General & Administrative (SG&A)' in sub_inc.columns else 0
-	    da        = sub_inc['Depreciation & Amortization'].sum() if 'Depreciation & Amortization' in sub_inc.columns else 0
-	    int_exp   = sub_inc['Interest Expense'].sum() if 'Interest Expense' in sub_inc.columns else 0
-	    tax_exp   = sub_inc['Income Tax Expense'].sum() if 'Income Tax Expense' in sub_inc.columns else 0
-
-	    # Derived
-	    ebitda_val = ni_year + int_exp + tax_exp + da
-	    ebit_val   = ni_year + int_exp + tax_exp  # ignoring DA if you prefer
-	    ebt_val    = ni_year + tax_exp
-
-	    # Balance sheet - typically take last row for that year
-	    if not sub_bal.empty:
-	        bal_sorted = sub_bal.sort_values('Date', ascending=True)
-	        assets = float(bal_sorted.iloc[-1]['Total Assets']) if 'Total Assets' in bal_sorted.columns else 0
-	        liab   = float(bal_sorted.iloc[-1]['Total Liabilities']) if 'Total Liabilities' in bal_sorted.columns else 0
-	    else:
-	        assets, liab = 0, 0
-
-	    # Cash flow - sum or last row
-	    if not sub_cf.empty:
-	        ocf = sub_cf['Operating Cash Flow'].sum() if 'Operating Cash Flow' in sub_cf.columns else 0
-	    else:
-	        ocf = 0
-
-	    yearly_data_list.append({
-	        "year": int(y),
-	        "assets": assets,
-	        "liabilities": liab,
-	        "operating_cash_flow": float(ocf),
-	        "revenue": float(rev_year),
-	        "net_income": float(ni_year),
-	        "cogs": float(cogs),
-	        "sga": float(sga),
-	        "depreciation": float(da),
-	        "interest_expense": float(int_exp),
-	        "income_tax": float(tax_exp),
-	        "ebitda": float(ebitda_val),
-	        "ebit": float(ebit_val),
-	        "ebt": float(ebt_val)
-	    })
-
-	# 6) Put it all together in data_visualizations
-	final_analysis["data_visualizations"] = {
-	    "ttm_current_12mo": float(ttm_current_12mo),
-	    "ttm_previous_12mo": float(ttm_previous_12mo),
-	    "ttm_yoy_change": float(ttm_yoy_change),
-	    "annual_revenue": annual_revenue_list,
-	    "yearly_data": yearly_data_list
-	}
-
-	# Then assign final_recommendation and company_info as separate dictionary keys:
-	final_analysis["final_recommendation"] = {
-	    "total_score": weighted_total_score,
-	    "recommendation": recommendation,
-	    "rationale": "No detailed rationale provided in code",
-	    "key_factors": ["Factor A", "Factor B"]
-	}
-
-	final_analysis["company_info"] = {
-	    "sector": "Unknown",
-	    "c_suite": "CEO: N/A",
-	    "analysis": "No extra analysis here."
-	}
-
-	# Add annual profit margins & industry margin
-	final_analysis["financial_analysis"]["annual_profit_margins"] = annual_profit_margins
-	final_analysis["financial_analysis"]["industry_profit_margin"] = industry_profit_margin
-
-	# Add the industry benchmarks
-	final_analysis["financial_analysis"]["industry_benchmarks"] = final_industry_bench
-
-	# Insert the optional quarterly data
-	if "time_series_analysis" not in final_analysis["financial_analysis"]:
-	    final_analysis["financial_analysis"]["time_series_analysis"] = {}
-	final_analysis["financial_analysis"]["time_series_analysis"]["quarterly"] = quarterly_data
+        # Insert the optional quarterly data
+        if "time_series_analysis" not in final_analysis["financial_analysis"]:
+            final_analysis["financial_analysis"]["time_series_analysis"] = {}
+        final_analysis["financial_analysis"]["time_series_analysis"]["quarterly"] = quarterly_data
 
         # Store the results for "demo_user"
         user_id = "demo_user"
         store_results_for_user(user_id, final_analysis)
+
+        # ---------------------------------------------------------------
+        # Replace old data_visualizations snippet with new visuals logic
+        # ---------------------------------------------------------------
+        from modules.system1.visuals import generate_visual_data
+        final_analysis["data_visualizations"] = generate_visual_data(
+            income_df,
+            balance_df,
+            cashflow_df
+        )
 
         # Generate PDF (for internal use if needed)
         pdf_output = generate_pdf_report(
