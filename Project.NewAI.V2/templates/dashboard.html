@@ -178,18 +178,38 @@
           <div class="card-body">
             <!-- Default State -->
             <div class="state-default">
-              <p class="key-metric"><strong>BUY</strong></p>
-              <p class="one-liner">See our weighted score and advice.</p>
-            </div>
+              <!-- We'll fill this with "Score: X" from main.js -->
+              <p class="key-metric" id="final-score"></p>
+              <p class="one-liner">
+                See our weighted score and advice.
+              </p>
+              <!-- Visual gauge or color-coded rectangle -->
+              <div 
+                id="final-score-gauge" 
+                class="score-gauge" 
+                style="width: 100px; height: 12px; background: #eee; position: relative; margin-top: 6px;"
+              >
+                <!-- We'll inject a small child DIV for the fill bar in main.js -->
+                <div 
+                  id="final-score-gauge-fill"
+                  style="
+                    position: absolute; 
+                    left: 0; top: 0; bottom: 0; 
+                    width: 0%; 
+                    background-color: green; 
+                  "
+                ></div>
+              </div>
+            </div> <!-- MISSING CLOSING DIV ADDED HERE -->
 
             <!-- Collapsed State -->
             <div class="state-collapsed">
-              <p class="tiny-data"><strong>BUY</strong></p>
+              <p class="tiny-data" id="final-collapsed-rec"></p>
             </div>
 
             <!-- Enlarged State -->
             <div class="state-enlarged">
-              <div id="final-recommendation-full">Loading full recommendation...</div>
+              <div id="final-recommendation-full"></div>
             </div>
           </div>
           <div class="card-footer bg-white border-0"></div>

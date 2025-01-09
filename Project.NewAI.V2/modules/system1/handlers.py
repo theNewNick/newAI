@@ -1326,6 +1326,71 @@ Please provide them in valid JSON only, like:
             'factor6_score': factor6_score,
         }
 
+
+        # ---------------------------------------------------------------------
+        # Build a dynamic rationale and key_factors based on existing factor scores
+        # ---------------------------------------------------------------------
+        rationale_parts = []
+
+        # Factor 1 => DCF
+        if factor1_score == 1:
+            rationale_parts.append("DCF suggests the stock may be undervalued.")
+        elif factor1_score == -1:
+            rationale_parts.append("DCF suggests the stock may be overvalued.")
+
+        # Factor 2 => Ratios
+        if factor2_score == 1:
+            rationale_parts.append("Financial ratios appear strong relative to benchmarks.")
+        elif factor2_score == -1:
+            rationale_parts.append("Financial ratios appear weak relative to benchmarks.")
+
+        # Factor 3 => Time Series
+        if factor3_score == 1:
+            rationale_parts.append("Time series analysis shows mostly positive or growing trends.")
+        elif factor3_score == -1:
+            rationale_parts.append("Time series analysis indicates flat or negative trends.")
+
+        # Factor 4 => Earnings Call Sentiment
+        if factor4_score == 1:
+            rationale_parts.append("Earnings call sentiment was notably positive.")
+        elif factor4_score == -1:
+            rationale_parts.append("Earnings call sentiment was notably negative.")
+
+        # Factor 5 => Industry Report Sentiment
+        if factor5_score == 1:
+            rationale_parts.append("Industry report sentiment is optimistic.")
+        elif factor5_score == -1:
+            rationale_parts.append("Industry report sentiment is cautious.")
+
+        # Factor 6 => Economic Report Sentiment
+        if factor6_score == 1:
+            rationale_parts.append("Economic report suggests favorable macro conditions.")
+        elif factor6_score == -1:
+            rationale_parts.append("Economic report suggests headwinds in the macro environment.")
+
+        # If we never added any lines, provide a fallback
+        if not rationale_parts:
+            rationale_parts = ["Mixed signals from multiple factors."]
+
+        rationale = " ".join(rationale_parts)
+
+        # For key_factors, just note which factors are non-zero
+        key_factors = []
+        if factor1_score != 0:
+            key_factors.append("DCF")
+        if factor2_score != 0:
+            key_factors.append("Ratios")
+        if factor3_score != 0:
+            key_factors.append("Time Series")
+        if factor4_score != 0:
+            key_factors.append("Earnings Call")
+        if factor5_score != 0:
+            key_factors.append("Industry Report")
+        if factor6_score != 0:
+            key_factors.append("Economic Report")
+        if not key_factors:
+            key_factors = ["No major factor identified"]
+
         # Build final_analysis dict to store
         composite_score = 0
         score_count = 0
@@ -1377,12 +1442,15 @@ Please provide them in valid JSON only, like:
 #                    {"date": str(dates[-1]) if len(dates) > 0 else "N/A", "value": float(revenue)},
 #                ]
 #            },
+
+
             "final_recommendation": {
                 "total_score": weighted_total_score,
                 "recommendation": recommendation,
-                "rationale": "No detailed rationale provided in code",
-                "key_factors": ["Factor A", "Factor B"]
+                "rationale": rationale,
+                "key_factors": key_factors
             },
+
             "company_info": {
                 "sector": "Unknown",
                 "c_suite": "CEO: N/A",

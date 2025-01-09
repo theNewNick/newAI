@@ -686,32 +686,303 @@ function formatNumber(num) {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+// (E) Final Recommendation
+fetch('/system1/final_recommendation')
+  .then(res => res.json())
+  .then(finalData => {
+    // In expanded mode, we also want the DCF, ratios, and sentiment details.
+    // We'll fetch them in parallel, then combine.
+    return Promise.all([
+      Promise.resolve(finalData),
+      fetch('/system1/financial_analysis_data').then(r => r.json()),
+      fetch('/system1/sentiment_data').then(r => r.json())
+    ]);
+  })
+  .then(([finalData, finAnalysisData, sentimentData]) => {
+    //-----------------------------------------------------------------------
+    // 1) Collapsed State
+    //    - "#final-collapsed-rec" => "BUY", "HOLD", or "SELL"
+    //-----------------------------------------------------------------------
+    const collapsedElem = document.querySelector(
+      '#final-recommendation-container .state-collapsed .tiny-data'
+    );
+    if (collapsedElem) {
+      collapsedElem.textContent = finalData.recommendation || 'BUY';
+    }
 
-  // (E) Final Recommendation
-  fetch('/system1/final_recommendation')
-    .then(res => res.json())
-    .then(data => {
-      const recDefault = document.querySelector('#final-recommendation-container .state-default .key-metric');
-      const recCollapsed = document.querySelector('#final-recommendation-container .state-collapsed .tiny-data');
+    //-----------------------------------------------------------------------
+    // 2) Default State
+    //    - "#final-score" => "Score: X"
+    //    - .one-liner => "See our weighted score and advice." (already in HTML)
+    //    - "#final-score-gauge-fill" => color-coded fill from 0-100% (score 0–10)
+    //-----------------------------------------------------------------------
+    // (A) Score
+    const scoreElem = document.getElementById('final-score');
+    if (scoreElem) {
+      const raw = (typeof finalData.total_score === 'number')
+        ? finalData.total_score
+        : 0;
+      scoreElem.textContent = `Score: ${raw.toFixed(1)}`;
+    }
 
-      if (recDefault) recDefault.textContent = data.recommendation || 'BUY';
-      if (recCollapsed) recCollapsed.textContent = data.recommendation || 'BUY';
+    // (B) Visual gauge fill
+    const gaugeFill = document.getElementById('final-score-gauge-fill');
+    if (gaugeFill && typeof finalData.total_score === 'number') {
+      // Clamp to 0..10 for a simple gauge
+      const clampScore = Math.max(0, Math.min(10, finalData.total_score));
+      const pct = (clampScore / 10) * 100;
+      gaugeFill.style.width = pct + '%';
 
-      const fullDiv = document.getElementById('final-recommendation-full');
-      if (fullDiv) {
-        fullDiv.innerHTML = `
-          <p>The weighted total score: ${data.total_score}</p>
-          <p>Final Recommendation: ${data.recommendation}</p>
-          <p><strong>Rationale:</strong> ${data.rationale || 'No rationale provided.'}</p>
-          <ul>
-            ${(data.key_factors || []).map(f => `<li>${f}</li>`).join('')}
-          </ul>
-        `;
+      // Color logic
+      if (clampScore >= 7) {
+        gaugeFill.style.backgroundColor = 'limegreen';
+      } else if (clampScore >= 4) {
+        gaugeFill.style.backgroundColor = 'orange';
+      } else {
+        gaugeFill.style.backgroundColor = 'red';
       }
-    })
-    .catch(err => {
-      console.error("Error fetching final recommendation:", err);
-    });
+    }
+
+    //-----------------------------------------------------------------------
+    // 3) Expanded State (#final-recommendation-full)
+    //    Show factor-by-factor details from financial_analysis + sentiment,
+    //    plus the final recommendation, rationale, and key_factors.
+    //-----------------------------------------------------------------------
+    const fullDiv = document.getElementById('final-recommendation-full');
+    if (fullDiv) {
+      // Pull out factor scores if present
+      // (Ensure your backend sets finalData.factor_scores = { factor1_score, factor2_score, ... })
+      const factor1Score = (finalData.factor_scores
+        && typeof finalData.factor_scores.factor1_score === 'number')
+          ? finalData.factor_scores.factor1_score
+          : 'N/A';
+      const factor2Score = (finalData.factor_scores
+        && typeof finalData.factor_scores.factor2_score === 'number')
+          ? finalData.factor_scores.factor2_score
+          : 'N/A';
+      const factor3Score = (finalData.factor_scores
+        && typeof finalData.factor_scores.factor3_score === 'number')
+          ? finalData.factor_scores.factor3_score
+          : 'N/A';
+      const factor4Score = (finalData.factor_scores
+        && typeof finalData.factor_scores.factor4_score === 'number')
+          ? finalData.factor_scores.factor4_score
+          : 'N/A';
+      const factor5Score = (finalData.factor_scores
+        && typeof finalData.factor_scores.factor5_score === 'number')
+          ? finalData.factor_scores.factor5_score
+          : 'N/A';
+      const factor6Score = (finalData.factor_scores
+        && typeof finalData.factor_scores.factor6_score === 'number')
+          ? finalData.factor_scores.factor6_score
+          : 'N/A';
+
+      // Retrieve financial analysis details
+      const dcfVal = finAnalysisData.dcf_intrinsic_value || 0;
+      // If your backend includes stock_price in the same object, adapt as needed:
+      const stockPrice = (typeof finAnalysisData.stock_price === 'number')
+        ? finAnalysisData.stock_price
+        : 0;
+
+      const ratioObj = finAnalysisData.ratios || {};
+      const tsa = finAnalysisData.time_series_analysis || {};
+
+      // Retrieve sentiment details
+      const earnSent = sentimentData.earnings_call_sentiment || {};
+      const indSent = sentimentData.industry_report_sentiment || {};
+      const ecoSent = sentimentData.economic_report_sentiment || {};
+
+      // Decide recommendation color
+      let recColor = 'limegreen';
+      if (finalData.recommendation
+          && finalData.recommendation.toUpperCase() === 'SELL') {
+        recColor = 'red';
+      } else if (finalData.recommendation
+          && finalData.recommendation.toUpperCase() === 'HOLD') {
+        recColor = 'orange';
+      }
+
+      // Build final HTML for expanded
+      let expandedHTML = `
+        <h3>Financial Analysis</h3>
+
+        <h4>Discounted Cash Flow (DCF) Analysis</h4>
+        <ul>
+          <li>Intrinsic Value per Share: <strong>$${dcfVal.toFixed(2)}</strong></li>
+          <li>Current Stock Price: <strong>$${stockPrice.toFixed(2)}</strong></li>
+          <li>Factor 1 Score (DCF Analysis): <strong>${factor1Score}</strong></li>
+        </ul>
+
+        <h4>Ratio Analysis</h4>
+        <table class="table table-sm">
+          <thead>
+            <tr><th>Ratio</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Debt-to-Equity Ratio</td>
+              <td>${
+                (typeof ratioObj["Debt-to-Equity Ratio"] === 'number')
+                  ? ratioObj["Debt-to-Equity Ratio"].toFixed(2)
+                  : 'N/A'
+              }</td>
+            </tr>
+            <tr>
+              <td>Current Ratio</td>
+              <td>${
+                (typeof ratioObj["Current Ratio"] === 'number')
+                  ? ratioObj["Current Ratio"].toFixed(2)
+                  : 'N/A'
+              }</td>
+            </tr>
+            <tr>
+              <td>P/E Ratio</td>
+              <td>${
+                (typeof ratioObj["P/E Ratio"] === 'number')
+                  ? ratioObj["P/E Ratio"].toFixed(2)
+                  : 'N/A'
+              }</td>
+            </tr>
+            <tr>
+              <td>P/B Ratio</td>
+              <td>${
+                (typeof ratioObj["P/B Ratio"] === 'number')
+                  ? ratioObj["P/B Ratio"].toFixed(2)
+                  : 'N/A'
+              }</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Factor 2 Score (Ratio Analysis): <strong>${factor2Score}</strong></p>
+
+        <h4>Time Series Analysis</h4>
+        <table class="table table-sm">
+          <thead>
+            <tr><th>Metric</th><th>CAGR</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Revenue CAGR</td>
+              <td>${
+                (typeof tsa.revenue_cagr === 'number')
+                  ? (tsa.revenue_cagr * 100).toFixed(2) + '%'
+                  : 'N/A'
+              }</td>
+            </tr>
+            <tr>
+              <td>Net Income CAGR</td>
+              <td>${
+                (typeof tsa.net_income_cagr === 'number')
+                  ? (tsa.net_income_cagr * 100).toFixed(2) + '%'
+                  : 'N/A'
+              }</td>
+            </tr>
+            <tr>
+              <td>Total Assets CAGR</td>
+              <td>${
+                (typeof tsa.assets_cagr === 'number')
+                  ? (tsa.assets_cagr * 100).toFixed(2) + '%'
+                  : 'N/A'
+              }</td>
+            </tr>
+            <tr>
+              <td>Total Liabilities CAGR</td>
+              <td>${
+                (typeof tsa.liabilities_cagr === 'number')
+                  ? (tsa.liabilities_cagr * 100).toFixed(2) + '%'
+                  : 'N/A'
+              }</td>
+            </tr>
+            <tr>
+              <td>Operating Cash Flow CAGR</td>
+              <td>${
+                (typeof tsa.cashflow_cagr === 'number')
+                  ? (tsa.cashflow_cagr * 100).toFixed(2) + '%'
+                  : 'N/A'
+              }</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Factor 3 Score (Time Series Analysis): <strong>${factor3Score}</strong></p>
+
+        <h3>Sentiment Analysis</h3>
+
+        <h5>Earnings Call Sentiment</h5>
+        <ul>
+          <li>Sentiment Score: ${
+            (typeof earnSent.score === 'number')
+              ? earnSent.score.toFixed(2)
+              : 'N/A'
+          }</li>
+          <li>Factor 4 Score: <strong>${factor4Score}</strong></li>
+        </ul>
+
+        <h5>Industry Report Sentiment</h5>
+        <ul>
+          <li>Sentiment Score: ${
+            (typeof indSent.score === 'number')
+              ? indSent.score.toFixed(2)
+              : 'N/A'
+          }</li>
+          <li>Factor 5 Score: <strong>${factor5Score}</strong></li>
+        </ul>
+
+        <h5>Economic Report Sentiment</h5>
+        <ul>
+          <li>Sentiment Score: ${
+            (typeof ecoSent.score === 'number')
+              ? ecoSent.score.toFixed(2)
+              : 'N/A'
+          }</li>
+          <li>Factor 6 Score: <strong>${factor6Score}</strong></li>
+        </ul>
+
+        <h3>Final Recommendation</h3>
+        <p>The weighted total score based on the analysis is:
+          <strong>${
+            (typeof finalData.total_score === 'number')
+              ? finalData.total_score.toFixed(1)
+              : 'N/A'
+          }</strong>.</p>
+        <p>The final recommendation is:
+          <strong>${
+            (finalData.recommendation)
+              ? finalData.recommendation
+              : 'N/A'
+          }</strong>.</p>
+        <p><strong>Rationale:</strong> ${
+          finalData.rationale
+            ? finalData.rationale
+            : 'No rationale provided.'
+        }</p>
+        <ul>
+          ${
+            (Array.isArray(finalData.key_factors))
+              ? finalData.key_factors.map(kf => `<li>${kf}</li>`).join('')
+              : ''
+          }
+        </ul>
+        <div style="margin-top:10px;">
+          <strong>Visual:</strong>
+          <span style="
+            display:inline-block;
+            width:60px;
+            height:20px;
+            border-radius:4px;
+            margin-left:8px;
+            background:${recColor};
+          "></span>
+        </div>
+      `;
+
+      // Insert into the expanded area
+      fullDiv.innerHTML = expandedHTML;
+    }
+  })
+  .catch(err => {
+    console.error("Error fetching final recommendation:", err);
+  });
+
 
   // (F) Chatbot - Not doing any default fetch here.
 
