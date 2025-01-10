@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Load data into each tile
   initDashboard();
 
+  // 2. Load the agentic base case from system3
+  initBaseCase();
+
   // 2. Chatbot functionality
   initChatbot();
 
@@ -1118,6 +1121,64 @@ function initChatbot() {
   });
 }
 
+// main.js
+// ---------------------------------------------------------------------------
+// A global variable to hold the user-chosen ticker from ?ticker=XYZ
+// ---------------------------------------------------------------------------
+let userTicker = "MSFT"; // fallback if the URL param is missing
+
+// ---------------------------------------------------------------------------
+// Read the ticker from the query params as soon as DOM is ready
+// Then initialize base-case logic & scenario logic
+// ---------------------------------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  // 1) Parse ?ticker= from the URL
+  const urlParams = new URLSearchParams(window.location.search);
+  userTicker = urlParams.get("ticker") || "MSFT";
+  console.log("Parsed userTicker from URL:", userTicker);
+
+  // 2) Init Base Case
+  initBaseCase();
+
+  // 3) Init Scenario Analysis
+  initScenarioAnalysis();
+});
+
+// ---------------------------------------------------------------------------
+// NEW: Confirm the frontend calls /system3/base_case to load the agentic base case
+// ---------------------------------------------------------------------------
+function initBaseCase() {
+  // Use the user-chosen ticker from userTicker
+  const endpoint = `/system3/base_case?ticker=${userTicker}`;
+  console.log("Calling base_case endpoint:", endpoint);
+
+  fetch(endpoint)
+    .then(res => res.json())
+    .then(data => {
+      console.log("Base Case from system3:", data);
+      // Suppose we display the base-case intrinsic value in some element
+      const baseCaseElem = document.getElementById('base-case-output');
+      if (baseCaseElem && data.intrinsic_value_per_share) {
+        baseCaseElem.textContent =
+          "Base Case IV: $" + data.intrinsic_value_per_share.toFixed(2);
+      } else if (baseCaseElem) {
+        // If there's an error or no data, handle gracefully
+        if (data.error) {
+          baseCaseElem.textContent = "Error: " + data.error;
+        } else {
+          baseCaseElem.textContent = "No data returned from /system3/base_case.";
+        }
+      }
+    })
+    .catch(err => {
+      console.error("Error fetching base case from system3:", err);
+      const baseCaseElem = document.getElementById('base-case-output');
+      if (baseCaseElem) {
+        baseCaseElem.textContent = "Error fetching base case.";
+      }
+    });
+}
+
 // ---------------------------------------------------------------------------
 // 3. Scenario Analysis
 // ---------------------------------------------------------------------------
@@ -1136,33 +1197,28 @@ function initScenarioAnalysis() {
     const scenarioIntrinsicElem = document.getElementById('scenario-intrinsic-value');
     const scenarioChartElem = document.getElementById('scenario-chart');
 
+    // Instead of legacy CSV-based route, call /system3/calculate_alpha
+    // We'll pass minimal fields: ticker from userTicker, wacc, etc.
     const payload = {
-      sector: SECTOR,
-      industry: INDUSTRY,
-      sub_industry: SUB_INDUSTRY,
+      ticker: userTicker,  // use userTicker, not 'MSFT'
       scenario: scenario,
-      stock_ticker: STOCK_TICKER,
-      data: {
-        income_statement: {},
-        balance_sheet: {},
-        cash_flow_statement: {}
-      },
-      assumptions: {
-        wacc: wacc / 100,
-        revenue_growth_rate: revGrowth / 100,
-        operating_expenses_pct: opex / 100,
-        cogs_pct: cogs / 100,
-        tax_rate: taxRate / 100
-      }
+      wacc: wacc / 100,
+      revenue_growth_rate: revGrowth / 100,
+      operating_expenses_pct: opex / 100,
+      cogs_pct: cogs / 100,
+      tax_rate: taxRate / 100
     };
 
-    fetch('/system3/calculate', {
+    console.log("Sending scenario payload to /system3/calculate_alpha:", payload);
+
+    fetch('/system3/calculate_alpha', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
     .then(res => res.json())
     .then(data => {
+      console.log("Scenario response from system3:", data);
       if (data.intrinsic_value_per_share) {
         scenarioIntrinsicElem.textContent = data.intrinsic_value_per_share.toFixed(2);
       } else if (data.error) {

@@ -32,6 +32,12 @@ from config import (
     SQLALCHEMY_DATABASE_URI
 )
 
+# --- NEW IMPORTS FOR ALPHA VANTAGE ---
+from modules.alpha_vantage_service import (
+    fetch_all_statements,
+    AlphaVantageAPIError
+)
+
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():  # Avoid duplicate handlers
     log_formatter = logging.Formatter(
@@ -296,7 +302,6 @@ custom_mappings = {
         'Current Liabilities'
     ],
 }
-
 
 def normalize_string(s):
     return re.sub(r'[^a-zA-Z0-9]', '', s).lower()
@@ -850,48 +855,280 @@ Check if assumptions are reasonable...
 
 
 ################################################################
-# SCENARIO ANALYSIS ROUTE (IF NEEDED FOR TILE #7)
+# ALPHA VANTAGE-BASED FLOW
 ################################################################
+
+def parse_alpha_vantage_json(income_json, balance_json, cash_flow_json):
+    """
+    Converts the 'annualReports' from each JSON object into Pandas DataFrames,
+    then attempts to parse numeric fields.
+    """
+    income_df = pd.DataFrame(income_json["annualReports"])
+    balance_df = pd.DataFrame(balance_json["annualReports"])
+    cash_flow_df = pd.DataFrame(cash_flow_json["annualReports"])
+
+    for df in [income_df, balance_df, cash_flow_df]:
+        for col in df.columns:
+            try:
+                df[col] = df[col].astype(float)
+            except ValueError:
+                pass
+
+    return income_df, balance_df, cash_flow_df
+
+def generate_base_case_assumptions(income_df, balance_df, cash_flow_df):
+    """
+    Automatically decides on a base-case set of assumptions,
+    e.g., 5% growth, 10% WACC, 21% tax rate, etc.
+    Uses the first row in income_df for totalRevenue if present.
+    """
+    if "totalRevenue" in income_df.columns and len(income_df) > 0:
+        latest_revenue = float(income_df["totalRevenue"].iloc[0])
+    else:
+        latest_revenue = 1000000.0  # fallback if missing
+
+    base_assumptions = {
+        "revenue_growth_rate": 0.05,
+        "wacc": 0.10,
+        "tax_rate": 0.21,
+        "operating_expenses_pct": 0.20,
+        "cogs_pct": 0.60,
+        "terminal_growth_rate": 0.02
+    }
+    return latest_revenue, base_assumptions
+
+
+@system3_bp.route('/base_case', methods=['GET'])
+def get_base_case():
+    """
+    GET /system3/base_case?ticker=XYZ
+    Fetches the ticker from the query param, pulls statements from Alpha Vantage,
+    then runs a base-case DCF using a default set of assumptions (5% growth, 10% WACC, etc.).
+    Returns JSON with 'intrinsic_value_per_share', 'assumptions_used', etc.
+    """
+    try:
+        ticker = request.args.get('ticker', 'MSFT')
+        logger.info(f"Received ticker for base_case: {ticker}")
+        # 1) Fetch statements from Alpha Vantage
+        income_json, balance_json, cash_flow_json = fetch_all_statements(ticker)
+        # 2) Parse into DataFrames
+        income_df, balance_df, cash_flow_df = parse_alpha_vantage_json(income_json, balance_json, cash_flow_json)
+        # 3) Generate base-case assumptions
+        latest_revenue, base_assumptions = generate_base_case_assumptions(income_df, balance_df, cash_flow_df)
+        # 4) Build the DCF model
+        initial_values = {"Revenue": latest_revenue}
+        dcf_model = DCFModel(initial_values, base_assumptions)
+        dcf_model.run_model()
+        results = dcf_model.get_results()
+
+        return jsonify({
+            "intrinsic_value_per_share": results["intrinsic_value_per_share"],
+            "assumptions_used": base_assumptions,
+            "dcf_model_results": results
+        }), 200
+
+    except AlphaVantageAPIError as e:
+        logger.exception(f"AlphaVantageAPIError: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        logger.exception(f"Unexpected error in get_base_case: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@system3_bp.route('/calculate_alpha', methods=['POST'])
+def calculate_custom_scenario():
+    """
+    Accepts JSON with a ticker plus custom assumptions or scenario,
+    fetches Alpha Vantage data, and returns an updated DCF result.
+    """
+    try:
+        data = request.get_json()
+        ticker = data.get('ticker', 'MSFT')
+
+        # 1) Pull from Alpha Vantage
+        income_json, balance_json, cash_flow_json = fetch_all_statements(ticker)
+        income_df, balance_df, cash_flow_df = parse_alpha_vantage_json(income_json, balance_json, cash_flow_json)
+
+        # 2) Decide or read user-supplied assumptions
+        wacc = float(data.get("wacc", 0.10))
+        rev_growth = float(data.get("revenue_growth_rate", 0.05))
+        cogs_pct = float(data.get("cogs_pct", 0.60))
+        opex_pct = float(data.get("operating_expenses_pct", 0.20))
+        tax_rate = float(data.get("tax_rate", 0.21))
+        term_growth = float(data.get("terminal_growth_rate", 0.02))
+
+        # 3) Latest revenue from the income_df or fallback
+        if "totalRevenue" in income_df.columns and len(income_df) > 0:
+            latest_revenue = float(income_df["totalRevenue"].iloc[0])
+        else:
+            latest_revenue = 1000000.0
+
+        final_assumptions = {
+            "revenue_growth_rate": rev_growth,
+            "wacc": wacc,
+            "tax_rate": tax_rate,
+            "operating_expenses_pct": opex_pct,
+            "cogs_pct": cogs_pct,
+            "terminal_growth_rate": term_growth
+        }
+
+        # 4) DCF
+        dcf_model = DCFModel({"Revenue": latest_revenue}, final_assumptions)
+        dcf_model.run_model()
+        results = dcf_model.get_results()
+
+        return jsonify({
+            "intrinsic_value_per_share": results["intrinsic_value_per_share"],
+            "assumptions_used": final_assumptions
+        }), 200
+
+    except AlphaVantageAPIError as e:
+        logger.exception(f"AlphaVantageAPIError: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        logger.exception(f"Unexpected error in calculate_custom_scenario: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+################################################################
+# DIRECT FIX: HANDLE CSV UPLOADS IN /CALCULATE (SYSTEM3)
+################################################################
+
+def process_financial_csv(file_path, csv_name):
+    """Replicate your system1 CSV reading logic (e.g. parse date columns, numeric data, etc.)."""
+    try:
+        df = pd.read_csv(file_path, index_col=0, thousands=',', quotechar='"')
+        df.columns = df.columns.str.strip()
+        df.index = df.index.str.strip()
+        if 'ttm' in df.columns:
+            df.drop(columns=['ttm'], inplace=True)
+        df = df.transpose()
+        df.reset_index(inplace=True)
+        df.rename(columns={'index': 'Date'}, inplace=True)
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
+        df = df[df['Date'].notnull()]
+        for col in df.columns:
+            if col != 'Date':
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        df.fillna(0, inplace=True)
+        return df
+    except Exception as e:
+        logger.error(f"Error processing {csv_name} CSV: {str(e)}")
+        return None
+
+def standardize_columns(df, column_mappings, csv_name):
+    """Similar to system1 approach: rename recognized columns, return leftover unmapped."""
+    df_columns = df.columns.tolist()
+    new_columns = {}
+    for standard_name, possible_names in column_mappings.items():
+        for name in possible_names:
+            if name in df_columns:
+                new_columns[name] = standard_name
+                break
+
+    df.rename(columns=new_columns, inplace=True)
+    unmapped_cols = []
+    for col in df_columns:
+        if col not in new_columns.keys() and col in df.columns:
+            unmapped_cols.append(col)
+
+    return df, unmapped_cols
+
+income_columns = {
+    "Revenue": ["Revenue", "TotalRevenue", "Total Revenue", "Sales"],
+    "Net Income": ["NetIncome", "Net Income", "Net Profit", "Profit After Tax"],
+    "Cost of Goods Sold (COGS)": ["COGS", "CostOfGoodsSold", "Cost Of Goods Sold"],
+    "Selling, General & Administrative (SG&A)": ["SGA", "SG&A", "Selling Gen Admin"],
+    "Depreciation & Amortization": ["DepreciationAndAmortization", "DepAndAmort", "Depreciation & Amortization"],
+    "Interest Expense": ["InterestExpense", "Interest Exp"],
+    "Income Tax Expense": ["IncomeTaxExpense", "TaxExpense", "Income Tax"]
+}
+
+balance_columns = {
+    "Total Assets": ["TotalAssets", "Total Assets"],
+    "Total Liabilities": ["TotalLiabilities", "Total Liabilities", "TotalLiabilitiesNetMinorityInterest"],
+    "Shareholders Equity": ["TotalEquity", "Shareholders Equity", "Total Equity", "StockholdersEquity"],
+    "Current Assets": ["CurrentAssets", "Current Assets"],
+    "Current Liabilities": ["CurrentLiabilities", "Current Liabilities"],
+    "CurrentDebt": ["CurrentDebt", "ShortTermDebt", "Short-Term Debt", "Current Debt"],
+    "Long-Term Debt": ["LongTermDebt", "Long-Term Debt"],
+    "Total Shares Outstanding": ["SharesIssued", "ShareIssued", "Total Shares Outstanding", "Total Shares", "OrdinarySharesNumber"],
+    "Inventory": ["Inventory", "Inventories"]
+}
+
+cashflow_columns = {
+    "Operating Cash Flow": ["OperatingCashFlow", "Operating Cash Flow", "Cash from Operations"],
+    "Capital Expenditures": ["CapitalExpenditures", "Capital Expenditures", "CapEx", "CapitalExpenditure", "Capital Expenditure"]
+}
 
 @system3_bp.route('/calculate', methods=['POST'])
 def calculate_scenario():
     """
-    This route handles scenario-based inputs (WACC, scenario, sector, etc.)
-    and returns updated assumptions or a computed DCF result for tile #7.
+    (Legacy route) Direct fix: handle CSV uploads in system3, parse them, and run DCF using real data.
+    This approach is retained for backward compatibility, but you can rely on the Alpha Vantage-based
+    endpoints (/base_case and /calculate_alpha) if you no longer want to deal with CSV uploads.
     """
+    import tempfile
+
     try:
-        data = request.get_json()
+        data = request.form.to_dict()
         scenario = data.get('scenario', 'Neutral')
         sector = data.get('sector', 'Unknown')
         industry = data.get('industry', 'Unknown')
         sub_industry = data.get('sub_industry', 'Unknown')
         stock_ticker = data.get('stock_ticker', 'AAPL')
 
-        # 1) Use your agentic logic
+        income_statement_file = request.files.get('income_statement')
+        balance_sheet_file = request.files.get('balance_sheet')
+        cash_flow_file = request.files.get('cash_flow')
+
+        if not income_statement_file or not balance_sheet_file or not cash_flow_file:
+            return jsonify({"error": "Missing one or more CSV files (income_statement, balance_sheet, cash_flow)."}), 400
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as inc_f:
+            income_statement_file.save(inc_f.name)
+            inc_path = inc_f.name
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as bal_f:
+            balance_sheet_file.save(bal_f.name)
+            bal_path = bal_f.name
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as cf_f:
+            cash_flow_file.save(cf_f.name)
+            cf_path = cf_f.name
+
+        income_df = process_financial_csv(inc_path, "income_statement")
+        balance_df = process_financial_csv(bal_path, "balance_sheet")
+        cashflow_df = process_financial_csv(cf_path, "cash_flow")
+
+        os.remove(inc_path)
+        os.remove(bal_path)
+        os.remove(cf_path)
+
+        if any(df is None for df in [income_df, balance_df, cashflow_df]):
+            return jsonify({"error": "Failed to parse one or more CSVs."}), 400
+
+        income_df, income_unmapped = standardize_columns(income_df, income_columns, "income_statement")
+        balance_df, balance_unmapped = standardize_columns(balance_df, balance_columns, "balance_sheet")
+        cashflow_df, cashflow_unmapped = standardize_columns(cashflow_df, cashflow_columns, "cash_flow")
+
+        income_df.sort_values('Date', inplace=True)
+        latest_revenue = income_df['Revenue'].iloc[-1] if 'Revenue' in income_df.columns else 0
+
         scenario_adjustments = adjust_for_scenario(scenario)
         sector_adjustments = adjust_for_sector(sector)
         industry_adjustments = adjust_for_industry(industry)
         sub_industry_adjustments = adjust_for_sub_industry(sub_industry)
         company_adjustments = adjust_for_company(stock_ticker)
 
-        # 2) Merge them
         merged_assumptions = {}
-        for d in [
-            scenario_adjustments,
-            sector_adjustments,
-            industry_adjustments,
-            sub_industry_adjustments,
-            company_adjustments
-        ]:
+        for d in [scenario_adjustments, sector_adjustments, industry_adjustments, sub_industry_adjustments, company_adjustments]:
             for k, v in d.items():
                 merged_assumptions[k] = v
 
-        # 3) Validate
         final_assumptions = validate_assumptions(merged_assumptions)
 
-        # 4) Run a DCFModel example (adjust as needed)
-        #    For demonstration, we'll provide minimal initial_values
-        initial_values = {"Revenue": 1_000_000}
+        initial_values = {"Revenue": float(latest_revenue)}
         dcf_model = DCFModel(initial_values, final_assumptions)
         dcf_model.run_model()
         results = dcf_model.get_results()

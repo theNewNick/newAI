@@ -1525,7 +1525,12 @@ Please provide them in valid JSON only, like:
         )
         logger.info('Completed analyze_financials function successfully.')
 
-        return redirect(url_for('dashboard'))
+        # NEW: Capture the ticker from the POST form data
+        ticker_entered = request.form.get('stock_ticker', 'AAPL')
+        logger.info(f"Redirecting user to dashboard with ticker={ticker_entered}")
+
+        # Return a redirect that appends the ticker as a query param, e.g. ?ticker=MSFT
+        return redirect(url_for('dashboard', ticker=ticker_entered))
 
     except Exception as e:
         logger.exception('An unexpected error occurred during analysis.')

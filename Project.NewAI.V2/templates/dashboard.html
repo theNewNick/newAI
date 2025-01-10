@@ -433,5 +433,39 @@
 
   <!-- Main JS that handles the multi-state tiles, AJAX fetching, etc. -->
   <script src="/static/js/main.js"></script>
+    <!-- 
+        OPTIONAL: A small snippet to fetch /system3/base_case using ?ticker= from the URL,
+        and display it in a new <div> for demonstration.
+    -->
+    <div id="base-case-display" style="margin:20px; font-weight:bold;">
+      <!-- We'll load the base-case result here -->
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // 1) Parse ?ticker= from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const ticker = urlParams.get('ticker') || 'AAPL';
+
+        // 2) Call system3/base_case
+        fetch(`/system3/base_case?ticker=${ticker}`)
+          .then(res => res.json())
+          .then(data => {
+            console.log("Base Case data from system3:", data);
+            const baseCaseElem = document.getElementById('base-case-display');
+            if (!baseCaseElem) return;
+            if (data.intrinsic_value_per_share) {
+              baseCaseElem.textContent = `Base Case for ${ticker}: $${data.intrinsic_value_per_share.toFixed(2)}`;
+            } else if (data.error) {
+              baseCaseElem.textContent = `Error: ${data.error}`;
+            } else {
+              baseCaseElem.textContent = "No data returned from /system3/base_case.";
+            }
+          })
+          .catch(err => {
+            console.error("Error fetching base_case from system3:", err);
+          });
+      });
+    </script>
 </body>
 </html>
