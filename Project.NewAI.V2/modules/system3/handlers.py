@@ -190,6 +190,59 @@ def validate_assumptions(adjusted_assumptions):
     logger.debug(f"Validated assumptions: {validated_assumptions}")
     return validated_assumptions
 
+########
+# Added
+########
+
+def guess_sector_industry_subindustry(ticker):
+    """
+    Calls GPT to classify the given ticker into sector, industry, sub-industry.
+    Returns a dict, e.g.:
+      {
+        "sector": "Technology",
+        "industry": "Software",
+        "sub_industry": "Enterprise SaaS"
+      }
+    If GPT fails or returns no valid JSON, default to "Unknown".
+    """
+    if not ticker:
+        return {
+            "sector": "Unknown",
+            "industry": "Unknown",
+            "sub_industry": "Unknown"
+        }
+
+    # Build a prompt that instructs GPT to produce exactly that JSON structure
+    prompt = f"""
+We have a public company with ticker symbol {ticker}.
+Please classify it into:
+  - sector
+  - industry
+  - sub_industry
+Return valid JSON with keys "sector", "industry", and "sub_industry".
+"""
+    assistant_reply = call_openai_api(prompt)
+    cleaned = clean_json(assistant_reply)
+    json_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+    if json_match:
+        try:
+            parsed = json.loads(json_match.group())
+            if isinstance(parsed, dict):
+                # Ensure each key is present
+                return {
+                    "sector":  parsed.get("sector",  "Unknown"),
+                    "industry": parsed.get("industry","Unknown"),
+                    "sub_industry": parsed.get("sub_industry","Unknown")
+                }
+        except json.JSONDecodeError:
+            pass
+    return {
+        "sector": "Unknown",
+        "industry": "Unknown",
+        "sub_industry": "Unknown"
+}
+
+
 
 ################################################################
 # GPT UTILS
@@ -552,53 +605,181 @@ def adjust_based_on_historical_data(stock_ticker):
 ################################################################
 # Agent Weighting + Validation
 ################################################################
-def get_agent_importance_weights():
-    prompt = """
-You are a financial expert. Assign an importance weight between 0 and 1 
-for each agent in JSON:
-{
-  "scenario_agent": 0.15,
-  "sector_agent": 0.10,
-  "industry_agent": 0.10,
-  "sub_industry_agent": 0.10,
-  "company_agent": 0.10,
-  "feedback_agent": 0.05,
-  "sentiment_agent": 0.05,
-  "historical_data_agent": 0.10,
-  "user_agent": 0.20
-}
-We will normalize.
-"""
-    rep = call_openai_api(prompt)
-    d = parse_json_from_reply(rep)
-    if not d:
-        d={}
-    s=sum(d.values())
-    if s>0:
-        for k in d:
-            d[k] = d[k]/s
-    return d
 
-def validation_agent(final_adjustments, sector, industry, sub_industry, scenario, stock_ticker, agent_adjustments):
+def get_agent_importance_weights():
+    """
+    Attempts to retrieve agent importance weights from GPT, ensuring
+    each agent has a numeric (0..1) value. If GPT fails or gives partial
+    data, we fallback to a default dictionary.
+    """
+    # We add explicit instructions: 
+    # "No extra keys, and no text outside valid JSON" etc.
+    prompt = """
+You are a financial expert. Provide importance weights (0..1) in valid JSON, 
+with exactly these keys (no extras):
+{
+  "scenario_agent": ...,
+  "sector_agent": ...,
+  "industry_agent": ...,
+  "sub_industry_agent": ...,
+  "company_agent": ...,
+  "feedback_agent": ...,
+  "sentiment_agent": ...,
+  "historical_data_agent": ...,
+  "user_agent": ...
+}
+The sum need not be exactly 1. We'll normalize afterwards.
+No additional text. Valid JSON only.
+"""
+
+    rep = call_openai_api(prompt)
+    parsed = parse_json_from_reply(rep)
+    
+    # Provide a fallback if GPT returns nothing or 
+    # if it’s missing any required keys
+    fallback = {
+        "scenario_agent":          0.15,
+        "sector_agent":            0.10,
+        "industry_agent":          0.10,
+        "sub_industry_agent":      0.10,
+        "company_agent":           0.10,
+        "feedback_agent":          0.05,
+        "sentiment_agent":         0.05,
+        "historical_data_agent":   0.10,
+        "user_agent":              0.20
+    }
+
+    # If parsed is empty, or not a dict, or missing any required key
+    if not isinstance(parsed, dict):
+        logger.warning("GPT returned no dict for agent weights. Using fallback.")
+        parsed = {}
+    required_keys = set(fallback.keys())
+    
+    # 1) Merge fallback if any key is missing
+    for rk in required_keys:
+        if rk not in parsed:
+            logger.warning(f"Missing agent weight for {rk}, using fallback.")
+            parsed[rk] = fallback[rk]
+    
+    # 2) Convert to floats safely & clamp 0..1
+    for k in list(parsed.keys()):
+        try:
+            val = float(parsed[k])
+            # If GPT gave insane values
+            if val < 0:
+                val = 0
+            elif val > 1:
+                val = 1
+            parsed[k] = val
+        except:
+            logger.warning(f"Non-numeric agent weight {k}, using fallback.")
+            parsed[k] = fallback[k]
+
+    # 3) Now we definitely have all 9 keys as floats in [0..1].
+    #    Normalize them:
+    s = sum(parsed.values())
+    if s > 0:
+        for k in parsed:
+            parsed[k] = parsed[k] / s
+    else:
+        logger.warning("Sum of GPT importance weights is 0. Using fallback entirely.")
+        parsed = fallback  # fallback has some valid distribution
+
+    # optional debug:
+    logger.debug(f"Final agent importance weights: {parsed}")
+
+    return parsed
+
+def validation_agent(
+    final_adjustments, 
+    sector, industry, sub_industry, 
+    scenario, stock_ticker, 
+    agent_adjustments
+):
+    """
+    Calls GPT to get confidence scores for each agent’s output. If GPT fails
+    or leaves any agent out, we default that agent's confidence to 1.0.
+    """
+    # We build a strict prompt so GPT must return exact JSON with 
+    # numeric confidence scores for each agent. No extra text, no placeholders.
     prompt = f"""
 You are a Validation Agent for {stock_ticker}, scenario={scenario}, sector={sector}, industry={industry}, sub_industry={sub_industry}.
-Agent outputs:
+
+We have agent outputs in JSON:
 {json.dumps(agent_adjustments, indent=2)}
 
-Return JSON:
+Return strictly valid JSON with two keys:
 {{
-  "reasoning":"some text",
+  "reasoning": "...some textual explanation...",
   "confidence_scores": {{
-    "scenario_agent": 0.8,
-    ...
+    "scenario_agent": <float 0..1>,
+    "sector_agent": <float 0..1>,
+    "industry_agent": <float 0..1>,
+    "sub_industry_agent": <float 0..1>,
+    "company_agent": <float 0..1>,
+    "feedback_agent": <float 0..1>,
+    "sentiment_agent": <float 0..1>,
+    "historical_data_agent": <float 0..1>,
+    "user_agent": <float 0..1>
   }}
 }}
+No other text outside the JSON. 
+Each confidence must be a float in [0,1].
 """
-    r = call_openai_api(prompt)
-    j = parse_json_from_reply(r)
-    if j:
-        return j.get("reasoning",""), j.get("confidence_scores",{})
-    return "", {}
+
+    raw_reply = call_openai_api(prompt)
+    parsed = parse_json_from_reply(raw_reply)
+    
+    # Fallback to default=1.0 for each agent.
+    fallback_scores = {
+        "scenario_agent":         1.0,
+        "sector_agent":           1.0,
+        "industry_agent":         1.0,
+        "sub_industry_agent":     1.0,
+        "company_agent":          1.0,
+        "feedback_agent":         1.0,
+        "sentiment_agent":        1.0,
+        "historical_data_agent":  1.0,
+        "user_agent":             1.0
+    }
+    
+    # If parse fails, we return "", fallback
+    if not isinstance(parsed, dict):
+        logger.warning("Validation agent: GPT returned no valid dict. Using fallback=1.0")
+        return "", fallback_scores
+
+    # 1) Extract reasoning if present
+    reasoning = parsed.get("reasoning", "")
+
+    # 2) Extract "confidence_scores" 
+    cs = parsed.get("confidence_scores", {})
+    if not isinstance(cs, dict):
+        logger.warning("Validation agent: no dict for 'confidence_scores'. Using fallback=1.0")
+        cs = {}
+
+    # 3) Merge fallback for missing or invalid keys
+    for agent_name, fallback_val in fallback_scores.items():
+        if agent_name not in cs:
+            logger.warning(f"Validation agent: missing confidence for {agent_name}, fallback=1.0")
+            cs[agent_name] = fallback_val
+        else:
+            # Try casting. If invalid or out-of-range, fallback
+            try:
+                num = float(cs[agent_name])
+                if num < 0.0:
+                    num = 0.0
+                elif num > 1.0:
+                    num = 1.0
+                cs[agent_name] = num
+            except:
+                logger.warning(f"Validation agent: non-numeric confidence for {agent_name}, fallback=1.0")
+                cs[agent_name] = fallback_val
+
+    # Optionally, we can log the final confidence dict
+    logger.debug(f"Final validation confidence scores: {cs}")
+    
+    return reasoning, cs
+
 
 def compute_final_adjustments_with_agents(agent_adjustments, agent_importance_weights, agent_confidence_scores):
     assumptions = [
@@ -645,15 +826,20 @@ def get_base_case():
         else:
             latest_revenue = 1_000_000.0
 
-        # 2) gather agent outputs
-        scenario_out = adjust_for_scenario(scenario)
-        sector_out = {}
-        industry_out = {}
-        sub_industry_out = {}
-        company_out = adjust_for_company(ticker)
-        feedback_out = {}
-        sentiment_out = adjust_based_on_sentiment(ticker)
-        historical_out = adjust_based_on_historical_data(ticker)
+        # 2) gather agent outputs (with GPT-based classification for sector/industry/sub_industry)
+        classification = guess_sector_industry_subindustry(ticker)
+        sector_str = classification.get("sector", "Unknown")
+        industry_str = classification.get("industry", "Unknown")
+        sub_industry_str = classification.get("sub_industry", "Unknown")
+
+        scenario_out     = adjust_for_scenario(scenario)
+        sector_out       = adjust_for_sector(sector_str)
+        industry_out     = adjust_for_industry(industry_str)
+        sub_industry_out = adjust_for_sub_industry(sub_industry_str)
+        company_out      = adjust_for_company(ticker)
+        feedback_out     = {}
+        sentiment_out    = adjust_based_on_sentiment(ticker)
+        historical_out   = adjust_based_on_historical_data(ticker)
 
         agent_adjustments = {
             "scenario_agent": scenario_out,
@@ -668,7 +854,7 @@ def get_base_case():
 
         # 3) weighting
         w = get_agent_importance_weights()
-        reasoning, conf = validation_agent({}, "Unknown","Unknown","Unknown", scenario, ticker, agent_adjustments)
+        reasoning, conf = validation_agent({}, sector_str, industry_str, sub_industry_str, scenario, ticker, agent_adjustments)
         merged = compute_final_adjustments_with_agents(agent_adjustments, w, conf)
         final_assumptions = validate_assumptions(merged)
 
@@ -707,14 +893,20 @@ def calculate_custom_scenario():
         else:
             latest_revenue = 1_000_000.0
 
-        scenario_out = adjust_for_scenario(scenario)
-        sector_out = {}
-        industry_out = {}
-        sub_industry_out = {}
-        company_out = adjust_for_company(ticker)
-        feedback_out = {}
-        sentiment_out = adjust_based_on_sentiment(ticker)
-        historical_out = adjust_based_on_historical_data(ticker)
+        # classify sector/industry/subindustry
+        classification = guess_sector_industry_subindustry(ticker)
+        sector      = classification.get("sector", "Unknown")
+        industry    = classification.get("industry","Unknown")
+        sub_industry= classification.get("sub_industry","Unknown")
+
+        scenario_out     = adjust_for_scenario(scenario)
+        sector_out       = adjust_for_sector(sector)
+        industry_out     = adjust_for_industry(industry)
+        sub_industry_out = adjust_for_sub_industry(sub_industry)
+        company_out      = adjust_for_company(ticker)
+        feedback_out     = {}
+        sentiment_out    = adjust_based_on_sentiment(ticker)
+        historical_out   = adjust_based_on_historical_data(ticker)
 
         # user_agent
         user_agent = {}
@@ -735,7 +927,7 @@ def calculate_custom_scenario():
         }
 
         w = get_agent_importance_weights()
-        reasoning, conf = validation_agent({}, "Unknown","Unknown","Unknown", scenario, ticker, agent_adjustments)
+        reasoning, conf = validation_agent({}, sector, industry, sub_industry, scenario, ticker, agent_adjustments)
         merged = compute_final_adjustments_with_agents(agent_adjustments, w, conf)
         final = validate_assumptions(merged)
 
