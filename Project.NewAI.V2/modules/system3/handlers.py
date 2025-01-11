@@ -4,42 +4,38 @@ import logging
 from logging.handlers import RotatingFileHandler
 import traceback
 import re
+import requests  # ADDED for Alpha Vantage calls
 from flask import request, jsonify, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 import pandas as pd
-import yfinance as yf
 import difflib
 from newsapi import NewsApiClient
 from textblob import TextBlob
 import numpy as np
 import tiktoken
-import openai  # We'll keep the import so references to openai.error exist, but we won't set openai.api_key directly
+import openai
 
-# We now import our new SMART load-balancer calls instead of the old round-robin calls
 from smart_load_balancer import call_openai_smart, call_openai_embedding_smart
-
-# NEW IMPORT: The "model_selector" helper (choose_model_for_task, etc.)
 from model_selector import choose_model_for_task
 
 from .def_model import DCFModel
-import config  # We still rely on config for environment variables, S3, etc., but no longer for round-robin
+import config
 from modules.extensions import db
-
 from config import (
     NEWSAPI_KEY,
     UPLOAD_FOLDER,
     SQLALCHEMY_DATABASE_URI
 )
 
-# --- NEW IMPORTS FOR ALPHA VANTAGE ---
+# We rely on alpha_vantage_service.py for statements:
 from modules.alpha_vantage_service import (
     fetch_all_statements,
     AlphaVantageAPIError
 )
 
 logger = logging.getLogger(__name__)
-if not logger.hasHandlers():  # Avoid duplicate handlers
+if not logger.hasHandlers():
     log_formatter = logging.Formatter(
         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
     )
@@ -86,7 +82,6 @@ class Feedback(db.Model):
     comments = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
-    # Detailed feedback on each assumption
     revenue_growth_feedback = db.Column(db.String(20), nullable=True)
     tax_rate_feedback = db.Column(db.String(20), nullable=True)
     cogs_pct_feedback = db.Column(db.String(20), nullable=True)
@@ -102,19 +97,14 @@ class Feedback(db.Model):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
 def clean_json(json_like_str):
-    """Cleans common JSON issues like trailing commas or JS comments."""
     cleaned = re.sub(r'//.*?\n', '\n', json_like_str)
     cleaned = re.sub(r',\s*}', '}', cleaned)
     cleaned = re.sub(r',\s*\]', ']', cleaned)
     return cleaned
 
-
 def parse_json_from_reply(reply):
-    """Extracts JSON from GPT-like text replies."""
     cleaned_reply = clean_json(reply)
-    # Replace "WACC"/'WACC' with 'wacc' to standardize
     cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
     json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
     if json_match:
@@ -124,7 +114,6 @@ def parse_json_from_reply(reply):
             logger.exception("JSON parsing failed in parse_json_from_reply")
             return {}
     return {}
-
 
 def summarize_feedback(sector, industry, sub_industry, scenario):
     logger.debug(f"Summarizing feedback for {sector}, {industry}, {sub_industry}, {scenario}")
@@ -203,24 +192,16 @@ def validate_assumptions(adjusted_assumptions):
 
 
 ################################################################
-# REPLACE Old Round-Robin Calls with Smart LB
+# GPT UTILS
 ################################################################
-
 def call_openai_api(prompt):
-    """
-    Replaces direct openai.ChatCompletion.create with call_openai_smart so
-    we rotate among multiple accounts. 
-    This is for advanced logic => GPT-4 usage in system3.
-    """
     logger.debug(f"Calling OpenAI API with prompt[:1000]: {prompt[:1000]}...")
     try:
         messages = [
             {"role": "system", "content": "You are an expert financial analyst."},
             {"role": "user", "content": prompt}
         ]
-        # We'll use the plan's GPT-4 path => 'complex_deep_analysis'
         chosen_model = choose_model_for_task("complex_deep_analysis")
-
         response = call_openai_smart(
             messages=messages,
             model=chosen_model,
@@ -235,15 +216,10 @@ def call_openai_api(prompt):
         logger.exception("Error in OpenAI API call")
         return ""
 
-
 def call_openai_api_with_messages(messages):
-    """
-    Same load-balanced approach, but accepts 'messages' directly => GPT-4 for system3 tasks.
-    """
     logger.debug(f"Calling OpenAI API with messages: {messages}")
     try:
         chosen_model = choose_model_for_task("complex_deep_analysis")
-
         response = call_openai_smart(
             messages=messages,
             model=chosen_model,
@@ -258,611 +234,10 @@ def call_openai_api_with_messages(messages):
         logger.exception("Error in OpenAI API call with messages")
         return ""
 
-
 ################################################################
-# MAPPINGS & DATA EXTRACTION
+# ALPHA VANTAGE PARSING
 ################################################################
-
-custom_mappings = {
-    'Revenue': [
-        'TotalRevenue',
-        'OperatingRevenue',
-        'Net Sales',
-        'Sales Revenue'
-    ],
-    'COGS': [
-        'CostOfRevenue',
-        'CostOfGoodsSold',
-        'Cost of Revenue',
-        'Cost of Goods Sold',
-        'Cost of Goods Manufactured'
-    ],
-    'Operating Expenses': [
-        'OperatingExpenses',
-        'SG&A',
-        'Selling General & Administrative Expenses',
-        'Selling, General and Administrative Expenses'
-    ],
-    'Depreciation': [
-        'Depreciation & Amortization',
-        'Depreciation Expense'
-    ],
-    'Capital Expenditures': [
-        'CapEx',
-        'Capital Spending',
-        'Purchase of Fixed Assets',
-        'Purchases of property and equipment'
-    ],
-    'Current Assets': [
-        'Total Current Assets',
-        'Current Assets'
-    ],
-    'Current Liabilities': [
-        'Total Current Liabilities',
-        'Current Liabilities'
-    ],
-}
-
-def normalize_string(s):
-    return re.sub(r'[^a-zA-Z0-9]', '', s).lower()
-
-
-def get_field_mapping_via_openai(field, existing_labels):
-    logger.debug(f"Getting field mapping for {field} using OpenAI")
-    prompt = f"""
-You are a financial data expert. We have a required financial field: '{field}'.
-Given the following available data labels from a financial dataset:
-{', '.join(existing_labels)}
-Please map the required field to the most appropriate label from the available labels.
-Provide the mapping in valid JSON format, where the key is the required field and the value is the matching label.
-Only use labels exactly as they appear in the available labels. Do not include any comments or extra text.
-"""
-    response_text = call_openai_api(prompt)
-    mapping = parse_json_from_reply(response_text)
-    if mapping:
-        logger.debug(f"Mapping for {field}: {mapping}")
-        return mapping.get(field)
-    else:
-        logger.error("Failed to extract JSON from the assistant's reply.")
-        return None
-
-
-def get_field_mappings(required_fields, existing_labels):
-    logger.debug(f"Getting field mappings for: {required_fields}")
-    field_mapping = {}
-    existing_labels_normalized = {normalize_string(label): label for label in existing_labels}
-
-    for field in required_fields:
-        mapped = False
-
-        # Use custom_mappings first if available
-        if field in custom_mappings:
-            for alias in custom_mappings[field]:
-                alias_normalized = normalize_string(alias)
-                if alias_normalized in existing_labels_normalized:
-                    field_mapping[field] = existing_labels_normalized[alias_normalized]
-                    mapped = True
-                    break
-
-        if not mapped:
-            field_normalized = normalize_string(field)
-            if field_normalized in existing_labels_normalized:
-                field_mapping[field] = existing_labels_normalized[field_normalized]
-                mapped = True
-            else:
-                matches = difflib.get_close_matches(field_normalized, existing_labels_normalized.keys(), n=1, cutoff=0.0)
-                if matches:
-                    field_mapping[field] = existing_labels_normalized[matches[0]]
-                    mapped = True
-                else:
-                    label = get_field_mapping_via_openai(field, existing_labels)
-                    if label:
-                        field_mapping[field] = label
-                        mapped = True
-                    else:
-                        field_mapping[field] = None
-
-    logger.debug(f"Field mappings result: {field_mapping}")
-    return field_mapping
-
-
-def process_uploaded_file(file_path, file_type):
-    logger.debug(f"Processing uploaded file: {file_path} of type {file_type}")
-    try:
-        file_extension = os.path.splitext(file_path)[1].lower()
-        if file_extension == '.csv':
-            data = pd.read_csv(file_path)
-        elif file_extension in ['.xls', '.xlsx']:
-            data = pd.read_excel(file_path)
-        else:
-            return None
-
-        data = data.fillna(0)
-        if file_type == 'income_statement':
-            return process_income_statement(data)
-        elif file_type == 'balance_sheet':
-            return process_balance_sheet(data)
-        elif file_type == 'cash_flow_statement':
-            return process_cash_flow_statement(data)
-        else:
-            return None
-    except Exception as e:
-        logger.exception(f"Error processing {file_type}")
-        return None
-    finally:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-
-def process_income_statement(data):
-    logger.debug("Processing income statement")
-    required_fields = ['Revenue', 'COGS', 'Operating Expenses']
-    return extract_fields(data, required_fields)
-
-
-def process_balance_sheet(data):
-    logger.debug("Processing balance sheet")
-    required_fields = ['Current Assets', 'Current Liabilities']
-    return extract_fields(data, required_fields)
-
-
-def process_cash_flow_statement(data):
-    logger.debug("Processing cash flow statement")
-    required_fields = ['Depreciation', 'Capital Expenditures']
-    return extract_fields(data, required_fields)
-
-
-def extract_fields(data, required_fields):
-    logger.debug(f"Extracting fields: {required_fields}")
-    labels = data.iloc[:, 0].astype(str).str.strip().tolist()
-    logger.debug(f"Existing labels: {labels}")
-    data_values = data.iloc[:, 1:].applymap(
-        lambda x: float(str(x).replace(',', '').replace('(', '-').replace(')', ''))
-    )
-
-    data_dict = dict(zip(labels, data_values.values.tolist()))
-    existing_labels = list(data_dict.keys())
-
-    field_mapping = get_field_mappings(required_fields, existing_labels)
-    if not field_mapping:
-        logger.error("Failed to obtain field mappings.")
-        return None
-
-    processed_data = {}
-    for field, label in field_mapping.items():
-        if label and label in data_dict:
-            try:
-                values = data_dict[label]
-                processed_data[field] = values[0]
-            except KeyError:
-                logger.error(f"Label '{label}' not found in data dictionary.")
-                return None
-        else:
-            logger.error(f"Label for required field '{field}' not found in data dictionary.")
-            return None
-
-    logger.debug(f"Extracted data: {processed_data}")
-    return processed_data
-
-
-################################################################
-# FINANCIAL / ECONOMIC HELPER FUNCTIONS
-################################################################
-
-import time
-
-def get_risk_free_rate():
-    logger.debug("Fetching risk-free rate")
-    tnx = yf.Ticker("^TNX")
-    data = tnx.history(period="1d")
-    if not data.empty:
-        current_yield = data['Close'].iloc[-1] / 100.0
-        logger.debug(f"Risk-free rate: {current_yield}")
-        return current_yield
-    else:
-        return 0.02
-
-
-def calculate_mrp():
-    logger.debug("Calculating MRP")
-    spy = yf.Ticker("SPY")
-    market_data = spy.history(period="10y")
-    if market_data.empty:
-        return 0.05
-
-    initial_price = market_data['Close'].iloc[0]
-    final_price = market_data['Close'].iloc[-1]
-    num_days = (market_data.index[-1] - market_data.index[0]).days
-    years = num_days / 365.25
-    annualized_market_return = (final_price / initial_price) ** (1 / years) - 1
-    current_risk_free = get_risk_free_rate()
-    mrp = annualized_market_return - current_risk_free
-    if mrp < 0:
-        mrp = 0.05
-    logger.debug(f"MRP: {mrp}")
-    return mrp
-
-
-################################################################
-# MULTI-AGENT ADJUSTMENTS (Now using GPT-4 for advanced tasks)
-################################################################
-
-def adjust_for_sector(sector):
-    logger.debug(f"Adjusting for sector: {sector}")
-    prompt = f"""
-As a financial analyst specializing in the {sector} sector...
-"""
-    assistant_reply = call_openai_api(prompt)
-    try:
-        cleaned_reply = clean_json(assistant_reply)
-        cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
-        json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
-        if json_match:
-            adjusted_assumptions = json.loads(json_match.group())
-            if isinstance(adjusted_assumptions, dict):
-                logger.debug(f"Sector adjustments: {adjusted_assumptions}")
-                return adjusted_assumptions
-            else:
-                logger.error("Adjusted assumptions is not a dictionary.")
-                return {}
-        else:
-            logger.error("Failed to extract JSON from the assistant's reply.")
-            return {}
-    except json.JSONDecodeError:
-        logger.exception("Error parsing JSON in adjust_for_sector")
-        return {}
-
-
-def adjust_for_industry(industry):
-    logger.debug(f"Adjusting for industry: {industry}")
-    prompt = f"""
-As a financial analyst specializing in the {industry} industry...
-"""
-    assistant_reply = call_openai_api(prompt)
-    try:
-        cleaned_reply = clean_json(assistant_reply)
-        cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
-        json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
-        if json_match:
-            adjusted_assumptions = json.loads(json_match.group())
-            if isinstance(adjusted_assumptions, dict):
-                logger.debug(f"Industry adjustments: {adjusted_assumptions}")
-                return adjusted_assumptions
-            else:
-                logger.error("Adjusted assumptions is not a dictionary.")
-                return {}
-        else:
-            logger.error("Failed to extract JSON.")
-            return {}
-    except json.JSONDecodeError:
-        logger.exception("Error parsing JSON in adjust_for_industry")
-        return {}
-
-
-def adjust_for_sub_industry(sub_industry):
-    logger.debug(f"Adjusting for sub_industry: {sub_industry}")
-    prompt = f"""
-As a financial analyst specializing in the {sub_industry} sub-industry...
-"""
-    assistant_reply = call_openai_api(prompt)
-    try:
-        cleaned_reply = clean_json(assistant_reply)
-        cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
-        json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
-        if json_match:
-            adjusted_assumptions = json.loads(json_match.group())
-            if isinstance(adjusted_assumptions, dict):
-                logger.debug(f"Sub-industry adjustments: {adjusted_assumptions}")
-                return adjusted_assumptions
-            else:
-                logger.error("Adjusted assumptions is not a dictionary.")
-                return {}
-        else:
-            logger.error("Failed to extract JSON.")
-            return {}
-    except json.JSONDecodeError:
-        logger.exception("Error parsing JSON in adjust_for_sub_industry")
-        return {}
-
-
-def adjust_for_scenario(scenario):
-    logger.debug(f"Adjusting for scenario: {scenario}")
-    prompt = f"""
-As a financial analyst, provide financial assumptions for a '{scenario}' scenario...
-"""
-    assistant_reply = call_openai_api(prompt)
-    try:
-        cleaned_reply = clean_json(assistant_reply)
-        cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
-        json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
-        if json_match:
-            adjusted_assumptions = json.loads(json_match.group())
-            if isinstance(adjusted_assumptions, dict):
-                logger.debug(f"Scenario adjustments: {adjusted_assumptions}")
-                return adjusted_assumptions
-            else:
-                logger.error("Adjusted assumptions is not a dictionary.")
-                return {}
-        else:
-            logger.error("Failed to extract JSON.")
-            return {}
-    except json.JSONDecodeError:
-        logger.exception("Error parsing JSON in adjust_for_scenario")
-        return {}
-
-
-def adjust_for_company(stock_ticker):
-    logger.debug(f"Adjusting for company: {stock_ticker}")
-    try:
-        company = yf.Ticker(stock_ticker)
-        info = company.info
-        company_name = info.get('longName', 'the company')
-        prompt = f"""
-As a financial analyst, analyze {company_name} ({stock_ticker})...
-"""
-        assistant_reply = call_openai_api(prompt)
-        cleaned_reply = clean_json(assistant_reply)
-        cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
-        json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
-        if json_match:
-            adjusted_assumptions = json.loads(json_match.group())
-            if isinstance(adjusted_assumptions, dict):
-                logger.debug(f"Company adjustments: {adjusted_assumptions}")
-                return adjusted_assumptions
-            else:
-                logger.error("Adjusted assumptions is not a dictionary.")
-                return {}
-        else:
-            logger.error("Failed to extract JSON.")
-            return {}
-    except json.JSONDecodeError:
-        logger.exception("Error parsing JSON in adjust_for_company")
-        return {}
-    except Exception as e:
-        logger.exception(f"Error adjusting for company {stock_ticker}")
-        return {}
-
-
-def adjust_based_on_feedback(sector, industry, sub_industry, scenario):
-    logger.debug("Adjusting based on feedback")
-    feedback_summary = summarize_feedback(sector, industry, sub_industry, scenario)
-    prompt = f"""
-You have received user feedback...
-{feedback_summary}
-"""
-    assistant_reply = call_openai_api(prompt)
-    try:
-        cleaned_reply = clean_json(assistant_reply)
-        cleaned_reply = re.sub(r'"WACC"|\'WACC\'', '"wacc"', cleaned_reply, flags=re.IGNORECASE)
-        json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
-        if json_match:
-            adjusted_assumptions = json.loads(json_match.group())
-            if isinstance(adjusted_assumptions, dict):
-                logger.debug(f"Feedback adjustments: {adjusted_assumptions}")
-                return adjusted_assumptions
-            else:
-                logger.error("Adjusted assumptions is not a dictionary.")
-                return {}
-        else:
-            logger.error("Failed to extract JSON.")
-            return {}
-    except json.JSONDecodeError:
-        logger.exception("Error parsing JSON in adjust_based_on_feedback")
-        return {}
-
-
-def adjust_based_on_sentiment(stock_ticker):
-    logger.debug(f"Adjusting based on sentiment for {stock_ticker}")
-    try:
-        company = yf.Ticker(stock_ticker)
-        info = company.info
-        company_name = info.get('longName', '')
-
-        if not company_name:
-            logger.warning(f"Company name not found for ticker {stock_ticker}")
-            return {}
-
-        articles = newsapi.get_everything(q=company_name, language='en', sort_by='relevancy', page_size=100)
-
-        if 'articles' not in articles or len(articles['articles']) == 0:
-            logger.warning(f"No news articles found for {company_name}")
-            return {}
-
-        sentiment_scores = []
-        for article in articles['articles']:
-            content = article.get('content', '')
-            if content:
-                blob = TextBlob(content)
-                sentiment_scores.append(blob.sentiment.polarity)
-
-        if not sentiment_scores:
-            logger.warning(f"No sentiment scores calculated for {company_name}")
-            return {}
-
-        aggregate_sentiment = sum(sentiment_scores) / len(sentiment_scores)
-        adjusted_assumptions = {}
-
-        if aggregate_sentiment > 0.1:
-            adjusted_assumptions['revenue_growth_rate'] = 0.07
-            adjusted_assumptions['wacc'] = 0.09
-        elif aggregate_sentiment < -0.1:
-            adjusted_assumptions['revenue_growth_rate'] = 0.03
-            adjusted_assumptions['wacc'] = 0.11
-        else:
-            adjusted_assumptions['revenue_growth_rate'] = 0.05
-            adjusted_assumptions['wacc'] = 0.10
-
-        logger.debug(f"Sentiment adjustments: {adjusted_assumptions}")
-        return adjusted_assumptions
-
-    except Exception as e:
-        logger.exception(f"Error in adjust_based_on_sentiment for {stock_ticker}")
-        return {}
-
-
-def adjust_based_on_historical_data(stock_ticker):
-    logger.debug(f"Adjusting based on historical data for {stock_ticker}")
-    try:
-        company = yf.Ticker(stock_ticker)
-        income_statement = company.financials
-        if income_statement.empty:
-            logger.warning(f"No financial data available for {stock_ticker}.")
-            return {}
-
-        required_fields = [
-            'Total Revenue',
-            'Income Before Tax',
-            'Income Tax Expense',
-            'Cost Of Revenue',
-            'Selling General Administrative'
-        ]
-        for field in required_fields:
-            if field not in income_statement.index:
-                logger.warning(f"Field '{field}' not found in financial data for {stock_ticker}.")
-                return {}
-
-        revenue = income_statement.loc['Total Revenue'].dropna()
-        if len(revenue) < 2:
-            logger.warning(f"Not enough revenue data to calculate growth rates for {stock_ticker}.")
-            return {}
-
-        revenue_growth_rates = revenue.pct_change().dropna()
-        average_growth_rate = revenue_growth_rates.mean()
-
-        income_before_tax = income_statement.loc['Income Before Tax']
-        income_tax_expense = income_statement.loc['Income Tax Expense']
-        tax_rates = income_tax_expense / income_before_tax
-        tax_rates = tax_rates.replace([np.inf, -np.inf], np.nan).dropna()
-        average_tax_rate = tax_rates.mean()
-
-        cogs = income_statement.loc['Cost Of Revenue']
-        cogs_pct = (cogs / revenue).mean()
-
-        opex = income_statement.loc['Selling General Administrative']
-        opex_pct = (opex / revenue).mean()
-
-        beta = company.info.get('beta')
-        if beta is None:
-            beta = 1.0
-
-        risk_free_rate = 0.02
-        market_risk_premium = 0.05
-        cost_of_equity = risk_free_rate + beta * market_risk_premium
-        average_wacc = cost_of_equity
-
-        adjusted_assumptions = {
-            'revenue_growth_rate': average_growth_rate,
-            'tax_rate': average_tax_rate,
-            'cogs_pct': cogs_pct,
-            'operating_expenses_pct': opex_pct,
-            'wacc': average_wacc,
-        }
-
-        adjusted_assumptions = validate_assumptions(adjusted_assumptions)
-        logger.debug(f"Historical data adjustments: {adjusted_assumptions}")
-        return adjusted_assumptions
-    except Exception as e:
-        logger.exception(f"Error adjusting based on historical data for {stock_ticker}")
-        return {}
-
-
-################################################################
-# AGENT WEIGHTING & VALIDATION
-################################################################
-
-def get_agent_importance_weights():
-    logger.debug("Getting agent importance weights")
-    prompt = """
-You are a financial expert. Assign an importance weight between 0 and 1...
-"""
-    assistant_reply = call_openai_api(prompt)
-    agent_weights = parse_json_from_reply(assistant_reply)
-    if agent_weights:
-        total_weight = sum(agent_weights.values())
-        if total_weight > 0:
-            agent_weights = {k: v / total_weight for k, v in agent_weights.items()}
-    else:
-        agent_weights = {}
-    logger.debug(f"Agent importance weights: {agent_weights}")
-    return agent_weights
-
-
-def validation_agent(final_adjustments, sector, industry, sub_industry, scenario, stock_ticker, agent_adjustments):
-    logger.debug("Running validation agent")
-    prompt = f"""
-You are a Validation Agent tasked with reviewing and validating the financial assumptions...
-"""
-    assistant_reply = call_openai_api(prompt)
-    response = parse_json_from_reply(assistant_reply)
-    if response:
-        reasoning = response.get("reasoning", "")
-        confidence_scores = response.get("confidence_scores", {})
-        logger.debug(f"Validation reasoning: {reasoning}")
-        logger.debug(f"Confidence scores: {confidence_scores}")
-        return reasoning, confidence_scores
-    else:
-        return "", {}
-
-
-def compute_final_adjustments_with_agents(agent_adjustments, agent_importance_weights, agent_confidence_scores):
-    logger.debug("Computing final adjustments with agents")
-    assumptions = [
-        'revenue_growth_rate',
-        'tax_rate',
-        'cogs_pct',
-        'wacc',
-        'terminal_growth_rate',
-        'operating_expenses_pct'
-    ]
-    final_adjustments = {}
-    for assumption in assumptions:
-        weighted_sum = 0
-        total_weight = 0
-        for agent, adjustments in agent_adjustments.items():
-            agent_value = adjustments.get(assumption)
-            if agent_value is not None:
-                importance_weight = agent_importance_weights.get(agent, 0)
-                confidence_score = agent_confidence_scores.get(agent, 1)
-                final_weight = importance_weight * confidence_score
-                weighted_sum += final_weight * agent_value
-                total_weight += final_weight
-        if total_weight > 0:
-            final_adjustments[assumption] = weighted_sum / total_weight
-        else:
-            final_adjustments[assumption] = 0
-    logger.debug(f"Final adjustments: {final_adjustments}")
-    return final_adjustments
-
-
-def pre_validation_sanity_check(adjusted_assumptions, historical_wacc, historical_growth, stock_ticker):
-    logger.debug("Running pre-validation sanity check")
-    prompt = f"""
-You are a financial analyst with deep knowledge of {stock_ticker}.
-Proposed assumptions:
-{json.dumps(adjusted_assumptions, indent=2)}
-
-Historical WACC ~ {historical_wacc}, Historical revenue growth ~ {historical_growth}.
-Check if assumptions are reasonable...
-"""
-    assistant_reply = call_openai_api(prompt)
-    corrected = parse_json_from_reply(assistant_reply)
-    if corrected:
-        corrected = validate_assumptions(corrected)
-        logger.debug(f"Sanity check corrected assumptions: {corrected}")
-        return corrected
-    else:
-        return adjusted_assumptions
-
-
-################################################################
-# ALPHA VANTAGE-BASED FLOW
-################################################################
-
 def parse_alpha_vantage_json(income_json, balance_json, cash_flow_json):
-    """
-    Converts the 'annualReports' from each JSON object into Pandas DataFrames,
-    then attempts to parse numeric fields.
-    """
     income_df = pd.DataFrame(income_json["annualReports"])
     balance_df = pd.DataFrame(balance_json["annualReports"])
     cash_flow_df = pd.DataFrame(cash_flow_json["annualReports"])
@@ -876,126 +251,514 @@ def parse_alpha_vantage_json(income_json, balance_json, cash_flow_json):
 
     return income_df, balance_df, cash_flow_df
 
-def generate_base_case_assumptions(income_df, balance_df, cash_flow_df):
+################################################################
+# MULTI-AGENT LOGIC
+################################################################
+
+def adjust_for_scenario(scenario):
+    logger.debug(f"Adjusting for scenario: {scenario}")
+    prompt = f"""
+As a financial analyst, provide financial assumptions for a '{scenario}' scenario.
+Return valid JSON:
+{{
+  "revenue_growth_rate": ...,
+  "tax_rate": ...,
+  "cogs_pct": ...,
+  "wacc": ...,
+  "terminal_growth_rate": ...,
+  "operating_expenses_pct": ...
+}}
+"""
+    assistant_reply = call_openai_api(prompt)
+    c = clean_json(assistant_reply)
+    c = re.sub(r'"WACC"|\'WACC\'', '"wacc"', c, flags=re.IGNORECASE)
+    m = re.search(r'\{.*\}', c, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group())
+        except:
+            return {}
+    return {}
+
+def adjust_for_sector(sector):
+    if sector.lower()=="unknown":
+        return {}
+    prompt = f"""
+As a financial analyst specializing in the {sector} sector,
+return a JSON with:
+{{
+  "revenue_growth_rate": ...,
+  "tax_rate": ...,
+  "cogs_pct": ...,
+  "wacc": ...,
+  "terminal_growth_rate": ...,
+  "operating_expenses_pct": ...
+}}
+"""
+    rep = call_openai_api(prompt)
+    c = clean_json(rep)
+    c = re.sub(r'"WACC"|\'WACC\'', '"wacc"', c, flags=re.IGNORECASE)
+    m = re.search(r'\{.*\}', c, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group())
+        except:
+            return {}
+    return {}
+
+def adjust_for_industry(industry):
+    if industry.lower()=="unknown":
+        return {}
+    prompt = f"""
+As a financial analyst in the {industry} industry...
+Return JSON for:
+revenue_growth_rate, tax_rate, cogs_pct, wacc, terminal_growth_rate, operating_expenses_pct
+"""
+    r = call_openai_api(prompt)
+    c = clean_json(r)
+    c = re.sub(r'"WACC"|\'WACC\'', '"wacc"', c, flags=re.IGNORECASE)
+    m = re.search(r'\{.*\}', c, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group())
+        except:
+            return {}
+    return {}
+
+def adjust_for_sub_industry(sub_industry):
+    if sub_industry.lower()=="unknown":
+        return {}
+    prompt = f"""
+As a financial analyst in the {sub_industry} sub-industry...
+Return JSON for revenue_growth_rate, tax_rate, cogs_pct, wacc, terminal_growth_rate, operating_expenses_pct
+"""
+    r = call_openai_api(prompt)
+    c = clean_json(r)
+    c = re.sub(r'"WACC"|\'WACC\'', '"wacc"', c, flags=re.IGNORECASE)
+    m = re.search(r'\{.*\}', c, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group())
+        except:
+            return {}
+    return {}
+
+def adjust_for_company(stock_ticker):
     """
-    Automatically decides on a base-case set of assumptions,
-    e.g., 5% growth, 10% WACC, 21% tax rate, etc.
-    Uses the first row in income_df for totalRevenue if present.
+    Dynamically fetches the company's overview from Alpha Vantage, then calls GPT
+    with the name, industry, and a short business summary to produce company-specific assumptions.
     """
-    if "totalRevenue" in income_df.columns and len(income_df) > 0:
-        latest_revenue = float(income_df["totalRevenue"].iloc[0])
+    if not stock_ticker:
+        logger.warning("No stock ticker provided; cannot run company agent.")
+        return {}
+
+    ALPHAVANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
+    if not ALPHAVANTAGE_API_KEY:
+        logger.warning("Alpha Vantage API key not found. Returning empty from company agent.")
+        return {}
+
+    try:
+        url_overview = f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={stock_ticker}&apikey={ALPHAVANTAGE_API_KEY}"
+        r = requests.get(url_overview, timeout=10)
+        data_overview = r.json()
+
+        if not data_overview or "Symbol" not in data_overview:
+            logger.warning(f"No overview data available for {stock_ticker}. Using minimal fallback.")
+            company_name = stock_ticker
+            industry = "Unknown"
+            business_summary = ""
+        else:
+            company_name = data_overview.get("Name", stock_ticker)
+            industry = data_overview.get("Industry", "Unknown Industry")
+            business_summary = data_overview.get("Description", "")
+
+        prompt = f"""
+We have {company_name} (ticker: {stock_ticker}), operating in the industry: {industry}.
+Business Summary:
+{business_summary}
+
+As an expert financial analyst, propose recommended assumptions in JSON:
+{{
+  "revenue_growth_rate": ...,
+  "tax_rate": ...,
+  "cogs_pct": ...,
+  "wacc": ...,
+  "terminal_growth_rate": ...,
+  "operating_expenses_pct": ...
+}}
+Use the above context to tailor these assumptions. No placeholders.
+"""
+
+        assistant_reply = call_openai_api(prompt)
+        cleaned_reply = clean_json(assistant_reply)
+        json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
+        if json_match:
+            try:
+                adjusted_assumptions = json.loads(json_match.group())
+                if isinstance(adjusted_assumptions, dict):
+                    return validate_assumptions(adjusted_assumptions)
+                else:
+                    logger.error("Company agent: returned data is not a dict.")
+                    return {}
+            except json.JSONDecodeError:
+                logger.exception("Error parsing JSON in adjust_for_company")
+                return {}
+        else:
+            logger.error("Failed to extract JSON from the company agent's LLM reply.")
+            return {}
+    except Exception as e:
+        logger.exception(f"Error fetching or parsing company overview for {stock_ticker}: {e}")
+        return {}
+
+def adjust_based_on_feedback(sector, industry, sub_industry, scenario):
+    fb = summarize_feedback(sector, industry, sub_industry, scenario)
+    if "No relevant feedback" in fb:
+        return {}
+    prompt = f"""
+User feedback summary: {fb}
+Return JSON for:
+revenue_growth_rate, tax_rate, cogs_pct, wacc, terminal_growth_rate, operating_expenses_pct
+"""
+    rep = call_openai_api(prompt)
+    c = clean_json(rep)
+    c = re.sub(r'"WACC"|\'WACC\'', '"wacc"', c, flags=re.IGNORECASE)
+    m = re.search(r'\{.*\}', c, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group())
+        except:
+            return {}
+    return {}
+
+def adjust_based_on_sentiment(stock_ticker):
+    articles = newsapi.get_everything(q=stock_ticker, language='en', sort_by='relevancy', page_size=25)
+    if 'articles' not in articles or len(articles['articles'])==0:
+        return {}
+    sentiments=[]
+    for a in articles['articles']:
+        content = a.get('content','')
+        if content:
+            tb = TextBlob(content)
+            sentiments.append(tb.sentiment.polarity)
+    if not sentiments:
+        return {}
+    avg = sum(sentiments)/len(sentiments)
+    out={}
+    if avg>0.1:
+        out["revenue_growth_rate"] = 0.07
+        out["wacc"] = 0.09
+    elif avg<-0.1:
+        out["revenue_growth_rate"] = 0.03
+        out["wacc"] = 0.11
     else:
-        latest_revenue = 1000000.0  # fallback if missing
+        out["revenue_growth_rate"] = 0.05
+        out["wacc"] = 0.10
+    return out
 
-    base_assumptions = {
-        "revenue_growth_rate": 0.05,
-        "wacc": 0.10,
-        "tax_rate": 0.21,
-        "operating_expenses_pct": 0.20,
-        "cogs_pct": 0.60,
-        "terminal_growth_rate": 0.02
-    }
-    return latest_revenue, base_assumptions
+def adjust_based_on_historical_data(stock_ticker):
+    """
+    Fetches actual annualReports from Alpha Vantage, computes average revenue growth,
+    tax rate, cogs%, opex%, and a simple WACC from Beta. All fully dynamic.
+    """
+    if not stock_ticker:
+        logger.warning("No stock ticker provided to historical_data_agent.")
+        return {}
 
+    ALPHAVANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
+    if not ALPHAVANTAGE_API_KEY:
+        logger.warning("No alpha vantage API key. Returning empty from historical_data_agent.")
+        return {}
 
+    try:
+        url_is = f"https://www.alphavantage.co/query?function=INCOME_STATEMENT&symbol={stock_ticker}&apikey={ALPHAVANTAGE_API_KEY}"
+        resp_is = requests.get(url_is, timeout=10)
+        data_is = resp_is.json()
+        if "annualReports" not in data_is:
+            logger.warning(f"Missing annualReports in income statement for {stock_ticker}.")
+            return {}
+
+        annual_reports = data_is["annualReports"]
+        # Reverse to oldest->newest
+        annual_reports.reverse()
+
+        revenues, ibt_list, tax_list, cogs_list, sga_list = [], [], [], [], []
+        for ar in annual_reports:
+            rev = float(ar.get("totalRevenue", "0") or 0)
+            ibt = float(ar.get("incomeBeforeTax", "0") or 0)
+            tx  = float(ar.get("incomeTaxExpense", "0") or 0)
+            cogs= float(ar.get("costOfRevenue", "0") or 0)
+            sga = float(ar.get("sellingGeneralAdministrative", "0") or 0)
+            revenues.append(rev)
+            ibt_list.append(ibt)
+            tax_list.append(tx)
+            cogs_list.append(cogs)
+            sga_list.append(sga)
+
+        growths=[]
+        for i in range(1,len(revenues)):
+            if revenues[i-1]>0:
+                g=(revenues[i]-revenues[i-1])/revenues[i-1]
+                growths.append(g)
+        avg_growth = np.mean(growths) if growths else 0.05
+
+        valid_tax_rates=[]
+        for ibt, tx in zip(ibt_list, tax_list):
+            if ibt!=0:
+                valid_tax_rates.append(tx/ibt)
+        avg_tax = np.mean(valid_tax_rates) if valid_tax_rates else 0.21
+
+        valid_cogs=[]
+        for rv, cg in zip(revenues, cogs_list):
+            if rv>0:
+                valid_cogs.append(cg/rv)
+        avg_cogs = np.mean(valid_cogs) if valid_cogs else 0.60
+
+        valid_opex=[]
+        for rv, sga in zip(revenues, sga_list):
+            if rv>0:
+                valid_opex.append(sga/rv)
+        avg_opex = np.mean(valid_opex) if valid_opex else 0.20
+
+        # fetch Beta from OVERVIEW
+        url_ov = f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={stock_ticker}&apikey={ALPHAVANTAGE_API_KEY}"
+        ov_resp = requests.get(url_ov, timeout=10)
+        data_ov = ov_resp.json()
+        beta = 1.0
+        if "Beta" in data_ov:
+            try:
+                b_val = float(data_ov["Beta"])
+                beta = b_val if b_val>0 else 1.0
+            except:
+                pass
+        risk_free_rate=0.02
+        mrp=0.05
+        cost_of_equity=risk_free_rate + beta*mrp
+        average_wacc= cost_of_equity
+
+        adjusted_assumptions={
+            "revenue_growth_rate":avg_growth,
+            "tax_rate":avg_tax,
+            "cogs_pct":avg_cogs,
+            "operating_expenses_pct":avg_opex,
+            "wacc":average_wacc,
+            "terminal_growth_rate":0.02
+        }
+        validated=validate_assumptions(adjusted_assumptions)
+        return validated
+    except Exception as e:
+        logger.exception(f"Error in historical_data_agent for {stock_ticker}: {e}")
+        return {}
+
+################################################################
+# Agent Weighting + Validation
+################################################################
+def get_agent_importance_weights():
+    prompt = """
+You are a financial expert. Assign an importance weight between 0 and 1 
+for each agent in JSON:
+{
+  "scenario_agent": 0.15,
+  "sector_agent": 0.10,
+  "industry_agent": 0.10,
+  "sub_industry_agent": 0.10,
+  "company_agent": 0.10,
+  "feedback_agent": 0.05,
+  "sentiment_agent": 0.05,
+  "historical_data_agent": 0.10,
+  "user_agent": 0.20
+}
+We will normalize.
+"""
+    rep = call_openai_api(prompt)
+    d = parse_json_from_reply(rep)
+    if not d:
+        d={}
+    s=sum(d.values())
+    if s>0:
+        for k in d:
+            d[k] = d[k]/s
+    return d
+
+def validation_agent(final_adjustments, sector, industry, sub_industry, scenario, stock_ticker, agent_adjustments):
+    prompt = f"""
+You are a Validation Agent for {stock_ticker}, scenario={scenario}, sector={sector}, industry={industry}, sub_industry={sub_industry}.
+Agent outputs:
+{json.dumps(agent_adjustments, indent=2)}
+
+Return JSON:
+{{
+  "reasoning":"some text",
+  "confidence_scores": {{
+    "scenario_agent": 0.8,
+    ...
+  }}
+}}
+"""
+    r = call_openai_api(prompt)
+    j = parse_json_from_reply(r)
+    if j:
+        return j.get("reasoning",""), j.get("confidence_scores",{})
+    return "", {}
+
+def compute_final_adjustments_with_agents(agent_adjustments, agent_importance_weights, agent_confidence_scores):
+    assumptions = [
+        'revenue_growth_rate',
+        'tax_rate',
+        'cogs_pct',
+        'wacc',
+        'terminal_growth_rate',
+        'operating_expenses_pct'
+    ]
+    final={}
+    for a in assumptions:
+        ws=0.0
+        tw=0.0
+        for agent_name,adjusts in agent_adjustments.items():
+            if a in adjusts:
+                val = adjusts[a]
+                iw = agent_importance_weights.get(agent_name,0)
+                cs = agent_confidence_scores.get(agent_name,1)
+                w=iw*cs
+                ws+= w* val
+                tw+= w
+        if tw>0:
+            final[a] = ws/tw
+        else:
+            final[a] = 0
+    return final
+
+################################################################
+# /base_case
+################################################################
 @system3_bp.route('/base_case', methods=['GET'])
 def get_base_case():
-    """
-    GET /system3/base_case?ticker=XYZ
-    Fetches the ticker from the query param, pulls statements from Alpha Vantage,
-    then runs a base-case DCF using a default set of assumptions (5% growth, 10% WACC, etc.).
-    Returns JSON with 'intrinsic_value_per_share', 'assumptions_used', etc.
-    """
     try:
-        ticker = request.args.get('ticker', 'MSFT')
-        logger.info(f"Received ticker for base_case: {ticker}")
-        # 1) Fetch statements from Alpha Vantage
-        income_json, balance_json, cash_flow_json = fetch_all_statements(ticker)
-        # 2) Parse into DataFrames
-        income_df, balance_df, cash_flow_df = parse_alpha_vantage_json(income_json, balance_json, cash_flow_json)
-        # 3) Generate base-case assumptions
-        latest_revenue, base_assumptions = generate_base_case_assumptions(income_df, balance_df, cash_flow_df)
-        # 4) Build the DCF model
-        initial_values = {"Revenue": latest_revenue}
-        dcf_model = DCFModel(initial_values, base_assumptions)
-        dcf_model.run_model()
-        results = dcf_model.get_results()
+        ticker = request.args.get('ticker','MSFT')
+        scenario = "Neutral"  # base case scenario if none yet
+        logger.info(f"base_case => ticker={ticker}, scenario={scenario}")
 
-        return jsonify({
-            "intrinsic_value_per_share": results["intrinsic_value_per_share"],
-            "assumptions_used": base_assumptions,
-            "dcf_model_results": results
-        }), 200
-
-    except AlphaVantageAPIError as e:
-        logger.exception(f"AlphaVantageAPIError: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    except Exception as e:
-        logger.exception(f"Unexpected error in get_base_case: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@system3_bp.route('/calculate_alpha', methods=['POST'])
-def calculate_custom_scenario():
-    """
-    Accepts JSON with a ticker plus custom assumptions or scenario,
-    fetches Alpha Vantage data, and returns an updated DCF result.
-    """
-    try:
-        data = request.get_json()
-        ticker = data.get('ticker', 'MSFT')
-
-        # 1) Pull from Alpha Vantage
-        income_json, balance_json, cash_flow_json = fetch_all_statements(ticker)
-        income_df, balance_df, cash_flow_df = parse_alpha_vantage_json(income_json, balance_json, cash_flow_json)
-
-        # 2) Decide or read user-supplied assumptions
-        wacc = float(data.get("wacc", 0.10))
-        rev_growth = float(data.get("revenue_growth_rate", 0.05))
-        cogs_pct = float(data.get("cogs_pct", 0.60))
-        opex_pct = float(data.get("operating_expenses_pct", 0.20))
-        tax_rate = float(data.get("tax_rate", 0.21))
-        term_growth = float(data.get("terminal_growth_rate", 0.02))
-
-        # 3) Latest revenue from the income_df or fallback
-        if "totalRevenue" in income_df.columns and len(income_df) > 0:
-            latest_revenue = float(income_df["totalRevenue"].iloc[0])
+        # 1) fetch alpha vantage
+        inc_json, bal_json, cf_json = fetch_all_statements(ticker)
+        inc_df, bal_df, cf_df = parse_alpha_vantage_json(inc_json, bal_json, cf_json)
+        if "totalRevenue" in inc_df.columns and len(inc_df)>0:
+            latest_revenue = float(inc_df["totalRevenue"].iloc[0])
         else:
-            latest_revenue = 1000000.0
+            latest_revenue = 1_000_000.0
 
-        final_assumptions = {
-            "revenue_growth_rate": rev_growth,
-            "wacc": wacc,
-            "tax_rate": tax_rate,
-            "operating_expenses_pct": opex_pct,
-            "cogs_pct": cogs_pct,
-            "terminal_growth_rate": term_growth
+        # 2) gather agent outputs
+        scenario_out = adjust_for_scenario(scenario)
+        sector_out = {}
+        industry_out = {}
+        sub_industry_out = {}
+        company_out = adjust_for_company(ticker)
+        feedback_out = {}
+        sentiment_out = adjust_based_on_sentiment(ticker)
+        historical_out = adjust_based_on_historical_data(ticker)
+
+        agent_adjustments = {
+            "scenario_agent": scenario_out,
+            "sector_agent": sector_out,
+            "industry_agent": industry_out,
+            "sub_industry_agent": sub_industry_out,
+            "company_agent": company_out,
+            "feedback_agent": feedback_out,
+            "sentiment_agent": sentiment_out,
+            "historical_data_agent": historical_out
         }
 
+        # 3) weighting
+        w = get_agent_importance_weights()
+        reasoning, conf = validation_agent({}, "Unknown","Unknown","Unknown", scenario, ticker, agent_adjustments)
+        merged = compute_final_adjustments_with_agents(agent_adjustments, w, conf)
+        final_assumptions = validate_assumptions(merged)
+
         # 4) DCF
-        dcf_model = DCFModel({"Revenue": latest_revenue}, final_assumptions)
-        dcf_model.run_model()
-        results = dcf_model.get_results()
+        dcf = DCFModel({"Revenue":latest_revenue}, final_assumptions)
+        dcf.run_model()
+        results = dcf.get_results()
 
         return jsonify({
-            "intrinsic_value_per_share": results["intrinsic_value_per_share"],
-            "assumptions_used": final_assumptions
-        }), 200
-
+            "intrinsic_value_per_share":results["intrinsic_value_per_share"],
+            "final_assumptions":final_assumptions,
+            "dcf_model_results":results,
+            "scenario":scenario
+        }),200
     except AlphaVantageAPIError as e:
-        logger.exception(f"AlphaVantageAPIError: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        logger.exception("AlphaVantageAPIError: %s", e)
+        return jsonify({"error":str(e)}),500
     except Exception as e:
-        logger.exception(f"Unexpected error in calculate_custom_scenario: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
+        logger.exception("Error in get_base_case: %s", e)
+        return jsonify({"error":str(e)}),500
 
 ################################################################
-# DIRECT FIX: HANDLE CSV UPLOADS IN /CALCULATE (SYSTEM3)
+# /calculate_alpha
 ################################################################
+@system3_bp.route('/calculate_alpha', methods=['POST'])
+def calculate_custom_scenario():
+    try:
+        data = request.get_json()
+        ticker = data.get("ticker","MSFT")
+        scenario = data.get("scenario","Neutral")
 
+        inc_json, bal_json, cf_json = fetch_all_statements(ticker)
+        inc_df, bal_df, cf_df = parse_alpha_vantage_json(inc_json, bal_json, cf_json)
+        if "totalRevenue" in inc_df.columns and len(inc_df)>0:
+            latest_revenue = float(inc_df["totalRevenue"].iloc[0])
+        else:
+            latest_revenue = 1_000_000.0
+
+        scenario_out = adjust_for_scenario(scenario)
+        sector_out = {}
+        industry_out = {}
+        sub_industry_out = {}
+        company_out = adjust_for_company(ticker)
+        feedback_out = {}
+        sentiment_out = adjust_based_on_sentiment(ticker)
+        historical_out = adjust_based_on_historical_data(ticker)
+
+        # user_agent
+        user_agent = {}
+        for k in ["revenue_growth_rate","tax_rate","cogs_pct","wacc","terminal_growth_rate","operating_expenses_pct"]:
+            if k in data:
+                user_agent[k] = float(data[k])
+
+        agent_adjustments = {
+            "scenario_agent": scenario_out,
+            "sector_agent": sector_out,
+            "industry_agent": industry_out,
+            "sub_industry_agent": sub_industry_out,
+            "company_agent": company_out,
+            "feedback_agent": feedback_out,
+            "sentiment_agent": sentiment_out,
+            "historical_data_agent": historical_out,
+            "user_agent": user_agent
+        }
+
+        w = get_agent_importance_weights()
+        reasoning, conf = validation_agent({}, "Unknown","Unknown","Unknown", scenario, ticker, agent_adjustments)
+        merged = compute_final_adjustments_with_agents(agent_adjustments, w, conf)
+        final = validate_assumptions(merged)
+
+        dcf = DCFModel({"Revenue":latest_revenue}, final)
+        dcf.run_model()
+        results = dcf.get_results()
+
+        return jsonify({
+            "intrinsic_value_per_share":results["intrinsic_value_per_share"],
+            "final_assumptions":final,
+            "scenario":scenario
+        }),200
+    except AlphaVantageAPIError as e:
+        logger.exception("AlphaVantageAPIError: %s", e)
+        return jsonify({"error":str(e)}),500
+    except Exception as e:
+        logger.exception("Error in calculate_custom_scenario: %s", e)
+        return jsonify({"error":str(e)}),500
+
+################################################################
+# CSV-based /calculate
+################################################################
 def process_financial_csv(file_path, csv_name):
-    """Replicate your system1 CSV reading logic (e.g. parse date columns, numeric data, etc.)."""
     try:
         df = pd.read_csv(file_path, index_col=0, thousands=',', quotechar='"')
         df.columns = df.columns.str.strip()
@@ -1004,11 +767,11 @@ def process_financial_csv(file_path, csv_name):
             df.drop(columns=['ttm'], inplace=True)
         df = df.transpose()
         df.reset_index(inplace=True)
-        df.rename(columns={'index': 'Date'}, inplace=True)
+        df.rename(columns={'index':'Date'}, inplace=True)
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
         df = df[df['Date'].notnull()]
         for col in df.columns:
-            if col != 'Date':
+            if col!='Date':
                 df[col] = pd.to_numeric(df[col], errors='coerce')
         df.fillna(0, inplace=True)
         return df
@@ -1017,127 +780,132 @@ def process_financial_csv(file_path, csv_name):
         return None
 
 def standardize_columns(df, column_mappings, csv_name):
-    """Similar to system1 approach: rename recognized columns, return leftover unmapped."""
     df_columns = df.columns.tolist()
-    new_columns = {}
+    new_columns={}
     for standard_name, possible_names in column_mappings.items():
         for name in possible_names:
             if name in df_columns:
-                new_columns[name] = standard_name
+                new_columns[name]=standard_name
                 break
-
     df.rename(columns=new_columns, inplace=True)
-    unmapped_cols = []
+    unmapped_cols=[]
     for col in df_columns:
         if col not in new_columns.keys() and col in df.columns:
             unmapped_cols.append(col)
-
     return df, unmapped_cols
 
-income_columns = {
-    "Revenue": ["Revenue", "TotalRevenue", "Total Revenue", "Sales"],
-    "Net Income": ["NetIncome", "Net Income", "Net Profit", "Profit After Tax"],
-    "Cost of Goods Sold (COGS)": ["COGS", "CostOfGoodsSold", "Cost Of Goods Sold"],
-    "Selling, General & Administrative (SG&A)": ["SGA", "SG&A", "Selling Gen Admin"],
-    "Depreciation & Amortization": ["DepreciationAndAmortization", "DepAndAmort", "Depreciation & Amortization"],
-    "Interest Expense": ["InterestExpense", "Interest Exp"],
-    "Income Tax Expense": ["IncomeTaxExpense", "TaxExpense", "Income Tax"]
+income_columns={
+    "Revenue":["Revenue","TotalRevenue","Total Revenue","Sales"],
+    "Net Income":["NetIncome","Net Income","Net Profit","Profit After Tax"],
+    "Cost of Goods Sold (COGS)":["COGS","CostOfGoodsSold","Cost Of Goods Sold"],
+    "Selling, General & Administrative (SG&A)":["SGA","SG&A","Selling Gen Admin"],
+    "Depreciation & Amortization":["DepreciationAndAmortization","DepAndAmort","Depreciation & Amortization"],
+    "Interest Expense":["InterestExpense","Interest Exp"],
+    "Income Tax Expense":["IncomeTaxExpense","TaxExpense","Income Tax"]
 }
 
-balance_columns = {
-    "Total Assets": ["TotalAssets", "Total Assets"],
-    "Total Liabilities": ["TotalLiabilities", "Total Liabilities", "TotalLiabilitiesNetMinorityInterest"],
-    "Shareholders Equity": ["TotalEquity", "Shareholders Equity", "Total Equity", "StockholdersEquity"],
-    "Current Assets": ["CurrentAssets", "Current Assets"],
-    "Current Liabilities": ["CurrentLiabilities", "Current Liabilities"],
-    "CurrentDebt": ["CurrentDebt", "ShortTermDebt", "Short-Term Debt", "Current Debt"],
-    "Long-Term Debt": ["LongTermDebt", "Long-Term Debt"],
-    "Total Shares Outstanding": ["SharesIssued", "ShareIssued", "Total Shares Outstanding", "Total Shares", "OrdinarySharesNumber"],
-    "Inventory": ["Inventory", "Inventories"]
+balance_columns={
+    "Total Assets":["TotalAssets","Total Assets"],
+    "Total Liabilities":["TotalLiabilities","Total Liabilities","TotalLiabilitiesNetMinorityInterest"],
+    "Shareholders Equity":["TotalEquity","Shareholders Equity","Total Equity","StockholdersEquity"],
+    "Current Assets":["CurrentAssets","Current Assets"],
+    "Current Liabilities":["CurrentLiabilities","Current Liabilities"],
+    "CurrentDebt":["CurrentDebt","ShortTermDebt","Short-Term Debt","Current Debt"],
+    "Long-Term Debt":["LongTermDebt","Long-Term Debt"],
+    "Total Shares Outstanding":["SharesIssued","ShareIssued","Total Shares Outstanding","Total Shares","OrdinarySharesNumber"],
+    "Inventory":["Inventory","Inventories"]
 }
 
-cashflow_columns = {
-    "Operating Cash Flow": ["OperatingCashFlow", "Operating Cash Flow", "Cash from Operations"],
-    "Capital Expenditures": ["CapitalExpenditures", "Capital Expenditures", "CapEx", "CapitalExpenditure", "Capital Expenditure"]
+cashflow_columns={
+    "Operating Cash Flow":["OperatingCashFlow","Operating Cash Flow","Cash from Operations"],
+    "Capital Expenditures":["CapitalExpenditures","Capital Expenditures","CapEx","CapitalExpenditure","Capital Expenditure"]
 }
 
 @system3_bp.route('/calculate', methods=['POST'])
 def calculate_scenario():
     """
-    (Legacy route) Direct fix: handle CSV uploads in system3, parse them, and run DCF using real data.
-    This approach is retained for backward compatibility, but you can rely on the Alpha Vantage-based
-    endpoints (/base_case and /calculate_alpha) if you no longer want to deal with CSV uploads.
+    CSV-based route; merges multi-agent ensemble logic if you want.
     """
     import tempfile
-
     try:
-        data = request.form.to_dict()
-        scenario = data.get('scenario', 'Neutral')
-        sector = data.get('sector', 'Unknown')
-        industry = data.get('industry', 'Unknown')
-        sub_industry = data.get('sub_industry', 'Unknown')
-        stock_ticker = data.get('stock_ticker', 'AAPL')
+        data=request.form.to_dict()
+        scenario=data.get('scenario','Neutral')
+        sector=data.get('sector','Unknown')
+        industry=data.get('industry','Unknown')
+        sub_industry=data.get('sub_industry','Unknown')
+        stock_ticker=data.get('stock_ticker','AAPL')
 
-        income_statement_file = request.files.get('income_statement')
-        balance_sheet_file = request.files.get('balance_sheet')
-        cash_flow_file = request.files.get('cash_flow')
+        inc_file=request.files.get('income_statement')
+        bal_file=request.files.get('balance_sheet')
+        cf_file=request.files.get('cash_flow')
+        if not inc_file or not bal_file or not cf_file:
+            return jsonify({"error":"Missing CSVs"}),400
 
-        if not income_statement_file or not balance_sheet_file or not cash_flow_file:
-            return jsonify({"error": "Missing one or more CSV files (income_statement, balance_sheet, cash_flow)."}), 400
+        with tempfile.NamedTemporaryFile(delete=False,suffix=".csv") as inc_f:
+            inc_file.save(inc_f.name)
+            inc_path=inc_f.name
+        with tempfile.NamedTemporaryFile(delete=False,suffix=".csv") as bal_f:
+            bal_file.save(bal_f.name)
+            bal_path=bal_f.name
+        with tempfile.NamedTemporaryFile(delete=False,suffix=".csv") as cf_f:
+            cf_file.save(cf_f.name)
+            cf_path=cf_f.name
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as inc_f:
-            income_statement_file.save(inc_f.name)
-            inc_path = inc_f.name
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as bal_f:
-            balance_sheet_file.save(bal_f.name)
-            bal_path = bal_f.name
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as cf_f:
-            cash_flow_file.save(cf_f.name)
-            cf_path = cf_f.name
-
-        income_df = process_financial_csv(inc_path, "income_statement")
-        balance_df = process_financial_csv(bal_path, "balance_sheet")
-        cashflow_df = process_financial_csv(cf_path, "cash_flow")
+        inc_df=process_financial_csv(inc_path,"income_statement")
+        bal_df=process_financial_csv(bal_path,"balance_sheet")
+        cf_df=process_financial_csv(cf_path,"cash_flow")
 
         os.remove(inc_path)
         os.remove(bal_path)
         os.remove(cf_path)
 
-        if any(df is None for df in [income_df, balance_df, cashflow_df]):
-            return jsonify({"error": "Failed to parse one or more CSVs."}), 400
+        if any(x is None for x in [inc_df,bal_df,cf_df]):
+            return jsonify({"error":"Failed to parse CSVs."}),400
 
-        income_df, income_unmapped = standardize_columns(income_df, income_columns, "income_statement")
-        balance_df, balance_unmapped = standardize_columns(balance_df, balance_columns, "balance_sheet")
-        cashflow_df, cashflow_unmapped = standardize_columns(cashflow_df, cashflow_columns, "cash_flow")
+        inc_df, inc_unmapped=standardize_columns(inc_df,income_columns,"inc_csv")
+        bal_df, bal_unmapped=standardize_columns(bal_df,balance_columns,"bal_csv")
+        cf_df, cf_unmapped=standardize_columns(cf_df,cashflow_columns,"cf_csv")
 
-        income_df.sort_values('Date', inplace=True)
-        latest_revenue = income_df['Revenue'].iloc[-1] if 'Revenue' in income_df.columns else 0
+        inc_df.sort_values('Date',inplace=True)
+        if 'Revenue' in inc_df.columns and len(inc_df)>0:
+            latest_revenue=float(inc_df['Revenue'].iloc[-1])
+        else:
+            latest_revenue=1_000_000.0
 
-        scenario_adjustments = adjust_for_scenario(scenario)
-        sector_adjustments = adjust_for_sector(sector)
-        industry_adjustments = adjust_for_industry(industry)
-        sub_industry_adjustments = adjust_for_sub_industry(sub_industry)
-        company_adjustments = adjust_for_company(stock_ticker)
+        scenario_out=adjust_for_scenario(scenario)
+        sector_out=adjust_for_sector(sector)
+        industry_out=adjust_for_industry(industry)
+        sub_industry_out=adjust_for_sub_industry(sub_industry)
+        company_out=adjust_for_company(stock_ticker)
+        feedback_out={}
+        sentiment_out={}
+        historical_out=adjust_based_on_historical_data(stock_ticker)
 
-        merged_assumptions = {}
-        for d in [scenario_adjustments, sector_adjustments, industry_adjustments, sub_industry_adjustments, company_adjustments]:
-            for k, v in d.items():
-                merged_assumptions[k] = v
+        agent_adjustments={
+            "scenario_agent":scenario_out,
+            "sector_agent":sector_out,
+            "industry_agent":industry_out,
+            "sub_industry_agent":sub_industry_out,
+            "company_agent":company_out,
+            "feedback_agent":feedback_out,
+            "sentiment_agent":sentiment_out,
+            "historical_data_agent":historical_out
+        }
 
-        final_assumptions = validate_assumptions(merged_assumptions)
+        weights=get_agent_importance_weights()
+        reasoning, conf=validation_agent({}, sector,industry,sub_industry, scenario,stock_ticker, agent_adjustments)
+        merged=compute_final_adjustments_with_agents(agent_adjustments, weights, conf)
+        final_assumptions=validate_assumptions(merged)
 
-        initial_values = {"Revenue": float(latest_revenue)}
-        dcf_model = DCFModel(initial_values, final_assumptions)
+        dcf_model=DCFModel({"Revenue":latest_revenue},final_assumptions)
         dcf_model.run_model()
-        results = dcf_model.get_results()
+        results=dcf_model.get_results()
 
         return jsonify({
-            "intrinsic_value_per_share": results["intrinsic_value_per_share"],
-            "assumptions_used": final_assumptions
-        }), 200
-
+            "intrinsic_value_per_share":results["intrinsic_value_per_share"],
+            "final_assumptions":final_assumptions,
+            "scenario":scenario
+        }),200
     except Exception as e:
-        logger.exception("Error in calculate_scenario")
-        return jsonify({"error": str(e)}), 500
+        logger.exception("Error in CSV-based /calculate route: %s", e)
+        return jsonify({"error":str(e)}),500
