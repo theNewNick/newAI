@@ -1,11 +1,13 @@
 import os
 import requests
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()  # This will read variables from .env into os.environ
 
 ALPHAVANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
 
+logger = logging.getLogger(__name__)
 
 class AlphaVantageAPIError(Exception):
     """
@@ -34,6 +36,7 @@ def fetch_income_statement(ticker: str) -> dict:
         )
 
     data = resp.json()
+    logger.debug(f"[fetch_income_statement] Raw response for {ticker}: {data}")
     if "annualReports" not in data:
         raise AlphaVantageAPIError(
             f"Invalid response from Alpha Vantage; 'annualReports' missing. "
@@ -62,6 +65,7 @@ def fetch_balance_sheet(ticker: str) -> dict:
         )
 
     data = resp.json()
+    logger.debug(f"[fetch_balance_sheet] Raw response for {ticker}: {data}")
     if "annualReports" not in data:
         raise AlphaVantageAPIError(
             f"Invalid response from Alpha Vantage; 'annualReports' missing. "
@@ -90,6 +94,7 @@ def fetch_cash_flow(ticker: str) -> dict:
         )
 
     data = resp.json()
+    logger.debug(f"[fetch_cash_flow] Raw response for {ticker}: {data}")
     if "annualReports" not in data:
         raise AlphaVantageAPIError(
             f"Invalid response from Alpha Vantage; 'annualReports' missing. "

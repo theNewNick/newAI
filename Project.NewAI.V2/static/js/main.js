@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDashboard();
 
   // 2. Load the agentic base case from system3
-  initBaseCase();
+//  initBaseCase();
 
   // 2. Chatbot functionality
   initChatbot();
@@ -1125,7 +1125,8 @@ function initChatbot() {
 // ---------------------------------------------------------------------------
 // A global variable to hold the user-chosen ticker from ?ticker=XYZ
 // ---------------------------------------------------------------------------
-let userTicker = "MSFT"; // fallback if the URL param is missing
+//let userTicker = "MSFT"; // fallback if the URL param is missing
+let userTicker;
 
 // ---------------------------------------------------------------------------
 // Read the ticker from the query params as soon as DOM is ready
@@ -1147,6 +1148,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ---------------------------------------------------------------------------
 // NEW: Confirm the frontend calls /system3/base_case to load the agentic base case
 // ---------------------------------------------------------------------------
+
 function initBaseCase() {
   // Use the user-chosen ticker from userTicker
   const endpoint = `/system3/base_case?ticker=${userTicker}`;
@@ -1156,25 +1158,62 @@ function initBaseCase() {
     .then(res => res.json())
     .then(data => {
       console.log("Base Case from system3:", data);
-      // Suppose we display the base-case intrinsic value in some element
+
+      // 1) OPTIONAL: If you have an element with ID 'base-case-output' somewhere else:
       const baseCaseElem = document.getElementById('base-case-output');
       if (baseCaseElem && data.intrinsic_value_per_share) {
-        baseCaseElem.textContent =
-          "Base Case IV: $" + data.intrinsic_value_per_share.toFixed(2);
+        baseCaseElem.textContent = "Base Case IV: $" + data.intrinsic_value_per_share.toFixed(2);
       } else if (baseCaseElem) {
-        // If there's an error or no data, handle gracefully
         if (data.error) {
           baseCaseElem.textContent = "Error: " + data.error;
         } else {
           baseCaseElem.textContent = "No data returned from /system3/base_case.";
         }
       }
+
+      // 2) Scenario tile’s default and collapsed (we already handle these):
+      const scenarioDefault = document.getElementById('scenario-basecase-default');
+      const scenarioCollapsed = document.getElementById('scenario-basecase-collapsed');
+
+      // 3) Also update the expanded state (just like your scenario-run results).
+      //    Suppose you want to show the “Base Case IV” at the bottom or near the 
+      //    “Intrinsic Value under this scenario:” line. For instance:
+      const scenarioExpandedValue = document.getElementById('scenario-intrinsic-value');
+
+      // Update all three if they exist
+      if (scenarioDefault && scenarioCollapsed && scenarioExpandedValue) {
+        if (data.intrinsic_value_per_share) {
+          scenarioDefault.textContent = `$${data.intrinsic_value_per_share.toFixed(2)}`;
+          scenarioCollapsed.textContent = `$${data.intrinsic_value_per_share.toFixed(2)}`;
+          scenarioExpandedValue.textContent = data.intrinsic_value_per_share.toFixed(2);
+        } else if (data.error) {
+          scenarioDefault.textContent = `Error: ${data.error}`;
+          scenarioCollapsed.textContent = `Error: ${data.error}`;
+          scenarioExpandedValue.textContent = `Error: ${data.error}`;
+        } else {
+          scenarioDefault.textContent = "No data returned from /system3/base_case.";
+          scenarioCollapsed.textContent = "No data returned from /system3/base_case.";
+          scenarioExpandedValue.textContent = "N/A";
+        }
+      }
     })
     .catch(err => {
       console.error("Error fetching base case from system3:", err);
+
+      // If there's an error, fill in placeholders
       const baseCaseElem = document.getElementById('base-case-output');
       if (baseCaseElem) {
         baseCaseElem.textContent = "Error fetching base case.";
+      }
+
+      const scenarioDefault = document.getElementById('scenario-basecase-default');
+      const scenarioCollapsed = document.getElementById('scenario-basecase-collapsed');
+      const scenarioExpandedValue = document.getElementById('scenario-intrinsic-value');
+
+      if (scenarioDefault && scenarioCollapsed && scenarioExpandedValue) {
+        scenarioDefault.textContent = "Error fetching base case.";
+        scenarioCollapsed.textContent = "Error fetching base case.";
+        scenarioExpandedValue.textContent = "N/A";
       }
     });
 }
